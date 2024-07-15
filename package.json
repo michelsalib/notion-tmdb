@@ -1,0 +1,20 @@
+{
+  "name": "notion-imdb",
+  "version": "1.0.0",
+  "description": "An integration between Notion and TMDB",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "michelsalib@gmail.com",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}

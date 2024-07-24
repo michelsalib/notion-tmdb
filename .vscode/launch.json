@@ -7,7 +7,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/index.ts",
             "preLaunchTask": "tsc: build - tsconfig.json",
-            "outFiles": ["${workspaceFolder}/out/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]

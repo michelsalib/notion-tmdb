@@ -1,120 +1,210 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { Client } from "@notionhq/client";
-import axios from 'axios';
+import { CreatePageParameters, UpdatePageParameters } from "@notionhq/client/build/src/api-endpoints.js";
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import dotenv from "dotenv";
+import { readFile } from 'node:fs/promises';
 
 dotenv.config();
 const config: Record<'NOTION_KEY' | 'NOTION_DB_ID' | 'TMDB_API_KEY', string> = process.env as any;
 
-app.http('sync', {
-    methods: ['GET'],
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
-        const tmdbClient = axios.create({
-            baseURL: 'https://api.themoviedb.org/3/',
-            headers: {
-                common: {
-                    Authorization: `Bearer ${config.TMDB_API_KEY}`,
-                },
+function createTmdbClient(): AxiosInstance {
+    return axios.create({
+        baseURL: 'https://api.themoviedb.org/3/',
+        headers: {
+            common: {
+                Authorization: `Bearer ${config.TMDB_API_KEY}`,
             },
-        })
+        },
+    });
+}
 
-        const notionClient = new Client({
-            auth: config.NOTION_KEY,
-        });
+function createNotionClient(): Client {
+    return new Client({
+        auth: config.NOTION_KEY,
+    });
+}
 
-        const db = await notionClient.databases.query({
-            database_id: config.NOTION_DB_ID,
-            filter: {
-                and: [
-                    {
-                        property: 'TMDB Link',
-                        url: {
-                            is_not_empty: true,
-                        },
-                    },
-                    {
-                        property: 'TMDB Sync',
-                        status: {
-                            equals: 'Not started',
-                        }
-                    }
-                ]
-            }
-        });
+async function loadNotionEntryFromTmdb(tmdbId: string): Promise<Omit<CreatePageParameters, 'parent'>> {
+    const tmdbClient = createTmdbClient();
 
-        const moviesToLoad = db.results as any[];
+    const { data } = await tmdbClient.get(`/movie/${tmdbId}`, {
+        params: {
+            append_to_response: 'credits',
+            language: 'fr-FR',
+        },
+    });
 
-        for (const movie of moviesToLoad) {
-            const name: string = movie.properties.Nom.title[0].plain_text;
-            context.log(`Loading ${name}`);
-            const tmdbUrl: string = movie.properties['TMDB Link'].url;
-            const tmdbId = /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(tmdbUrl)?.[1];
+    const director = data.credits.crew.find((i: any) => i.job == 'Director');
 
-            const { data } = await tmdbClient.get(`/movie/${tmdbId}`, {
-                params: {
-                    append_to_response: 'credits',
-                    language: 'fr-FR',
-                },
-            });
-
-            const director = data.credits.crew.find((i: any) => i.job == 'Director');
-
-            // populate
-            await notionClient.pages.update({
-                page_id: movie.id,
-                cover: {
-                    external: {
-                        url: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
+    return {
+        cover: {
+            external: {
+                url: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
+            },
+        },
+        icon: {
+            external: {
+                url: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
+            },
+        },
+        properties: {
+            Nom: {
+                title: [{
+                    text: {
+                        content: data.title,
                     },
-                },
-                icon: {
-                    external: {
-                        url: `https://image.tmdb.org/t/p/original/${data.poster_path}`,
-                    },
-                },
-                properties: {
-                    Nom: {
-                        title: [{
-                            text: {
-                                content: data.title,
-                            },
-                        }]
-                    },
-                    Annee: {
-                        number: Number(data.release_date.split('-')[0]),
-                    },
-                    ['Realisateur•rice']: {
-                        rich_text: [{
-                            text: {
-                                content: director.name,
-                                link: {
-                                    url: `https://www.themoviedb.org/person/${director.id}`,
-                                }
-                            },
-                        }]
-                    },
-                    Genre: {
-                        multi_select: data.genres.map((g: any) => {
-                            return {
-                                name: g.name,
-                            };
-                        }),
-                    },
-                    ['TMDB Sync']: {
-                        status: {
-                            name: 'Done',
+                }]
+            },
+            Annee: {
+                number: Number(data.release_date.split('-')[0]),
+            },
+            ['Realisateur•rice']: {
+                rich_text: [{
+                    text: {
+                        content: director.name,
+                        link: {
+                            url: `https://www.themoviedb.org/person/${director.id}`,
                         }
                     },
-                    ['TMDB Raiting']: {
-                        number: Number(data.vote_average),
-                    },
-                },
-            });
+                }]
+            },
+            Genre: {
+                multi_select: data.genres.map((g: any) => {
+                    return {
+                        name: g.name,
+                    };
+                }),
+            },
+            ['TMDB Sync']: {
+                status: {
+                    name: 'Done',
+                }
+            },
+            ['TMDB Raiting']: {
+                number: Number(data.vote_average),
+            },
+        },
+    };
+}
 
-            context.log(`DONE ${name}`);
-        }
+app.get('search', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    const tmdbClient = createTmdbClient();
+    
+    const { data } = await tmdbClient.get('/search/movie', {
+        params: {
+            query: request.query.get('query'),
+            include_adult: false,
+            language: 'fr-FR',
+            page: 1,
+        },
+    });
 
-        return { body: `Sucess ${moviesToLoad.length} item(s).` };
+    return {
+        jsonBody: data,
     }
 });
 
+app.post('sync', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    const notionClient = createNotionClient();
+
+    const db = await notionClient.databases.query({
+        database_id: config.NOTION_DB_ID,
+        filter: {
+            and: [
+                {
+                    property: 'TMDB Link',
+                    url: {
+                        is_not_empty: true,
+                    },
+                },
+                {
+                    property: 'TMDB Sync',
+                    status: {
+                        equals: 'Not started',
+                    }
+                }
+            ]
+        }
+    });
+
+    const moviesToLoad = db.results as any[];
+
+    for (const movie of moviesToLoad) {
+        const name: string = movie.properties.Nom.title[0].plain_text;
+        context.log(`Loading ${name}`);
+        const tmdbUrl: string = movie.properties['TMDB Link'].url;
+        const tmdbId = /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(tmdbUrl)?.[1] as string;
+
+        // load from tmdb
+        const entry = await loadNotionEntryFromTmdb(tmdbId);
+
+        // populate in notion
+        await notionClient.pages.update({
+            ...entry,
+            page_id: movie.id,
+        });
+
+        context.log(`DONE ${name}`);
+    }
+
+    return { body: `Sucess ${moviesToLoad.length} item(s).` };
+});
+
+app.post('add', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+        const notionClient = createNotionClient();
+
+        // get from tmdb
+        const entry = await loadNotionEntryFromTmdb(request.query.get('id') as string);
+
+        // put into notion
+        await notionClient.pages.create({
+            ...entry,
+            parent: {
+                database_id: config.NOTION_DB_ID,
+            },
+        })
+
+        return {
+            body: 'Sucess loading ' + (entry as any).properties.Nom.title[0].text.content,
+        };
+    }
+    catch (err) {
+        let message = String(err);
+
+        if (err instanceof AxiosError) {
+            message = JSON.stringify(err.response?.data);
+        }
+
+        return {
+            status: 503,
+            body: 'Failed: ' + message,
+        };
+    }
+});
+
+app.get('static_hosting', {
+    route: 'static/{*filename}',
+    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+        const filename = request.params.filename || 'index.html';
+
+        try {
+            const file = await readFile('./frontend/' + filename);
+
+            return {
+                body: file,
+                headers: {
+                    'Cache-Control': 'public, max-age=3600',
+                },
+            };
+        }
+
+        catch {
+            return {
+                status: 404,
+                body: 'Path not supported',
+            };
+        }
+    }
+});

@@ -6,7 +6,7 @@
   "scripts": {
     "code:build": "tsc",
     "code:deploy": "tsc && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb -n nscacgyakfa6i --src out.zip",
-    "infra:deploy": "az deployment group create --mode complete -g notion-tmdb -f azure/template.bicep",
+    "infra:deploy": "az deployment group create --mode complete -g notion-tmdb -f azure/template.bicep"
   },
   "author": "michelsalib@gmail.com",
   "license": "MIT",

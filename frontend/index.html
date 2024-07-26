@@ -46,7 +46,7 @@
             const fetchMovieSearch = React.useMemo(
                 () =>
                     debounce((inputValue, done) => {
-                        fetch('https://nscacgyakfa6i.azurewebsites.net/search?query=' + encodeURIComponent(inputValue))
+                        fetch('/search?query=' + encodeURIComponent(inputValue))
                             .then(res => res.json())
                             .then(done)
                     }, 400),
@@ -121,6 +121,7 @@
         }
 
         function App() {
+            const [loading, setLoading] = React.useState(false);
             const [value, setValue] = React.useState(null);
             const [alert, setAlert] = React.useState({ message: '' });
 
@@ -143,8 +144,10 @@
                     return;
                 }
 
+                setLoading(true);
+
                 try {
-                    await fetch('https://nscacgyakfa6i.azurewebsites.net/add?id=' + value.id, {
+                    await fetch('/add?id=' + value.id, {
                         method: 'POST',
                     });
 
@@ -159,11 +162,16 @@
                         severity: 'error'
                     });
                 }
+                finally {
+                    setLoading(false);
+                }
             }
 
             async function sync() {
+                setLoading(true);
+
                 try {
-                    await fetch('https://nscacgyakfa6i.azurewebsites.net/sync', {
+                    await fetch('/sync', {
                         method: 'POST',
                     });
 
@@ -178,6 +186,9 @@
                         severity: 'error'
                     });
                 }
+                finally {
+                    setLoading(false);
+                }
             }
 
             return (
@@ -187,9 +198,9 @@
                         <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
                             <Stack direction="row" spacing={2}>
                                 <Asynchronous onMovieChange={m => setValue(m)} />
-                                <Button variant="contained" size="large" onClick={submit}>Create</Button>
+                                <Button variant="contained" size="large" onClick={submit} disabled={loading || !value}>Create</Button>
                             </Stack>
-                            <Button variant="contained" size="large" color="success" onClick={sync}>Sync all</Button>
+                            <Button variant="contained" size="large" color="success" onClick={sync} disabled={loading}>Sync all</Button>
                             {alert.message ?
                                 <Alert variant="filled" severity={alert.severity} onClose={() => setAlert({ message: '' })}>
                                     {alert.message}

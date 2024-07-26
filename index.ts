@@ -1,12 +1,13 @@
+import { CosmosClient } from '@azure/cosmos';
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { Client } from "@notionhq/client";
-import { CreatePageParameters, UpdatePageParameters } from "@notionhq/client/build/src/api-endpoints.js";
+import { CreatePageParameters } from "@notionhq/client/build/src/api-endpoints.js";
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import dotenv from "dotenv";
 import { readFile } from 'node:fs/promises';
 
 dotenv.config();
-const config: Record<'NOTION_KEY' | 'NOTION_DB_ID' | 'TMDB_API_KEY', string> = process.env as any;
+const config: Record<'NOTION_KEY' | 'NOTION_DB_ID' | 'TMDB_API_KEY' | 'CosmosDb:Account' | 'CosmosDb:Key', string> = process.env as any;
 
 function createTmdbClient(): AxiosInstance {
     return axios.create({
@@ -22,6 +23,13 @@ function createTmdbClient(): AxiosInstance {
 function createNotionClient(): Client {
     return new Client({
         auth: config.NOTION_KEY,
+    });
+}
+
+function createCosmoClient(): CosmosClient {
+    return new CosmosClient({
+        endpoint: config['CosmosDb:Account'],
+        key: config['CosmosDb:Key'],
     });
 }
 
@@ -90,7 +98,7 @@ async function loadNotionEntryFromTmdb(tmdbId: string): Promise<Omit<CreatePageP
 
 app.get('search', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     const tmdbClient = createTmdbClient();
-    
+
     const { data } = await tmdbClient.get('/search/movie', {
         params: {
             query: request.query.get('query'),
@@ -103,6 +111,20 @@ app.get('search', async (request: HttpRequest, context: InvocationContext): Prom
     return {
         jsonBody: data,
     }
+});
+
+app.get('db', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    const client = createCosmoClient();
+
+    const container = client.database('notion-tmdb-europe-north').container('notion-tmdb-europe-north');
+
+    // container.items.upsert({
+    //     time: new Date(),
+    // });
+
+    return {
+        jsonBody: (await container.item('f7976ead-fac8-4a2f-a389-8302b6c498be', 'f7976ead-fac8-4a2f-a389-8302b6c498be').read()).resource,
+    };
 });
 
 app.post('sync', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {

@@ -209,6 +209,15 @@ app.post('add', async (request: HttpRequest, context: InvocationContext): Promis
     }
 });
 
+app.get('legal', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    return {
+        status: 302,
+        headers: {
+            location: '/legal.md',
+        },
+    };
+});
+
 app.get('static_hosting', {
     route: '{*filename}',
     handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {

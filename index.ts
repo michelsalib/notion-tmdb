@@ -92,6 +92,9 @@ async function loadNotionEntryFromTmdb(tmdbId: string): Promise<Omit<CreatePageP
             ['TMDB Raiting']: {
                 number: Number(data.vote_average),
             },
+            ['TMDB Link']: {
+                url: `https://www.themoviedb.org/movie/${tmdbId}`,
+            },
         },
     };
 }
@@ -186,7 +189,7 @@ app.post('add', async (request: HttpRequest, context: InvocationContext): Promis
             parent: {
                 database_id: config.NOTION_DB_ID,
             },
-        })
+        });
 
         return {
             body: 'Sucess loading ' + (entry as any).properties.Nom.title[0].text.content,
@@ -207,7 +210,7 @@ app.post('add', async (request: HttpRequest, context: InvocationContext): Promis
 });
 
 app.get('static_hosting', {
-    route: 'static/{*filename}',
+    route: '{*filename}',
     handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         const filename = request.params.filename || 'index.html';
 

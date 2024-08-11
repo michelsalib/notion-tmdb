@@ -2,25 +2,21 @@
   "name": "notion-imdb",
   "version": "1.0.0",
   "description": "An integration between Notion and TMDB",
-  "main": "index.js",
+  "type": "module",
+  "main": "backend/dist/index.js",
   "scripts": {
-    "local:prepare": "func azure functionapp fetch-app-settings notion-tmdb-europe-north",
-    "local:run": "tsc && func start",
-    "code:build": "tsc",
-    "code:deploy": "tsc && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-europe-north -n notion-tmdb-europe-north --src out.zip",
+    "build": "npm run build --workspaces && rm -rf dist && node support/build.js",
+    "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-europe-north -n notion-tmdb-europe-north --src out.zip",
     "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-europe-north -f azure/template.bicep"
   },
   "author": "michelsalib@gmail.com",
   "license": "MIT",
-  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "dependencies": {
-    "@azure/functions": "^4.5.0",
-    "@azure/cosmos": "^4.0.0",
-    "@notionhq/client": "^2.2.15",
-    "axios": "^1.7.2",
-    "dotenv": "^16.4.5"
-  },
-  "devDependencies": {
-    "typescript": "^5.5.3"
+    "copy-file": "^11.0.0",
+    "globby": "^14.0.2"
   }
 }

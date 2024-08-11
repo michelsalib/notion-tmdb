@@ -1,12 +1,18 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "node16",
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "lib": ["ES2023"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "sourceMap": true,
-  }
+    "jsx": "react-jsx"
+  },
+  
 }

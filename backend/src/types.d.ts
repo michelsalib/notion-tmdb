@@ -1,4 +1,4 @@
-interface NotionData {
+export interface NotionData {
     workspaceId: string;
     workspaceName: string;
     workspaceIcon: string;

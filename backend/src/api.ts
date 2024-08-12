@@ -3,6 +3,7 @@ import { AxiosError } from "axios";
 import { getLoggedUser } from "./auth.js";
 import { createNotionClient, loadNotionEntryFromTmdb } from "./providers/notion.js";
 import { createTmdbClient } from "./providers/tmdb.js";
+import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints.js";
 
 app.get('user', {
     route: 'api/user', 
@@ -124,5 +125,28 @@ app.post('add', {
                 body: 'Failed: ' + message,
             };
         }
+    }
+});
+
+app.get('config', {
+    route: 'api/config',
+    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+        const user = await getLoggedUser(request);
+
+        const dbSearch = await createNotionClient(user.notionWorkspace.accessToken)
+        .search({
+            filter: {
+                property: 'object',
+                value: 'database'
+            },
+        });
+
+        const dbConfig = dbSearch.results as DatabaseObjectResponse[];
+
+        return {
+            jsonBody: {
+                data: dbConfig,
+            },
+        };
     }
 });

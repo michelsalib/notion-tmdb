@@ -1,9 +1,10 @@
-import { Alert, AlertColor, Button, Container, createTheme, CssBaseline, LinearProgress, Snackbar, Stack, TextField, ThemeProvider, Toolbar, useMediaQuery } from "@mui/material";
-import { useMemo, useState } from "react";
+import { Alert, AlertColor, Button, Container, createTheme, CssBaseline, LinearProgress, Snackbar, Stack, TextField, ThemeProvider, Typography, useMediaQuery } from "@mui/material";
+import { Fragment, useMemo, useState } from "react";
+import { DbConfig } from "./DbConfig";
 import { Login } from "./Login";
+import { Navigation } from "./Navigation";
 import { SearchMovie } from "./SearchMovie";
 import { Movie } from "./types";
-import { Navigation } from "./Navigation";
 
 type LOGIN_STATE = 'sso' | 'embed' | 'none';
 
@@ -138,15 +139,21 @@ export function App() {
                         </Stack>
                         <Button variant="contained" size="large" color="success" onClick={sync} disabled={loading}>Sync all</Button>
                         {loggedIn.status == "sso" ?
-                            <TextField
-                                label="Notion embed URLLL"
-                                defaultValue={window.location.origin + '?userId=' + loggedIn.userId}
-                                size="small"
-                                InputProps={{
-                                    readOnly: true,
-                                }}
-                                variant="filled"
-                            /> :
+                            <Fragment>
+                                <Alert variant="outlined" severity="info">
+                                    Your plugin is ready to be embeded in notion
+                                    <TextField
+                                        defaultValue={window.location.origin + '?userId=' + loggedIn.userId}
+                                        size="small"
+                                        InputProps={{
+                                            readOnly: true,
+                                        }}
+                                        sx={{width: '100%'}}
+                                    />
+                                </Alert>
+                                <DbConfig />
+                            </Fragment>
+                            :
                             ''
                         }
                     </Stack> :

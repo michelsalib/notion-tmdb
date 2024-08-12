@@ -1,13 +1,13 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { UserData } from "./types.js";
-import { createCosmoClient } from "./providers/cosmo.js";
-import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints.js";
-import { createNotionClient } from "./providers/notion.js";
 import { Client } from "@notionhq/client";
+import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints.js";
 import { config } from "./config.js";
+import { createCosmoClient } from "./providers/cosmo.js";
+import { createNotionClient } from "./providers/notion.js";
+import type { UserData } from "./types.js";
 
 export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
-    const regex = /userId=([\w-]*)/
+    const regex = /userId=([\w-]*)/;
     let userId = regex.exec(request.headers.get('cookie') as string)?.[1] as string;
 
     if (!userId) {

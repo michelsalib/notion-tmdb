@@ -82,6 +82,7 @@ app.get('login', async (request: HttpRequest, context: InvocationContext): Promi
             {
                 name: 'userId',
                 value: userData.id,
+                maxAge: 31_536_000, // 1 year
             },
         ],
     };

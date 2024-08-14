@@ -1,9 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { Client } from "@notionhq/client";
-import { DatabaseObjectResponse, getUser } from "@notionhq/client/build/src/api-endpoints.js";
 import { config } from "./config.js";
 import { createCosmoClient } from "./providers/cosmo.js";
-import { createNotionClient } from "./providers/notion.js";
 import type { UserData } from "./types.js";
 
 export function getUserId(request: HttpRequest): string {
@@ -21,11 +19,16 @@ export function getUserId(request: HttpRequest): string {
     return userId;
 }
 
-export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
-    const userId = getUserId(request);
+async function getUser(userId: string): Promise<UserData> {
     const item = await createCosmoClient().item(userId, userId).read();
 
     return item.resource;
+}
+
+export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
+    const userId = getUserId(request);
+
+    return getUser(userId);
 }
 
 app.get('logout', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
@@ -54,16 +57,7 @@ app.get('login', async (request: HttpRequest, context: InvocationContext): Promi
             redirect_uri: request.url.split('?')[0],
         });
 
-    const dbSearch = await createNotionClient(tokenResponse.access_token)
-        .search({
-            query: 'Movies',
-            filter: {
-                property: 'object',
-                value: 'database'
-            },
-        });
-
-    const dbConfig = dbSearch.results[0] as DatabaseObjectResponse;
+    const existingUser = await getUser(tokenResponse.workspace_id);
 
     const userData: UserData = {
         id: tokenResponse.workspace_id,
@@ -73,6 +67,7 @@ app.get('login', async (request: HttpRequest, context: InvocationContext): Promi
             workspaceIcon: tokenResponse.workspace_icon as string,
             accessToken: tokenResponse.access_token,
         },
+        dbConfig: existingUser?.dbConfig,
     };
 
     const cosmo = createCosmoClient();

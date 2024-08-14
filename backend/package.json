@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "watch": "tsc --watch",
     "start": "func start",
     "local:prepare": "func azure functionapp fetch-app-settings notion-tmdb-europe-north"
   }

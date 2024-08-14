@@ -11,7 +11,7 @@ app.get('user', {
     route: 'api/user',
     handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         const user = await getLoggedUser(request);
-        user.notionWorkspace.accessToken = '***';
+        user.notionWorkspace.accessToken = '***'; // hide sensitive data
 
         return {
             jsonBody: {

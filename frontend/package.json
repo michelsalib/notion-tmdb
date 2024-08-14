@@ -15,6 +15,7 @@
   },
   "scripts": {
     "build": "vite build",
+    "watch": "vite build --watch",
     "start": "vite"
   }
 }

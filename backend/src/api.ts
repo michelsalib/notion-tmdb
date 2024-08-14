@@ -55,19 +55,18 @@ app.post('sync', {
 
         const notionClient = createNotionClient(user.notionWorkspace.accessToken);
 
-
         const db = await notionClient.databases.query({
             database_id: user.dbConfig.id,
             filter: {
                 and: [
                     {
-                        property: 'TMDB Link',
+                        property: user.dbConfig.url,
                         url: {
                             is_not_empty: true,
                         },
                     },
                     {
-                        property: 'TMDB Sync',
+                        property: user.dbConfig.status,
                         status: {
                             equals: 'Not started',
                         }
@@ -81,11 +80,11 @@ app.post('sync', {
         for (const movie of moviesToLoad) {
             const name: string = movie.properties.Nom.title[0].plain_text;
             context.log(`Loading ${name}`);
-            const tmdbUrl: string = movie.properties['TMDB Link'].url;
+            const tmdbUrl: string = movie.properties[user.dbConfig.url].url;
             const tmdbId = /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(tmdbUrl)?.[1] as string;
 
             // load from tmdb
-            const entry = await loadNotionEntryFromTmdb(tmdbId);
+            const entry = await loadNotionEntryFromTmdb(tmdbId, user.dbConfig);
 
             // populate in notion
             await notionClient.pages.update({
@@ -116,7 +115,7 @@ app.post('add', {
             const notionClient = createNotionClient(user.notionWorkspace.accessToken);
 
             // get from tmdb
-            const entry = await loadNotionEntryFromTmdb(request.query.get('id') as string);
+            const entry = await loadNotionEntryFromTmdb(request.query.get('id') as string, user.dbConfig);
 
             // put into notion
             await notionClient.pages.create({

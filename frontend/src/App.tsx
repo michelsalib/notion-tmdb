@@ -1,9 +1,8 @@
-import { Alert, AlertColor, Button, Container, createTheme, CssBaseline, LinearProgress, Snackbar, Stack, TextField, ThemeProvider, Toolbar, useMediaQuery } from "@mui/material";
+import { createTheme, CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
 import { useMemo, useState } from "react";
+import { EmbedPage } from "./EmbedPage";
 import { Login } from "./Login";
-import { SearchMovie } from "./SearchMovie";
-import { Movie } from "./types";
-import { Navigation } from "./Navigation";
+import { UserPage } from "./UserPage";
 
 type LOGIN_STATE = 'sso' | 'embed' | 'none';
 
@@ -37,14 +36,7 @@ function loginState(): {
 }
 
 export function App() {
-    const [loading, setLoading] = useState(false);
     const [loggedIn] = useState(loginState());
-    const [value, setValue] = useState<Movie | null>(null);
-    const [alert, setAlert] = useState<{
-        open: boolean;
-        message: string;
-        severity: AlertColor
-    }>({ open: false, message: '', severity: 'success' });
 
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const theme = useMemo(
@@ -60,105 +52,14 @@ export function App() {
         [prefersDarkMode],
     );
 
-    async function submit() {
-        if (!value) {
-            return;
-        }
 
-        setLoading(true);
-
-        try {
-            await fetch('/api/add?id=' + value.id, {
-                method: 'POST',
-            });
-
-            setAlert({
-                open: true,
-                message: 'Movie succesfully added',
-                severity: 'success'
-            });
-        }
-        catch (err) {
-            setAlert({
-                open: true,
-                message: 'Unable to add movie',
-                severity: 'error'
-            });
-        }
-        finally {
-            setLoading(false);
-        }
-    }
-
-    async function sync() {
-        setLoading(true);
-
-        try {
-            await fetch('/api/sync', {
-                method: 'POST',
-            });
-
-            setAlert({
-                open: true,
-                message: 'Movies succesfully synced',
-                severity: 'success'
-            });
-        }
-        catch (err) {
-            setAlert({
-                open: true,
-                message: 'Unable to sync movies',
-                severity: 'error'
-            });
-        }
-        finally {
-            setLoading(false);
-        }
-    }
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            {loading ?
-                <LinearProgress sx={{ position: "absolute", top: 0, left: 0, right: 0 }} /> :
-                ''
-            }
-            <Container maxWidth="sm" sx={{ padding: 2 }}>
-                {loggedIn.status == "sso" ?
-                    <Navigation /> :
-                    ''
-                }
-
-                {loggedIn.status != "none" ?
-                    <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-
-                        <Stack direction="row" spacing={2}>
-                            <SearchMovie onMovieChange={m => setValue(m)} />
-                            <Button variant="contained" size="large" onClick={submit} disabled={loading || !value}>Create</Button>
-                        </Stack>
-                        <Button variant="contained" size="large" color="success" onClick={sync} disabled={loading}>Sync all</Button>
-                        {loggedIn.status == "sso" ?
-                            <TextField
-                                label="Notion embed URLLL"
-                                defaultValue={window.location.origin + '?userId=' + loggedIn.userId}
-                                size="small"
-                                InputProps={{
-                                    readOnly: true,
-                                }}
-                                variant="filled"
-                            /> :
-                            ''
-                        }
-                    </Stack> :
-                    <Login />
-                }
-
-                <Snackbar open={alert.open} onClose={() => setAlert(p => ({ ...p, open: false }))} autoHideDuration={5000} anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
-                    <Alert variant="filled" severity={alert.severity} onClose={() => setAlert(p => ({ ...p, open: false }))}>
-                        {alert.message}
-                    </Alert>
-                </Snackbar>
-            </Container>
+            {loggedIn.status == "none" ? <Login /> : ''}
+            {loggedIn.status == "embed" ? <EmbedPage /> : ''}
+            {loggedIn.status == "sso" ? <UserPage userId={loggedIn.userId as string} /> : ''}
         </ThemeProvider>
     );
 }

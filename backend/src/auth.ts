@@ -1,13 +1,13 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { UserData } from "./types.js";
-import { createCosmoClient } from "./providers/cosmo.js";
-import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints.js";
-import { createNotionClient } from "./providers/notion.js";
 import { Client } from "@notionhq/client";
+import { DatabaseObjectResponse, getUser } from "@notionhq/client/build/src/api-endpoints.js";
 import { config } from "./config.js";
+import { createCosmoClient } from "./providers/cosmo.js";
+import { createNotionClient } from "./providers/notion.js";
+import type { UserData } from "./types.js";
 
-export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
-    const regex = /userId=([\w-]*)/
+export function getUserId(request: HttpRequest): string {
+    const regex = /userId=([\w-]*)/;
     let userId = regex.exec(request.headers.get('cookie') as string)?.[1] as string;
 
     if (!userId) {
@@ -18,6 +18,11 @@ export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
         throw 'User not authenticated';
     }
 
+    return userId;
+}
+
+export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
+    const userId = getUserId(request);
     const item = await createCosmoClient().item(userId, userId).read();
 
     return item.resource;
@@ -62,9 +67,6 @@ app.get('login', async (request: HttpRequest, context: InvocationContext): Promi
 
     const userData: UserData = {
         id: tokenResponse.workspace_id,
-        dbConfig: {
-            id: dbConfig.id,
-        },
         notionWorkspace: {
             workspaceId: tokenResponse.workspace_id,
             workspaceName: tokenResponse.workspace_name as string,

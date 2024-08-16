@@ -37,5 +37,5 @@ app.get('z_static_hosting', {
 });
 
 app.get('legal', async (request: HttpRequest): Promise<HttpResponseInit> => {
-    return await serveStaticFile(localhostHack(request) + 'frontend/legal.md');
+    return await serveStaticFile(localhostHack(request) + 'frontend/dist/legal.md');
 });

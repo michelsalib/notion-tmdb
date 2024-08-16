@@ -33,7 +33,6 @@ const pathes = await globby([
     'backend/package.json',
     'frontend/dist',
     'frontend/package.json',
-    'frontend/legal.md',
     'package.json'
 ]);
 

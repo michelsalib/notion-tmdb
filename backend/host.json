@@ -6,6 +6,9 @@
     }
   },
   "logging": {
+    "logLevel": {
+      "default": "Error"
+    },
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,

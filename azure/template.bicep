@@ -9,7 +9,6 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   location: location
   sku: {
     name: 'Y1'
-    tier: 'Dynamic'
   }
 }
 
@@ -24,6 +23,8 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
     siteConfig: {
       minTlsVersion: '1.2'
       publicNetworkAccess: 'Enabled'
+      localMySqlEnabled: false
+      netFrameworkVersion: 'v4.6'
       cors: {
         allowedOrigins: [
           'https://portal.azure.com'
@@ -74,6 +75,8 @@ resource insights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalyticsWorkspace.id
+    Flow_Type: 'Bluefield'
+    Request_Source: 'rest'
   }
 }
 
@@ -81,19 +84,24 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06
   name: appName
   location: location
   properties: {
+    retentionInDays: 30
     sku: {
       name: 'PerGB2018'
     }
   }
 }
 
-resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15-preview' = {
+resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name: appName
   kind: 'GlobalDocumentDB'
   location: location
-  properties: { 
-    capacityMode: 'Serverless'
+  properties: {
     databaseAccountOfferType: 'Standard'
+    defaultIdentity: 'FirstPartyIdentity'
+    minimalTlsVersion: 'Tls12'
+    capabilities: [
+      { name: 'EnableServerless' }
+    ]
     consistencyPolicy: {
       defaultConsistencyLevel: 'Session'
     }
@@ -112,12 +120,15 @@ resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15-previ
         isZoneRedundant: false
       }
     ]
+    analyticalStorageConfiguration: {
+      schemaType: 'WellDefined'
+    }
   }
 }
 
 resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15' = {
-  name: appName
   parent: databaseAccount
+  name: appName
   properties: {
     resource: {
       id: appName
@@ -126,11 +137,17 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
 }
 
 resource container 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
-  name: appName
   parent: database
+  name: appName
   properties: {
     resource: {
       id: appName
+      indexingPolicy: {
+        automatic: true
+        includedPaths: [
+          { path: '/*' }
+        ]
+      }
       partitionKey: {
         paths: [
           '/id'
@@ -138,5 +155,23 @@ resource container 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/container
         kind: 'Hash'
       }
     }
+  }
+}
+
+resource certificate 'Microsoft.Web/certificates@2023-12-01' = {
+  name: appName
+  location: location
+  properties: {
+    canonicalName: 'notion-tmdb.micheldev.com'
+    serverFarmId: hostingPlan.id
+  }
+}
+
+resource appCustomDomain 'Microsoft.Web/sites/hostNameBindings@2023-12-01' = {
+  parent: functionApp
+  name: 'notion-tmdb.micheldev.com'
+  properties: {
+    sslState: 'SniEnabled'
+    thumbprint: certificate.properties.thumbprint
   }
 }

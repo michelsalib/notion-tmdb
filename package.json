@@ -6,8 +6,8 @@
   "main": "backend/dist/index.js",
   "scripts": {
     "build": "npm run build --workspaces && rm -rf dist && node support/build.js",
-    "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-europe-north -n notion-tmdb-europe-north --src out.zip",
-    "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-europe-north -f azure/template.bicep"
+    "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-fr -n notion-tmdb-fr --src out.zip",
+    "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-fr -f azure/template.bicep"
   },
   "author": "michelsalib@gmail.com",
   "license": "MIT",

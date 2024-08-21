@@ -37,7 +37,7 @@ azure.app.get('login', async (request: azure.HttpRequest, context: azure.Invocat
         dbConfig: existingUser?.dbConfig,
     };
 
-    cosmos.putUser(userData);
+    await cosmos.putUser(userData);
 
     return {
         status: 302,

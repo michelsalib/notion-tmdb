@@ -63,6 +63,14 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'CosmosDb:Key'
           value: databaseAccount.listKeys().primaryMasterKey
         }
+        {
+          name: 'CosmosDb:Database'
+          value: database.name
+        }
+        {
+          name: 'CosmosDb:Container'
+          value: container.name
+        }
       ]
     }
   }

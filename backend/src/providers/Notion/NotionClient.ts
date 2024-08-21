@@ -47,10 +47,6 @@ export class NotionClient {
     }
 
     async listDatabases(): Promise<DatabaseObjectResponse[]> {
-        if (!this.user.dbConfig) {
-            throw 'User must be connected to Notion';
-        }
-
         const { results } = await this.client
             .search({
                 filter: {
@@ -64,7 +60,7 @@ export class NotionClient {
 
     async listDatabaseEntries(): Promise<PageObjectResponse[]> {
         if (!this.user.dbConfig) {
-            throw 'User must be connected to Notion';
+            throw 'User must have configured Notion';
         }
 
         const { results } = await this.client.databases.query({

@@ -7,3 +7,5 @@ export const NOTION_CLIENT_SECRET = Symbol.for('NOTION_CLIENT_SECRET');
 export const TMDB_API_KEY = Symbol.for('TMDB_API_KEY');
 export const COSMOS_DB_ACCOUNT = Symbol.for('COSMOS_DB_ACCOUNT');
 export const COSMOS_DB_KEY = Symbol.for('COSMOS_DB_KEY');
+export const COSMOS_DB_DATABASE = Symbol.for('COSMOS_DB_DATABASE');
+export const COSMOS_DB_CONTAINER = Symbol.for('COSMOS_DB_CONTAINER');

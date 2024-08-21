@@ -119,14 +119,14 @@ azure.app.get('getConfig', {
     handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
         const container = await scopeContainer(request, context, true);
 
-        const { dbConfig } = container.get<UserData>(USER);
+        const user = container.get<UserData>(USER);
 
         const notionDatabases = await container.get(NotionClient).listDatabases();
 
         return {
             jsonBody: {
                 notionDatabases,
-                dbConfig,
+                dbConfig: user.dbConfig,
             } as UserConfig,
         };
     }

@@ -1,0 +1,9 @@
+export const REQUEST = Symbol.for('REQUEST');
+export const CONTEXT = Symbol.for('CONTEXT');
+export const USER_ID = Symbol.for('USER_ID');
+export const USER = Symbol.for('USER');
+export const NOTION_CLIENT_ID = Symbol.for('NOTION_CLIENT_ID');
+export const NOTION_CLIENT_SECRET = Symbol.for('NOTION_CLIENT_SECRET');
+export const TMDB_API_KEY = Symbol.for('TMDB_API_KEY');
+export const COSMOS_DB_ACCOUNT = Symbol.for('COSMOS_DB_ACCOUNT');
+export const COSMOS_DB_KEY = Symbol.for('COSMOS_DB_KEY');

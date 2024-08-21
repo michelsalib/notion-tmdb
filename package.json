@@ -5,7 +5,6 @@
   "type": "module",
   "main": "backend/dist/index.js",
   "scripts": {
-    "watch": "npm --workspace frontend run watch & npm --workspace backend run watch",
     "build": "npm run build --workspaces && rm -rf dist && node support/build.js",
     "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-europe-north -n notion-tmdb-europe-north --src out.zip",
     "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-europe-north -f azure/template.bicep"

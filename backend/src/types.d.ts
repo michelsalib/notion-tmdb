@@ -1,4 +1,4 @@
-import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints.js";
+import type { DatabaseObjectResponse, CreatePageParameters } from "@notionhq/client/build/src/api-endpoints.js";
 
 export interface NotionData {
     workspaceId: string;
@@ -28,3 +28,5 @@ export interface UserConfig {
     notionDatabases: DatabaseObjectResponse[];
     dbConfig: DbConfig;
 }
+
+export type MovieItem = Omit<CreatePageParameters, 'parent'>;

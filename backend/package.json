@@ -7,7 +7,10 @@
     "@notionhq/client": "^2.2.15",
     "axios": "^1.7.2",
     "dotenv": "^16.4.5",
-    "mime": "^4.0.4"
+    "inversify": "^6.0.2",
+    "inversify-binding-decorators": "^4.0.0",
+    "mime": "^4.0.4",
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "typescript": "^5.5.3"

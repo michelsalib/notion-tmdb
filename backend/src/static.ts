@@ -1,8 +1,8 @@
-import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
+import azure from "@azure/functions";
 import mime from 'mime';
 import { readFile } from 'node:fs/promises';
 
-async function serveStaticFile(filename: string): Promise<HttpResponseInit> {
+async function serveStaticFile(filename: string): Promise<azure.HttpResponseInit> {
     try {
         const file = await readFile(filename);
 
@@ -23,19 +23,19 @@ async function serveStaticFile(filename: string): Promise<HttpResponseInit> {
     }
 }
 
-function localhostHack(request: HttpRequest): string {
+function localhostHack(request: azure.HttpRequest): string {
     return request.headers.get('host')?.includes('localhost') ? '../' : '';
 }
 
-app.get('z_static_hosting', {
+azure.app.get('z_static_hosting', {
     route: '{*filename}',
-    handler: async (request: HttpRequest): Promise<HttpResponseInit> => {
+    handler: async (request: azure.HttpRequest): Promise<azure.HttpResponseInit> => {
         const filename = request.params.filename || 'index.html';
 
         return await serveStaticFile(localhostHack(request) + 'frontend/dist/' + filename);
     }
 });
 
-app.get('legal', async (request: HttpRequest): Promise<HttpResponseInit> => {
+azure.app.get('legal', async (request: azure.HttpRequest): Promise<azure.HttpResponseInit> => {
     return await serveStaticFile(localhostHack(request) + 'frontend/dist/legal.md');
 });

@@ -1,37 +1,10 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { Client } from "@notionhq/client";
-import { config } from "./config.js";
-import { createCosmoClient } from "./providers/cosmo.js";
+import azure from "@azure/functions";
+import { scopeContainer } from "./fx/di.js";
+import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
+import { AnonymousNotionClient } from "./providers/Notion/NotionClient.js";
 import type { UserData } from "./types.js";
 
-export function getUserId(request: HttpRequest): string {
-    const regex = /userId=([\w-]*)/;
-    let userId = regex.exec(request.headers.get('cookie') as string)?.[1] as string;
-
-    if (!userId) {
-        userId = regex.exec(request.headers.get('referer') as string)?.[1] as string;
-    }
-
-    if (!userId) {
-        throw 'User not authenticated';
-    }
-
-    return userId;
-}
-
-async function getUser(userId: string): Promise<UserData> {
-    const item = await createCosmoClient().item(userId, userId).read();
-
-    return item.resource;
-}
-
-export async function getLoggedUser(request: HttpRequest): Promise<UserData> {
-    const userId = getUserId(request);
-
-    return getUser(userId);
-}
-
-app.get('logout', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+azure.app.get('logout', async (): Promise<azure.HttpResponseInit> => {
     return {
         status: 302,
         headers: {
@@ -46,18 +19,12 @@ app.get('logout', async (request: HttpRequest, context: InvocationContext): Prom
     };
 });
 
-app.get('login', async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
-    const tokenResponse = await new Client()
-        .oauth
-        .token({
-            client_id: config.NOTION_CLIENT_ID,
-            client_secret: config.NOTION_CLIENT_SECRET,
-            code: request.query.get('code') as string,
-            grant_type: 'authorization_code',
-            redirect_uri: request.url.split('?')[0],
-        });
+azure.app.get('login', async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
+    const container = await scopeContainer(request, context, false);
+    const cosmos = container.get(CosmosClient);
 
-    const existingUser = await getUser(tokenResponse.workspace_id);
+    const tokenResponse = await container.get(AnonymousNotionClient).generateUserToken();
+    const existingUser = await cosmos.getUser(tokenResponse.workspace_id);
 
     const userData: UserData = {
         id: tokenResponse.workspace_id,
@@ -70,8 +37,7 @@ app.get('login', async (request: HttpRequest, context: InvocationContext): Promi
         dbConfig: existingUser?.dbConfig,
     };
 
-    const cosmo = createCosmoClient();
-    cosmo.items.upsert(userData);
+    cosmos.putUser(userData);
 
     return {
         status: 302,

@@ -2,10 +2,10 @@
   "type": "module",
   "main": "dist/index.js",
   "dependencies": {
-    "@azure/cosmos": "^4.0.0",
-    "@azure/functions": "^4.5.0",
+    "@azure/cosmos": "^4.1.1",
+    "@azure/functions": "^4.5.1",
     "@notionhq/client": "^2.2.15",
-    "axios": "^1.7.4",
+    "axios": "^1.7.7",
     "dotenv": "^16.4.5",
     "inversify": "^6.0.2",
     "inversify-binding-decorators": "^4.0.0",
@@ -13,7 +13,7 @@
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.4"
   },
   "scripts": {
     "build": "tsc",

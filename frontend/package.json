@@ -1,17 +1,17 @@
 {
   "type": "module",
   "devDependencies": {
-    "@emotion/react": "^11.13.0",
+    "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
-    "@mui/icons-material": "^5.16.6",
-    "@mui/material": "^5.16.6",
-    "@types/react": "^18.3.3",
+    "@mui/icons-material": "^6.0.2",
+    "@mui/material": "^6.0.2",
+    "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "typescript": "^5.5.3",
-    "vite": "^5.3.5"
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3"
   },
   "scripts": {
     "build": "vite build",

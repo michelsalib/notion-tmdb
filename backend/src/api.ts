@@ -60,7 +60,7 @@ azure.app.post('sync', {
         for (const movie of moviesToLoad) {
             const name: string = (movie.properties.Nom as any).title[0].plain_text;
             context.log(`Loading ${name}`);
-            const tmdbUrl: string = (movie.properties as any)[user.dbConfig.url].url;
+            const tmdbUrl: string = (Object.values(movie.properties).find(p => p.id == user.dbConfig?.url) as any).url;
             const tmdbId = /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(tmdbUrl)?.[1] as string;
 
             // load from tmdb

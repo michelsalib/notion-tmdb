@@ -48,6 +48,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: '1'
         }
         {
+          name: 'FUNCTIONS_NODE_BLOCK_ON_ENTRY_POINT_ERROR'
+          value: 'true'
+        }
+        {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
           value: insights.properties.InstrumentationKey
         }

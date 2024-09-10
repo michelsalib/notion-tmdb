@@ -20,7 +20,12 @@ for (const path of pathes) {
 }
 
 await copyFile('backend/host.json', 'dist/host.json');
-await copyFile('backend/.env', 'dist/.env');
+
+try {
+    await copyFile('backend/.env', 'dist/.env');
+} catch {
+    console.warn('.env file not available')
+}
 
 console.log(`Copy done 🆗`);
 

@@ -44,8 +44,11 @@ export function UserPage({ userId }: { userId: string }) {
                             <TextField
                                 defaultValue={window.location.origin + '?userId=' + userId}
                                 size="small"
-                                InputProps={{
-                                    readOnly: true,
+                                slotProps={{
+                                    input: {
+                                        readOnly: true,
+                                        onClick: (i) => (i.target as HTMLInputElement).select()
+                                    }
                                 }}
                                 sx={{ width: '100%' }} />
                         </Alert>

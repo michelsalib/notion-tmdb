@@ -54,10 +54,11 @@ jobs:
           name: node-app
 
       - name: 'Create secret .env file'
-        uses: mobiledevops/secret-to-file-action@v1
-        with:
-          base64-encoded-secret: ${{ secrets.ENVIRONMENT_VARIABLES }}
-          filename: '.env'
+        shell: pwsh
+        env:
+          ENVIRONMENT_VARIABLES: ${{ secrets.ENVIRONMENT_VARIABLES }}
+        run: |
+          echo "$ENVIRONMENT_VARIABLES" >> .env
       
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1

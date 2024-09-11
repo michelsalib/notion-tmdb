@@ -25,13 +25,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: 'Resolve Project Dependencies Using Npm'
-        shell: pwsh
+        shell: bash
         run: |
           npm install
           npm run build --workspaces
 
       - name: 'Create dist'
-        shell: pwsh
+        shell: bash
         run: |
           node support/build.js
           cd dist
@@ -54,7 +54,7 @@ jobs:
           name: node-app
 
       - name: 'Create secret .env file'
-        shell: pwsh
+        shell: bash
         env:
           ENVIRONMENT_VARIABLES: ${{ secrets.ENVIRONMENT_VARIABLES }}
         run: |

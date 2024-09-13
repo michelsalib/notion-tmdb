@@ -1,15 +1,15 @@
 import { Autocomplete, Box, debounce, Stack, TextField, Typography } from "@mui/material";
+import type { Suggestion } from "backend/src/types";
 import { useEffect, useMemo, useState } from "react";
-import { Movie } from "./types";
 
-export function SearchMovie({ onMovieChange }: { onMovieChange: (movie: Movie | null) => void}) {
-    const [value, setValue] = useState<Movie | null>(null);
+export function Search({ onChange }: { onChange: (result: Suggestion | null) => void }) {
+    const [value, setValue] = useState<Suggestion | null>(null);
     const [inputValue, setInputValue] = useState('');
-    const [options, setOptions] = useState<Movie[]>([]);
+    const [options, setOptions] = useState<Suggestion[]>([]);
 
-    const fetchMovieSearch = useMemo(
+    const fetchSearch = useMemo(
         () =>
-            debounce((inputValue, done: (result: { results: Movie[]}) => void) => {
+            debounce((inputValue, done: (result: { results: Suggestion[] }) => void) => {
                 fetch('/api/search?query=' + encodeURIComponent(inputValue))
                     .then(res => res.json())
                     .then(done)
@@ -26,7 +26,7 @@ export function SearchMovie({ onMovieChange }: { onMovieChange: (movie: Movie | 
             return undefined;
         }
 
-        fetchMovieSearch(inputValue, ({ results }) => {
+        fetchSearch(inputValue, ({ results }) => {
             if (active) {
                 setOptions(results);
             }
@@ -35,20 +35,21 @@ export function SearchMovie({ onMovieChange }: { onMovieChange: (movie: Movie | 
         return () => {
             active = false;
         };
-    }, [inputValue, fetchMovieSearch]);
+    }, [inputValue]);
 
     return (
-        <Autocomplete<Movie>
+        <Autocomplete<Suggestion>
             sx={{ width: '100%' }}
             getOptionLabel={(option) => option.title}
             getOptionKey={(x) => x.id}
             options={options}
             value={value}
             isOptionEqualToValue={(o, v) => o.id == v.id}
-            noOptionsText="No movie"
+            noOptionsText="No result"
+            filterOptions={x => x}
             onChange={(event, newValue) => {
                 setValue(newValue);
-                onMovieChange(newValue);
+                onChange(newValue);
             }}
             onInputChange={(event, newInputValue) => {
                 setInputValue(newInputValue);
@@ -57,8 +58,10 @@ export function SearchMovie({ onMovieChange }: { onMovieChange: (movie: Movie | 
                 <TextField {...params} label="TMDB lookup" fullWidth />
             )}
             renderOption={(props, option) => {
+                const { key, ...optionProps } = props;
+
                 return (
-                    <li {...props}>
+                    <li key={key} {...optionProps}>
                         <Stack direction="row" spacing={1}>
                             <Box
                                 component="img"
@@ -67,13 +70,13 @@ export function SearchMovie({ onMovieChange }: { onMovieChange: (movie: Movie | 
                                     height: 60,
                                     objectFit: 'cover',
                                 }}
-                                src={"https://image.tmdb.org/t/p/w500" + option.poster_path}
+                                src={option.posterPath}
                             />
                             <Stack direction="column">
                                 <Typography variant="subtitle2">{option.title}</Typography>
                                 <Typography variant="caption">
-                                    {option.release_date.split('-')[0]}
-                                    {option.original_title != option.title ? ' - ' + option.original_title : ''}
+                                    {option.releaseDate.split('-')[0]}
+                                    {option.subtitle ? ' - ' + option.subtitle : ''}
                                 </Typography>
                             </Stack>
                         </Stack>

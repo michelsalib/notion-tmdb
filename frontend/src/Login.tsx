@@ -1,20 +1,44 @@
 import SyncAlt from "@mui/icons-material/SyncAlt";
-import { Button, Container, Stack, SvgIcon, Typography, useTheme } from "@mui/material";
+import { Button, Container, MenuItem, Select, Stack, SvgIcon, Typography, useTheme } from "@mui/material";
+import type { DOMAIN } from "backend/src/types";
 import { useCallback } from "react";
 
-export function Login() {
+const AUTH_KEYS: Record<DOMAIN, string> = {
+    GBook: "2a557a18-cd3a-4ac1-b9ce-3a5cb92468b7",
+    TMDB: "e19ffced-a96f-4f22-8f58-163bd4c86f5a",
+};
+
+export function Login({ domain }: { domain: DOMAIN }) {
     const theme = useTheme();
+    const h2 = theme.typography.h2;
 
     const login = useCallback(() => {
-        const redirectUrl = `${window.location.origin}/login`;
-        window.location.href = `https://api.notion.com/v1/oauth/authorize?client_id=e19ffced-a96f-4f22-8f58-163bd4c86f5a&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUrl)}`;
+        let redirectUrl = `${window.location.origin}/login`;
+
+        if (redirectUrl.includes('localhost')) {
+            redirectUrl = redirectUrl.replace(/notion-\w+\./, '');
+        }
+
+        window.location.href = `https://api.notion.com/v1/oauth/authorize?client_id=${AUTH_KEYS[domain]}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUrl)}&state=${domain}`;
+    }, []);
+
+    const switchDomain = useCallback((target: 'gbook' | 'tmdb') => {
+        window.location.href = window.location.origin.replace(/notion-\w+/, 'notion-' + target);
     }, []);
 
     return (
         <Container maxWidth="sm" sx={{ padding: 2 }}>
             <Stack alignItems={"center"} spacing={3}>
                 <Typography variant="h2">
-                    Notion <SyncAlt fontSize="large" color="primary" /> TMDB
+                    Notion
+                    <SyncAlt fontSize="large" color="primary" sx={{ marginRight: 1, marginLeft: 1 }} />
+                    <Select value={domain}
+                        variant="standard"
+                        sx={{ fontSize: h2.fontSize, fontWeight: h2.fontWeight }}
+                        onChange={e => switchDomain(e.target.value.toLowerCase() as any)}>
+                        <MenuItem value="TMDB" sx={{ fontSize: 'large', fontWeight: h2.fontWeight }}>TMDB</MenuItem>
+                        <MenuItem value="GBook" sx={{ fontSize: 'large', fontWeight: h2.fontWeight }}>GBook</MenuItem>
+                    </Select>
                 </Typography>
                 <Button variant="outlined" onClick={login}>
                     <SvgIcon sx={{ marginRight: 1 }}>

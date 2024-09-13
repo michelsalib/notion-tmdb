@@ -2,10 +2,11 @@ import axios, { AxiosInstance } from 'axios';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { TMDB_API_KEY } from '../../fx/keys.js';
-import { DbConfig, MovieItem } from '../../types.js';
+import { DbConfig, NotionItem, Suggestion } from '../../types.js';
+import { DataProvider } from '../DataProvider.js';
 
 @provide(TmdbClient)
-export class TmdbClient {
+export class TmdbClient implements DataProvider {
     private readonly client: AxiosInstance;
 
     constructor(
@@ -21,7 +22,11 @@ export class TmdbClient {
         });
     }
 
-    async search(query: string): Promise<any> {
+    extractId(url: string): string {
+        return /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(url)?.[1] as string;
+    }
+
+    async search(query: string): Promise<Suggestion[]> {
         const { data } = await this.client.get('/search/movie', {
             params: {
                 query: query,
@@ -31,10 +36,18 @@ export class TmdbClient {
             },
         });
 
-        return data;
+        return data.results.map((s: any) => {
+            return {
+                id: s.id,
+                title: s.title,
+                releaseDate: s.release_date,
+                posterPath: `https://image.tmdb.org/t/p/w500${s.poster_path}`,
+                subtitle: s.original_title != s.title ? s.original_title : '',
+            } as Suggestion;
+        });
     }
 
-    async loadNotionEntryFromTmdb(tmdbId: string, dbConfig: DbConfig): Promise<MovieItem> {
+    async loadNotionEntry(tmdbId: string, dbConfig: DbConfig): Promise<NotionItem> {
         const { data } = await this.client.get(`/movie/${tmdbId}`, {
             params: {
                 append_to_response: 'credits',
@@ -42,7 +55,7 @@ export class TmdbClient {
             },
         });
 
-        const movieItem: MovieItem = {
+        const movieItem: NotionItem = {
             cover: {
                 external: {
                     url: `https://image.tmdb.org/t/p/original/${data.poster_path}`,

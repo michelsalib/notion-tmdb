@@ -1,5 +1,5 @@
 import { Alert, Button, Container, Paper, Stack, TextField } from "@mui/material";
-import { UserConfig } from "backend/src/types";
+import type { DOMAIN, UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
 import { DbConfig } from "./DbConfig";
 import { Navigation } from "./Navigation";
@@ -11,7 +11,7 @@ async function loadUserData(): Promise<UserConfig> {
     return await resp.json();
 }
 
-export function UserPage({ userId }: { userId: string }) {
+export function UserPage({ userId, domain }: { userId: string, domain: DOMAIN }) {
     const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined);
     const [newDbConfig, setNewDbConfig] = useState<UserConfig['dbConfig'] | undefined>(undefined);
 
@@ -34,7 +34,7 @@ export function UserPage({ userId }: { userId: string }) {
 
     return (
         <Container maxWidth="sm" sx={{ padding: 2 }}>
-            <Navigation />
+            <Navigation domain={domain} />
 
             <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
                 {userConfig.dbConfig ?
@@ -53,7 +53,7 @@ export function UserPage({ userId }: { userId: string }) {
                                 sx={{ width: '100%' }} />
                         </Alert>
                         <Paper>
-                            <EmbedPage />
+                            <EmbedPage domain={domain}/>
                         </Paper>
                     </Fragment > :
                     <Alert variant="outlined" severity="warning">

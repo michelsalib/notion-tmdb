@@ -1,11 +1,13 @@
 import { Alert, AlertColor, Button, LinearProgress, Snackbar, Stack } from "@mui/material";
 import { Fragment, useState } from "react";
-import { Movie } from "./types";
-import { SearchMovie } from "./SearchMovie";
+import { useTranslation } from "react-i18next";
+import { Search } from "./Search";
+import type { DOMAIN, Suggestion } from "backend/src/types";
 
-export function EmbedPage() {
+export function EmbedPage({ domain }: { domain: DOMAIN }) {
+    const { t } = useTranslation(domain);
     const [loading, setLoading] = useState(false);
-    const [value, setValue] = useState<Movie | null>(null);
+    const [value, setValue] = useState<Suggestion | null>(null);
     const [alert, setAlert] = useState<{
         open: boolean;
         message: string;
@@ -26,14 +28,14 @@ export function EmbedPage() {
 
             setAlert({
                 open: true,
-                message: 'Movie succesfully added',
+                message: t('ADD_SUCCESS'),
                 severity: 'success'
             });
         }
         catch (err) {
             setAlert({
                 open: true,
-                message: 'Unable to add movie',
+                message: t('ADD_FAILURE'),
                 severity: 'error'
             });
         }
@@ -52,14 +54,14 @@ export function EmbedPage() {
 
             setAlert({
                 open: true,
-                message: 'Movies succesfully synced',
+                message: t('SYNC_SUCESS'),
                 severity: 'success'
             });
         }
         catch (err) {
             setAlert({
                 open: true,
-                message: 'Unable to sync movies',
+                message: t('SYNC_FAILURE'),
                 severity: 'error'
             });
         }
@@ -74,7 +76,7 @@ export function EmbedPage() {
 
             <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
                 <Stack direction="row" spacing={2}>
-                    <SearchMovie onMovieChange={m => setValue(m)} />
+                    <Search onChange={m => setValue(m)} />
                     <Button variant="contained" size="large" onClick={submit} disabled={loading || !value}>Create</Button>
                 </Stack>
                 <Button variant="contained" size="large" color="success" onClick={sync} disabled={loading}>Sync all</Button>

@@ -29,8 +29,8 @@ export class AnonymousNotionClient {
                 client_secret: this.clientSecret,
                 code: this.request.query.get('code') as string,
                 grant_type: 'authorization_code',
-                redirect_uri: this.request.url.split('?')[0],
-            })
+                redirect_uri: this.request.url.split('?')[0].replace(/notion-\w+\.localhost/, 'localhost'),
+            });
     }
 }
 

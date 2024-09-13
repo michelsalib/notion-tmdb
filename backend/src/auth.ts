@@ -20,6 +20,18 @@ azure.app.get('logout', async (): Promise<azure.HttpResponseInit> => {
 });
 
 azure.app.get('login', async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
+    if (/http:\/\/localhost:/.test(request.url)) {
+        const domain = `notion-${request.query.get('state')?.toLowerCase()}.localhost`;
+        const location = request.url.replace('localhost', domain);
+
+        return {
+            status: 302,
+            headers: {
+                location,
+            },
+        };
+    }
+    
     const container = await scopeContainer(request, context, false);
     const cosmos = container.get(CosmosClient);
 

@@ -1,8 +1,8 @@
 import { Container, CosmosClient as Cosmos } from "@azure/cosmos";
 import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
-import { COSMOS_DB_ACCOUNT, COSMOS_DB_CONTAINER, COSMOS_DB_DATABASE, COSMOS_DB_KEY, USER_ID } from "../../fx/keys.js";
-import { DbConfig, UserData } from "../../types.js";
+import { COSMOS_DB_ACCOUNT, COSMOS_DB_DATABASE, COSMOS_DB_KEY, USER_ID, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
+import { DbConfig, DOMAIN, UserData } from "../../types.js";
 
 @provide(CosmosClient)
 export class CosmosClient {
@@ -12,15 +12,15 @@ export class CosmosClient {
         @inject(COSMOS_DB_ACCOUNT) cosmosAccount: string,
         @inject(COSMOS_DB_KEY) cosmosKey: string,
         @inject(COSMOS_DB_DATABASE) database: string,
-        @inject(COSMOS_DB_CONTAINER) container: string,
         @inject(USER_ID) private readonly userId: string,
+        @inject(DOMAIN_KEY) private readonly domain: DOMAIN,
     ) {
         this.client = new Cosmos({
             endpoint: cosmosAccount,
             key: cosmosKey,
         })
             .database(database)
-            .container(container);
+            .container(`notion-${this.domain.toLowerCase()}`);
     }
 
     async getUser(userId: string): Promise<UserData> {

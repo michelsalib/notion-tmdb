@@ -1,5 +1,5 @@
 import { Alert, FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, Typography } from "@mui/material";
-import { UserConfig } from "backend/src/types";
+import type { UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
 
 function typeToEmoji(type: string): string {

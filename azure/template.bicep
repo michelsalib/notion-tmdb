@@ -4,6 +4,8 @@ param appName string = resourceGroup().name
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
+var distros = ['notion-tmdb', 'notion-gbook']
+
 resource hostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: appName
   location: location
@@ -70,10 +72,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'CosmosDb:Database'
           value: database.name
-        }
-        {
-          name: 'CosmosDb:Container'
-          value: container.name
         }
       ]
     }
@@ -148,42 +146,45 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15
   }
 }
 
-resource container 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
-  parent: database
-  name: appName
-  properties: {
-    resource: {
-      id: appName
-      indexingPolicy: {
-        automatic: true
-        includedPaths: [
-          { path: '/*' }
-        ]
-      }
-      partitionKey: {
-        paths: [
-          '/id'
-        ]
-        kind: 'Hash'
+resource containers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = [
+  for distro in distros: {
+    parent: database
+    name: distro
+    properties: {
+      resource: {
+        id: distro
+        indexingPolicy: {
+          automatic: true
+          includedPaths: [
+            { path: '/*' }
+          ]
+        }
+        partitionKey: {
+          paths: [
+            '/id'
+          ]
+          kind: 'Hash'
+        }
       }
     }
   }
-}
+]
 
-resource certificate 'Microsoft.Web/certificates@2023-12-01' = {
-  name: appName
+resource certificates 'Microsoft.Web/certificates@2023-12-01' = [ for distro in distros: {
+  name: '${distro}-certificate'
   location: location
   properties: {
-    canonicalName: 'notion-tmdb.micheldev.com'
+    canonicalName: '${distro}.micheldev.com'
     serverFarmId: hostingPlan.id
   }
-}
+}]
 
-resource appCustomDomain 'Microsoft.Web/sites/hostNameBindings@2023-12-01' = {
+@batchSize(1)
+resource appCustomDomains 'Microsoft.Web/sites/hostNameBindings@2023-12-01' = [ for (distro, i) in distros: {
   parent: functionApp
-  name: 'notion-tmdb.micheldev.com'
+  name: '${distro}.micheldev.com'
   properties: {
     sslState: 'SniEnabled'
-    thumbprint: certificate.properties.thumbprint
+    thumbprint: certificates[i].properties.thumbprint
   }
-}
+}]

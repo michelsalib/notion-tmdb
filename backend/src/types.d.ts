@@ -7,7 +7,7 @@ export interface NotionData {
     accessToken: string;
 }
 
-export interface DbConfig {
+interface DbConfig {
     id: string;
     url: string;
     status: string;
@@ -29,4 +29,14 @@ export interface UserConfig {
     dbConfig: DbConfig;
 }
 
-export type MovieItem = Omit<CreatePageParameters, 'parent'>;
+export interface Suggestion {
+    id: string;
+    title: string;
+    releaseDate: string;
+    posterPath: string;
+    subtitle: string;
+}
+
+export type NotionItem = Omit<CreatePageParameters, 'parent'>;
+
+export type DOMAIN = 'GBook' | 'TMDB';

@@ -1,10 +1,11 @@
 import azure from "@azure/functions";
 import { scopeContainer } from "./fx/di.js";
-import { USER, USER_ID } from "./fx/keys.js";
+import { DATA_PROVIDER, USER, USER_ID } from "./fx/keys.js";
 import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { TmdbClient } from "./providers/Tmdb/TmdbClient.js";
 import { DbConfig, UserConfig, UserData } from "./types.js";
+import { DataProvider } from "./providers/DataProvider.js";
 
 azure.app.get('user', {
     route: 'api/user',
@@ -27,12 +28,14 @@ azure.app.get('search', {
     handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
         const container = await scopeContainer(request, context, false);
 
-        const tmdbClient = container.get(TmdbClient);
+        const client = container.get<DataProvider>(DATA_PROVIDER);
 
-        const data = await tmdbClient.search(request.query.get('query') as string);
+        const results = await client.search(request.query.get('query') as string);
 
         return {
-            jsonBody: data,
+            jsonBody: {
+                results,
+            },
         }
     }
 });
@@ -41,8 +44,7 @@ azure.app.post('sync', {
     route: 'api/sync',
     handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
         const container = await scopeContainer(request, context, true);
-
-        const user = await container.get<UserData>(USER);
+        const user = container.get<UserData>(USER);
 
         if (!user.dbConfig) {
             return {
@@ -53,29 +55,29 @@ azure.app.post('sync', {
 
         // const notionClient = createNotionClient(user.notionWorkspace.accessToken);
         const notionClient = container.get(NotionClient);
-        const tmdbClient = container.get(TmdbClient);
+        const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
-        const moviesToLoad = await notionClient.listDatabaseEntries();
+        const entriesToLoad = await notionClient.listDatabaseEntries();
 
-        for (const movie of moviesToLoad) {
-            const name: string = (movie.properties.Nom as any).title[0].plain_text;
+        for (const entry of entriesToLoad) {
+            const name: string = (Object.values(entry.properties).find(p => p.id == user.dbConfig?.title) as any).title[0].text.content;
             context.log(`Loading ${name}`);
-            const tmdbUrl: string = (Object.values(movie.properties).find(p => p.id == user.dbConfig?.url) as any).url;
-            const tmdbId = /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(tmdbUrl)?.[1] as string;
+            const url: string = (Object.values(entry.properties).find(p => p.id == user.dbConfig?.url) as any).url;
+            const id = dataProvider.extractId(url);
 
             // load from tmdb
-            const entry = await tmdbClient.loadNotionEntryFromTmdb(tmdbId, user.dbConfig);
+            const newEntry = await dataProvider.loadNotionEntry(id, user.dbConfig);
 
             // populate in notion
             await notionClient.updatePage({
-                ...entry,
-                page_id: movie.id,
+                ...newEntry,
+                page_id: entry.id,
             });
 
             context.log(`DONE ${name}`);
         }
 
-        return { body: `Sucess ${moviesToLoad.length} item(s).` };
+        return { body: `Sucess ${entriesToLoad.length} item(s).` };
     }
 });
 
@@ -84,7 +86,7 @@ azure.app.post('add', {
     handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
         const container = await scopeContainer(request, context, true);
 
-        const user = await container.get<UserData>(USER);
+        const user = container.get<UserData>(USER);
 
         if (!user.dbConfig) {
             return {
@@ -95,10 +97,10 @@ azure.app.post('add', {
 
         // const notionClient = createNotionClient(user.notionWorkspace.accessToken);
         const notionClient = container.get(NotionClient);
-        const tmdbClient = container.get(TmdbClient);
+        const client = container.get<DataProvider>(DATA_PROVIDER);
 
         // get from tmdb
-        const entry = await tmdbClient.loadNotionEntryFromTmdb(request.query.get('id') as string, user.dbConfig);
+        const entry = await client.loadNotionEntry(request.query.get('id') as string, user.dbConfig);
 
         // put into notion
         await notionClient.createPage({
@@ -109,7 +111,7 @@ azure.app.post('add', {
         });
 
         return {
-            body: 'Sucess loading ' + (entry as any).properties.Nom.title[0].text.content,
+            body: 'Sucess loading ' + (entry as any).properties[user.dbConfig.title].title[0].text.content,
         };
     }
 });

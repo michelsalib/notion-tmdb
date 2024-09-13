@@ -1,7 +1,10 @@
 import { createTheme, CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
-import { useMemo, useState } from "react";
+import { lightBlue, orange } from "@mui/material/colors";
+import { useMemo } from "react";
 import { EmbedPage } from "./EmbedPage";
+import './i18n';
 import { Login } from "./Login";
+import { DOMAIN } from "./types";
 import { UserPage } from "./UserPage";
 
 type LOGIN_STATE = 'sso' | 'embed' | 'none';
@@ -35,8 +38,19 @@ function loginState(): {
     }
 }
 
+function domainState(): DOMAIN {
+    const unlinted = /notion-(\w+)/.exec(window.location.origin)?.[1];
+
+    if (unlinted == 'gbook') {
+        return 'GBook';
+    }
+
+    return 'TMDB';
+}
+
 export function App() {
-    const [loggedIn] = useState(loginState());
+    const loggedIn = useMemo(() => loginState(), []);
+    const domain = useMemo(() => domainState(), []);
 
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
     const theme = useMemo(
@@ -44,6 +58,7 @@ export function App() {
             createTheme({
                 palette: {
                     mode: prefersDarkMode ? 'dark' : 'light',
+                    primary: domain == "TMDB" ? lightBlue : orange,
                     background: {
                         default: prefersDarkMode ? 'rgb(25, 25, 25)' : undefined,
                     }
@@ -57,9 +72,9 @@ export function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            {loggedIn.status == "none" ? <Login /> : ''}
-            {loggedIn.status == "embed" ? <EmbedPage /> : ''}
-            {loggedIn.status == "sso" ? <UserPage userId={loggedIn.userId as string} /> : ''}
+            {loggedIn.status == "none" ? <Login domain={domain} /> : ''}
+            {loggedIn.status == "embed" ? <EmbedPage domain={domain} /> : ''}
+            {loggedIn.status == "sso" ? <UserPage userId={loggedIn.userId as string} domain={domain} /> : ''}
         </ThemeProvider>
     );
 }

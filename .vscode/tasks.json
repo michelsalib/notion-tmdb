@@ -29,6 +29,11 @@
       "type": "shell",
       "label": "npm watch (frontend)",
       "command": "npm run watch --workspace frontend",
+      "options": {
+        "env": {
+          "NODE_ENV": "development"
+        }
+      },
       "problemMatcher": {
         "base": "$tsc-watch",
         "background": {

@@ -1,49 +1,33 @@
-import azure from "@azure/functions";
-import { scopeContainer } from "./fx/di.js";
-import { DATA_PROVIDER, USER, USER_ID } from "./fx/keys.js";
+import { FastifyReply, FastifyRequest } from "fastify";
+import { Container } from "inversify";
+import { DATA_PROVIDER, REPLY, REQUEST, USER, USER_ID } from "./fx/keys.js";
+import { route } from "./fx/router.js";
 import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
-import { NotionClient } from "./providers/Notion/NotionClient.js";
-import { TmdbClient } from "./providers/Tmdb/TmdbClient.js";
-import { DbConfig, UserConfig, UserData } from "./types.js";
 import { DataProvider } from "./providers/DataProvider.js";
+import { NotionClient } from "./providers/Notion/NotionClient.js";
+import { DbConfig, UserData } from "./types.js";
 
-azure.app.get('user', {
-    route: 'api/user',
-    handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-        const container = await scopeContainer(request, context, true);
-
-        const user = await container.get<UserData>(USER);
+export class Api {
+    @route({ path: '/api/user', method: 'GET', authenticate: true })
+    async getUser(container: Container) {
+        const user = container.get<UserData>(USER);
         user.notionWorkspace.accessToken = '***'; // hide sensitive data
 
-        return {
-            jsonBody: {
-                user
-            },
-        }
-    },
-});
-
-azure.app.get('search', {
-    route: 'api/search',
-    handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-        const container = await scopeContainer(request, context, false);
-
-        const client = container.get<DataProvider>(DATA_PROVIDER);
-
-        const results = await client.search(request.query.get('query') as string);
-
-        return {
-            jsonBody: {
-                results,
-            },
-        }
+        return user;
     }
-});
 
-azure.app.post('sync', {
-    route: 'api/sync',
-    handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-        const container = await scopeContainer(request, context, true);
+    @route({ path: '/api/search', method: 'GET', authenticate: false })
+    async search(container: Container) {
+        const client = container.get<DataProvider>(DATA_PROVIDER);
+        const request = container.get<FastifyRequest>(REQUEST);
+
+        const results = await client.search((request.query as any)['query']);
+
+        return { results };
+    }
+
+    @route({ path: '/api/sync', method: 'POST', authenticate: true })
+    async sync(container: Container) {
         const user = container.get<UserData>(USER);
 
         if (!user.dbConfig) {
@@ -60,8 +44,6 @@ azure.app.post('sync', {
         const entriesToLoad = await notionClient.listDatabaseEntries();
 
         for (const entry of entriesToLoad) {
-            const name: string = (Object.values(entry.properties).find(p => p.id == user.dbConfig?.title) as any).title[0].text.content;
-            context.log(`Loading ${name}`);
             const url: string = (Object.values(entry.properties).find(p => p.id == user.dbConfig?.url) as any).url;
             const id = dataProvider.extractId(url);
 
@@ -73,26 +55,22 @@ azure.app.post('sync', {
                 ...newEntry,
                 page_id: entry.id,
             });
-
-            context.log(`DONE ${name}`);
         }
 
-        return { body: `Sucess ${entriesToLoad.length} item(s).` };
+        return `Sucess ${entriesToLoad.length} item(s).`;
     }
-});
 
-azure.app.post('add', {
-    route: 'api/add',
-    handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-        const container = await scopeContainer(request, context, true);
-
+    @route({ path: '/api/add', method: 'POST', authenticate: true })
+    async add(container: Container) {
         const user = container.get<UserData>(USER);
+        const request = container.get<FastifyRequest>(REQUEST);
 
         if (!user.dbConfig) {
-            return {
-                status: 400,
-                body: 'Notion db needs to be configured first',
-            };
+            const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+
+            reply.status(400);
+
+            return 'Notion db needs to be configured first';
         }
 
         // const notionClient = createNotionClient(user.notionWorkspace.accessToken);
@@ -100,7 +78,7 @@ azure.app.post('add', {
         const client = container.get<DataProvider>(DATA_PROVIDER);
 
         // get from tmdb
-        const entry = await client.loadNotionEntry(request.query.get('id') as string, user.dbConfig);
+        const entry = await client.loadNotionEntry((request.query as any)['id'], user.dbConfig);
 
         // put into notion
         await notionClient.createPage({
@@ -110,44 +88,30 @@ azure.app.post('add', {
             },
         });
 
-        return {
-            body: 'Sucess loading ' + (entry as any).properties[user.dbConfig.title].title[0].text.content,
-        };
+        return 'Sucess loading ' + (entry as any).properties[user.dbConfig.title].title[0].text.content;
     }
-});
 
-azure.app.get('getConfig', {
-    route: 'api/config',
-    handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-        const container = await scopeContainer(request, context, true);
-
+    @route({ path: '/api/config', method: 'GET', authenticate: true })
+    async getConfig(container: Container) {
         const user = container.get<UserData>(USER);
 
         const notionDatabases = await container.get(NotionClient).listDatabases();
 
         return {
-            jsonBody: {
-                notionDatabases,
-                dbConfig: user.dbConfig,
-            } as UserConfig,
+            notionDatabases,
+            dbConfig: user.dbConfig,
         };
     }
-});
 
-azure.app.post('postConfig', {
-    route: 'api/config',
-    handler: async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-        const dbConfig: DbConfig = (await request.json() as any).dbConfig;
-        const container = await scopeContainer(request, context, true);
-
+    @route({ path: '/api/config', method: 'POST', authenticate: true })
+    async postConfig(container: Container) {
+        const request = container.get<FastifyRequest>(REQUEST);
+        const dbConfig: DbConfig = (request.body as any).dbConfig;
         const cosmos = container.get(CosmosClient);
         const userId = container.get<string>(USER_ID);
 
         await cosmos.putUserConfig(userId, dbConfig);
 
-        return {
-            status: 200,
-            body: 'Config saved',
-        };
+        return 'Config saved';
     }
-});
+}

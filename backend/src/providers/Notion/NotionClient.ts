@@ -1,10 +1,10 @@
-import azure from "@azure/functions";
 import { Client } from "@notionhq/client";
 import { CreatePageParameters, DatabaseObjectResponse, OauthTokenResponse, PageObjectResponse, UpdatePageParameters } from "@notionhq/client/build/src/api-endpoints.js";
 import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
 import { NOTION_CLIENT_ID, NOTION_CLIENT_SECRET, REQUEST, USER } from "../../fx/keys.js";
 import { UserData } from "../../types.js";
+import { FastifyRequest } from "fastify";
 
 @provide(AnonymousNotionClient)
 export class AnonymousNotionClient {
@@ -16,7 +16,7 @@ export class AnonymousNotionClient {
     private readonly clientSecret!: string;
 
     constructor(
-        @inject(REQUEST) private readonly request: azure.HttpRequest
+        @inject(REQUEST) private readonly request: FastifyRequest
     ) {
         this.client = new Client();
     }
@@ -27,10 +27,17 @@ export class AnonymousNotionClient {
             .token({
                 client_id: this.clientId,
                 client_secret: this.clientSecret,
-                code: this.request.query.get('code') as string,
+                code: (this.request.query as any)['code'] as string,
                 grant_type: 'authorization_code',
-                redirect_uri: this.request.url.split('?')[0].replace(/notion-\w+\.localhost/, 'localhost'),
+                redirect_uri: this.getRedirectUrl(),
             });
+    }
+
+
+    private getRedirectUrl() {
+        const domain = this.request.host.replace(/notion-\w+\.localhost/, 'localhost');
+
+        return `${this.request.protocol}://${domain}/login`;
     }
 }
 

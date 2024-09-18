@@ -2,8 +2,8 @@ import { Alert, Button, Container, Paper, Stack, TextField } from "@mui/material
 import type { DOMAIN, UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
 import { DbConfig } from "./DbConfig";
-import { Navigation } from "./Navigation";
 import { EmbedPage } from "./EmbedPage";
+import { Navigation } from "./Navigation";
 
 async function loadUserData(): Promise<UserConfig> {
     const resp = await fetch('/api/config');
@@ -26,6 +26,9 @@ export function UserPage({ userId, domain }: { userId: string, domain: DOMAIN })
     async function save() {
         await fetch('/api/config', {
             method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify({
                 dbConfig: newDbConfig,
             }),
@@ -53,7 +56,7 @@ export function UserPage({ userId, domain }: { userId: string, domain: DOMAIN })
                                 sx={{ width: '100%' }} />
                         </Alert>
                         <Paper>
-                            <EmbedPage domain={domain}/>
+                            <EmbedPage domain={domain} />
                         </Paper>
                     </Fragment > :
                     <Alert variant="outlined" severity="warning">

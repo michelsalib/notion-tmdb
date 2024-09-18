@@ -1,5 +1,5 @@
-export const REQUEST = Symbol.for('REQUEST');
-export const CONTEXT = Symbol.for('CONTEXT');
+export const REQUEST = Symbol.for('FASTIFY_REQUEST');
+export const REPLY = Symbol.for('FASTIFY_REPLY');
 export const USER_ID = Symbol.for('USER_ID');
 export const DOMAIN = Symbol.for('DOMAIN');
 export const USER = Symbol.for('USER');

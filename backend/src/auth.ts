@@ -1,67 +1,57 @@
-import azure from "@azure/functions";
-import { scopeContainer } from "./fx/di.js";
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { Container } from "inversify";
+import { REPLY, REQUEST } from "./fx/keys.js";
+import { route } from './fx/router.js';
 import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
 import { AnonymousNotionClient } from "./providers/Notion/NotionClient.js";
 import type { UserData } from "./types.js";
 
-azure.app.get('logout', async (): Promise<azure.HttpResponseInit> => {
-    return {
-        status: 302,
-        headers: {
-            location: '/',
-        },
-        cookies: [
-            {
-                name: 'userId',
-                value: '',
-            },
-        ],
-    };
-});
+export class Auth {
+    @route({ path: '/logout', method: 'GET', authenticate: false })
+    async logout(container: Container) {
+        const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
 
-azure.app.get('login', async (request: azure.HttpRequest, context: azure.InvocationContext): Promise<azure.HttpResponseInit> => {
-    if (/http:\/\/localhost:/.test(request.url)) {
-        const domain = `notion-${request.query.get('state')?.toLowerCase()}.localhost`;
-        const location = request.url.replace('localhost', domain);
-
-        return {
-            status: 302,
-            headers: {
-                location,
-            },
-        };
+        reply.status(302);
+        reply.header('location', '/');
+        reply.clearCookie('userId');
     }
-    
-    const container = await scopeContainer(request, context, false);
-    const cosmos = container.get(CosmosClient);
 
-    const tokenResponse = await container.get(AnonymousNotionClient).generateUserToken();
-    const existingUser = await cosmos.getUser(tokenResponse.workspace_id);
+    @route({ path: '/login', method: 'GET', authenticate: false })
+    async login(container: Container) {
+        const request = container.get<FastifyRequest>(REQUEST);
+        const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
 
-    const userData: UserData = {
-        id: tokenResponse.workspace_id,
-        notionWorkspace: {
-            workspaceId: tokenResponse.workspace_id,
-            workspaceName: tokenResponse.workspace_name as string,
-            workspaceIcon: tokenResponse.workspace_icon as string,
-            accessToken: tokenResponse.access_token,
-        },
-        dbConfig: existingUser?.dbConfig,
-    };
+        if (request.hostname == 'localhost') {
+            const domain = `notion-${(request.query as any)['state']!.toLowerCase()}.localhost`;
+            const location = `${request.protocol}://${domain}:${request.port}${request.url}`;
 
-    await cosmos.putUser(userData);
+            reply.status(302);
+            reply.header('location', location);
 
-    return {
-        status: 302,
-        headers: {
-            location: request.url.split('/login')[0],
-        },
-        cookies: [
-            {
-                name: 'userId',
-                value: userData.id,
-                maxAge: 31_536_000, // 1 year
+            return;
+        }
+
+        const cosmos = container.get(CosmosClient);
+        const tokenResponse = await container.get(AnonymousNotionClient).generateUserToken();
+        const existingUser = await cosmos.getUser(tokenResponse.workspace_id);
+
+        const userData: UserData = {
+            id: tokenResponse.workspace_id,
+            notionWorkspace: {
+                workspaceId: tokenResponse.workspace_id,
+                workspaceName: tokenResponse.workspace_name as string,
+                workspaceIcon: tokenResponse.workspace_icon as string,
+                accessToken: tokenResponse.access_token,
             },
-        ],
-    };
-});
+            dbConfig: existingUser?.dbConfig,
+        };
+
+        await cosmos.putUser(userData);
+
+        reply.status(302);
+        reply.header('location', '/');
+        reply.setCookie('userId', userData.id, {
+            maxAge: 31_536_000, // 1y
+        });
+    }
+}

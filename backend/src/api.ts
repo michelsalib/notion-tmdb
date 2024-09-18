@@ -13,7 +13,7 @@ export class Api {
         const user = container.get<UserData>(USER);
         user.notionWorkspace.accessToken = '***'; // hide sensitive data
 
-        return user;
+        return { user };
     }
 
     @route({ path: '/api/search', method: 'GET', authenticate: false })

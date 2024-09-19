@@ -5,3 +5,4 @@ node_modules
 local.settings.json
 dist
 !support/build.js
+!eslint.config.js

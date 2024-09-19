@@ -32,7 +32,7 @@ export function EmbedPage({ domain }: { domain: DOMAIN }) {
                 severity: 'success'
             });
         }
-        catch (err) {
+        catch {
             setAlert({
                 open: true,
                 message: t('ADD_FAILURE'),
@@ -58,7 +58,7 @@ export function EmbedPage({ domain }: { domain: DOMAIN }) {
                 severity: 'success'
             });
         }
-        catch (err) {
+        catch {
             setAlert({
                 open: true,
                 message: t('SYNC_FAILURE'),

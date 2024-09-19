@@ -5,6 +5,8 @@
   "type": "module",
   "main": "backend/dist/index.js",
   "scripts": {
+    "lint": "eslint",
+    "format": "prettier",
     "build": "npm run build --workspaces && rm -rf dist && node support/build.js",
     "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-fr -n notion-tmdb-fr --src out.zip",
     "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-fr -f azure/template.bicep"
@@ -18,5 +20,16 @@
   "dependencies": {
     "copy-file": "^11.0.0",
     "globby": "^14.0.2"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.1.1",
+    "@eslint/js": "^9.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "eslint": "^9.10.0",
+    "eslint-plugin-react": "^7.36.1",
+    "globals": "^15.9.0",
+    "prettier": "^3.3.3",
+    "typescript-eslint": "^8.6.0"
   }
 }

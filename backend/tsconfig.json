@@ -7,16 +7,11 @@
     "importHelpers": true,
     "strict": true,
     "skipLibCheck": true,
-    "lib": [
-      "ES2023",
-      "esnext.disposable"
-    ],
-    "types": [
-      "reflect-metadata"
-    ],
+    "lib": ["ES2023", "esnext.disposable"],
+    "types": ["reflect-metadata"],
     "sourceMap": true,
     "outDir": "dist",
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
+    "experimentalDecorators": true
   }
 }

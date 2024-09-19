@@ -18,7 +18,8 @@ export interface RouteInvocation {
 }
 
 export function route(routeConfig: RouteConfig) {
-    return (target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<RouteTarget>) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- descriptor helps typing the decorator target
+    return (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<RouteTarget>) => {
         const serviceName = '_Router' + target.constructor.name;
 
         const existingMetadata = Reflect.getMetadata('routes', target) || [];

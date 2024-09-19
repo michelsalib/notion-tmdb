@@ -19,6 +19,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const fastApp = fastify();
 fastApp.register(fastifyStatic, {
     root: join(__dirname, '../../frontend/dist/'),
+    maxAge: 86_400_000, // 1 day
 });
 fastApp.register(fastifyCookie, {});
 Router.load(fastApp);

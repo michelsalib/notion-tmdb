@@ -3,10 +3,7 @@
   "tasks": [
     {
       "label": "node: host start",
-      "dependsOn": [
-        "npm watch (backend)",
-        "npm watch (frontend)"
-      ]
+      "dependsOn": ["npm watch (backend)", "npm watch (frontend)"]
     },
     {
       "type": "func",
@@ -14,10 +11,7 @@
       "command": "host start",
       "problemMatcher": "$func-node-watch",
       "isBackground": true,
-      "dependsOn": [
-        "npm watch (backend)",
-        "npm watch (frontend)"
-      ],
+      "dependsOn": ["npm watch (backend)", "npm watch (frontend)"],
       "options": {
         "cwd": "${workspaceFolder}/backend"
       }

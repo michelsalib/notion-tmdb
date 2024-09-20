@@ -7,7 +7,6 @@ import {
   COSMOS_DB_ACCOUNT,
   COSMOS_DB_DATABASE,
   COSMOS_DB_KEY,
-  DATA_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   NOTION_CLIENT_ID,
   NOTION_CLIENT_SECRET,
@@ -24,9 +23,9 @@ import {
 
 // load services
 import "../providers/Cosmos/CosmosClient.js";
-import { GBookClient } from "../providers/GBook/GBookClient.js";
+import "../providers/GBook/GBookClient.js";
 import "../providers/Notion/NotionClient.js";
-import { TmdbClient } from "../providers/Tmdb/TmdbClient.js";
+import "../providers/Tmdb/TmdbClient.js";
 
 // setup container
 export const rootContainer = new Container();
@@ -61,7 +60,7 @@ export function loadEnvironmentConfig(env: {
 export async function scopeContainer(
   request: FastifyRequest,
   reply: FastifyReply,
-  authenticate: boolean,
+  authenticate: boolean
 ): Promise<Container> {
   const container = rootContainer.createChild();
   const userId = getUserId(request);
@@ -73,20 +72,22 @@ export async function scopeContainer(
   container.bind(DOMAIN_KEY).toConstantValue(domain);
 
   container
-    .bind(DATA_PROVIDER)
-    .toService(domain == "GBook" ? GBookClient : TmdbClient);
+    .bind(NOTION_CLIENT_ID)
+    .toConstantValue(NOTION_GBOOK_CLIENT_ID)
+    .when(() => domain == "GBook");
   container
     .bind(NOTION_CLIENT_ID)
-    .toService(
-      domain == "GBook" ? NOTION_GBOOK_CLIENT_ID : NOTION_TMDB_CLIENT_ID,
-    );
+    .toConstantValue(NOTION_TMDB_CLIENT_ID)
+    .when(() => domain == "TMDB");
+
   container
     .bind(NOTION_CLIENT_SECRET)
-    .toService(
-      domain == "GBook"
-        ? NOTION_GBOOK_CLIENT_SECRET
-        : NOTION_TMDB_CLIENT_SECRET,
-    );
+    .toConstantValue(NOTION_GBOOK_CLIENT_SECRET)
+    .when(() => domain == "GBook");
+  container
+    .bind(NOTION_CLIENT_SECRET)
+    .toConstantValue(NOTION_TMDB_CLIENT_SECRET)
+    .when(() => domain == "TMDB");
 
   if (authenticate) {
     if (!userId) {
@@ -110,7 +111,7 @@ function getUserId(request: FastifyRequest): string {
 
   if (!userId) {
     userId = /userId=([\w-]*)/.exec(
-      request.headers["referer"] as string,
+      request.headers["referer"] as string
     )?.[1] as string;
   }
 

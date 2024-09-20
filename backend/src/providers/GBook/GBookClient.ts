@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from "axios";
-import { provide } from "inversify-binding-decorators";
-import { DbConfig, NotionItem, Suggestion } from "../../types.js";
+import { fluentProvide } from "inversify-binding-decorators";
+import { DbConfig, DOMAIN, NotionItem, Suggestion } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
+import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 
 interface VolumeInfo {
   title: string;
@@ -15,7 +16,7 @@ interface VolumeInfo {
   subtitle?: string;
 }
 
-@provide(GBookClient)
+@(fluentProvide(DATA_PROVIDER).when(r => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook").done())
 export class GBookClient implements DataProvider {
   private readonly client: AxiosInstance;
 

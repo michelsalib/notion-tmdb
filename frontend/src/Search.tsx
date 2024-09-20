@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import type { Suggestion } from "backend/src/types";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function Search({
   onChange,
@@ -17,6 +18,7 @@ export function Search({
   const [value, setValue] = useState<Suggestion | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [options, setOptions] = useState<Suggestion[]>([]);
+  const { t } = useTranslation();
 
   const fetchSearch = useMemo(
     () =>
@@ -69,7 +71,7 @@ export function Search({
         setInputValue(newInputValue);
       }}
       renderInput={(params) => (
-        <TextField {...params} label="TMDB lookup" fullWidth />
+        <TextField {...params} label={t("SEARCH_PLACEHOLDER")} fullWidth />
       )}
       renderOption={(props, option) => {
         const { key, ...optionProps } = props;

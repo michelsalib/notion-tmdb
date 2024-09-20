@@ -63,7 +63,7 @@ export function loadEnvironmentConfig(env: {
 export async function scopeContainer(
   request: FastifyRequest,
   reply: FastifyReply,
-  authenticate: boolean
+  authenticate: boolean,
 ): Promise<Container> {
   const container = rootContainer.createChild();
   const userId = getUserId(request);
@@ -114,7 +114,7 @@ function getUserId(request: FastifyRequest): string {
 
   if (!userId) {
     userId = /userId=([\w-]*)/.exec(
-      request.headers["referer"] as string
+      request.headers["referer"] as string,
     )?.[1] as string;
   }
 

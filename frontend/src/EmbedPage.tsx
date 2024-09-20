@@ -6,13 +6,13 @@ import {
   Snackbar,
   Stack,
 } from "@mui/material";
+import type { Suggestion } from "backend/src/types";
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "./Search";
-import type { DOMAIN, Suggestion } from "backend/src/types";
 
-export function EmbedPage({ domain }: { domain: DOMAIN }) {
-  const { t } = useTranslation(domain);
+export function EmbedPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState<Suggestion | null>(null);
   const [alert, setAlert] = useState<{

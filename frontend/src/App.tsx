@@ -4,13 +4,15 @@ import {
   ThemeProvider,
   useMediaQuery,
 } from "@mui/material";
-import { lightBlue, orange } from "@mui/material/colors";
+import * as colors from "@mui/material/colors";
+import type { DOMAIN } from "backend/src/types";
 import { useMemo } from "react";
 import { EmbedPage } from "./EmbedPage";
 import "./i18n";
 import { Login } from "./Login";
-import { DOMAIN } from "./types";
 import { UserPage } from "./UserPage";
+import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
 type LOGIN_STATE = "sso" | "embed" | "none";
 
@@ -43,7 +45,7 @@ function loginState(): {
   };
 }
 
-function domainState(): DOMAIN {
+export function domainState(): DOMAIN {
   const unlinted = /notion-(\w+)/.exec(window.location.origin)?.[1];
 
   if (unlinted == "gbook") {
@@ -56,6 +58,7 @@ function domainState(): DOMAIN {
 export function App() {
   const loggedIn = useMemo(() => loginState(), []);
   const domain = useMemo(() => domainState(), []);
+  const { t } = useTranslation();
 
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = useMemo(
@@ -63,7 +66,7 @@ export function App() {
       createTheme({
         palette: {
           mode: prefersDarkMode ? "dark" : "light",
-          primary: domain == "TMDB" ? lightBlue : orange,
+          primary: colors[t("PRIMARY_COLOR") as keyof typeof colors] as any,
           background: {
             default: prefersDarkMode ? "rgb(25, 25, 25)" : undefined,
           },
@@ -75,8 +78,12 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Helmet>
+        <title>{t("TITLE")}</title>
+        <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
+      </Helmet>
       {loggedIn.status == "none" ? <Login domain={domain} /> : ""}
-      {loggedIn.status == "embed" ? <EmbedPage domain={domain} /> : ""}
+      {loggedIn.status == "embed" ? <EmbedPage /> : ""}
       {loggedIn.status == "sso" ? (
         <UserPage userId={loggedIn.userId as string} domain={domain} />
       ) : (

@@ -28,7 +28,10 @@ import "../providers/Notion/NotionClient.js";
 import "../providers/Tmdb/TmdbClient.js";
 
 // setup container
-export const rootContainer = new Container();
+export const rootContainer = new Container({
+  // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
+  defaultScope: "Singleton",
+});
 rootContainer.load(buildProviderModule()); // load based on decorators
 
 export function loadEnvironmentConfig(env: {

@@ -28,10 +28,7 @@ import "../providers/Notion/NotionClient.js";
 import "../providers/Tmdb/TmdbClient.js";
 
 // setup container
-export const rootContainer = new Container({
-  // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
-  defaultScope: "Singleton",
-});
+export const rootContainer = new Container();
 rootContainer.load(buildProviderModule()); // load based on decorators
 
 export function loadEnvironmentConfig(env: {
@@ -58,6 +55,32 @@ export function loadEnvironmentConfig(env: {
   rootContainer
     .bind(COSMOS_DB_DATABASE)
     .toConstantValue(env["CosmosDb:Database"]);
+
+  rootContainer
+    .bind(NOTION_CLIENT_ID)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_GBOOK_CLIENT_ID))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook",
+    );
+  rootContainer
+    .bind(NOTION_CLIENT_ID)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_TMDB_CLIENT_ID))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB",
+    );
+
+  rootContainer
+    .bind(NOTION_CLIENT_SECRET)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_GBOOK_CLIENT_SECRET))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook",
+    );
+  rootContainer
+    .bind(NOTION_CLIENT_SECRET)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_TMDB_CLIENT_SECRET))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB",
+    );
 }
 
 export async function scopeContainer(
@@ -65,7 +88,10 @@ export async function scopeContainer(
   reply: FastifyReply,
   authenticate: boolean,
 ): Promise<Container> {
-  const container = rootContainer.createChild();
+  const container = rootContainer.createChild({
+    // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
+    defaultScope: "Singleton",
+  });
   const userId = getUserId(request);
   const domain = computeDomain(request);
 
@@ -73,24 +99,6 @@ export async function scopeContainer(
   container.bind(REQUEST).toConstantValue(request);
   container.bind(USER_ID).toConstantValue(userId);
   container.bind(DOMAIN_KEY).toConstantValue(domain);
-
-  container
-    .bind(NOTION_CLIENT_ID)
-    .toConstantValue(NOTION_GBOOK_CLIENT_ID)
-    .when(() => domain == "GBook");
-  container
-    .bind(NOTION_CLIENT_ID)
-    .toConstantValue(NOTION_TMDB_CLIENT_ID)
-    .when(() => domain == "TMDB");
-
-  container
-    .bind(NOTION_CLIENT_SECRET)
-    .toConstantValue(NOTION_GBOOK_CLIENT_SECRET)
-    .when(() => domain == "GBook");
-  container
-    .bind(NOTION_CLIENT_SECRET)
-    .toConstantValue(NOTION_TMDB_CLIENT_SECRET)
-    .when(() => domain == "TMDB");
 
   if (authenticate) {
     if (!userId) {

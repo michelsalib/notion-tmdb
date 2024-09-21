@@ -26,24 +26,24 @@ jobs:
 
       - name: "Run linter"
         shell: bash
-        continue-on-error: true
+        if: always()
         run: |
           npm run lint
 
       - name: "Run format checker"
         shell: bash
-        continue-on-error: true
+        if: always()
         run: |
           npx prettier --check .
 
       - name: Run frontend compilation
         shell: bash
-        continue-on-error: true
+        if: always()
         run: |
           npm --workspace frontend run build
 
       - name: Run backend compilation
         shell: bash
-        continue-on-error: true
+        if: always()
         run: |
           npm --workspace backend run build

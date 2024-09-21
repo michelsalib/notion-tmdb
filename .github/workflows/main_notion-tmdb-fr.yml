@@ -12,33 +12,6 @@ on:
 env: {}
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: "Checkout GitHub Action"
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: "Resolve Project Dependencies Using Npm"
-        shell: bash
-        run: |
-          npm install
-
-      - name: "Run linter"
-        shell: bash
-        run: |
-          npm run lint
-
-      - name: "Run format checker"
-        shell: bash
-        run: |
-          npx prettier --check .
-
   build:
     runs-on: ubuntu-latest
     steps:

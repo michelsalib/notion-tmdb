@@ -17,6 +17,7 @@ export interface RouteInvocation {
   serviceName: string;
 }
 
+// TO FIX
 export function route(routeConfig) {
   return (
     target: object,

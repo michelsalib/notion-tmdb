@@ -2,7 +2,7 @@ name: Run checks on every commits of this repo
 
 on:
   push:
-    tags-ignore:
+    branches:
       - "**"
 
 env: {}
@@ -26,20 +26,24 @@ jobs:
 
       - name: "Run linter"
         shell: bash
+        if: always()
         run: |
           npm run lint
 
       - name: "Run format checker"
         shell: bash
+        if: always()
         run: |
           npx prettier --check .
 
       - name: Run frontend compilation
         shell: bash
+        if: always()
         run: |
           npm --workspace frontend run build
 
       - name: Run backend compilation
         shell: bash
+        if: always()
         run: |
           npm --workspace backend run build

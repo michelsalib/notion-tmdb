@@ -22,7 +22,7 @@ export function route(routeConfig: RouteConfig) {
     target: object,
     propertyKey: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- as it helps enforce the decorator target type
-    descriptor: TypedPropertyDescriptor<RouteTarget>,
+    descriptor: TypedPropertyDescriptor<RouteTarget>
   ) => {
     const serviceName = "_Router" + target.constructor.name;
 

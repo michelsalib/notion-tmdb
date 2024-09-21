@@ -2,7 +2,7 @@ name: Run checks on every commits of this repo
 
 on:
   push:
-    tags-ignore:
+    branches:
       - "**"
 
 env: {}

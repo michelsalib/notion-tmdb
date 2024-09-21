@@ -17,12 +17,11 @@ export interface RouteInvocation {
   serviceName: string;
 }
 
-export function route(routeConfig: RouteConfig) {
+export function route(routeConfig) {
   return (
     target: object,
     propertyKey: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- descriptor helps typing the decorator target
-    descriptor: TypedPropertyDescriptor<RouteTarget>,
+    descriptor: TypedPropertyDescriptor<RouteTarget>
   ) => {
     const serviceName = "_Router" + target.constructor.name;
 

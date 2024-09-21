@@ -17,12 +17,12 @@ export interface RouteInvocation {
   serviceName: string;
 }
 
-// TO FIX
-export function route(routeConfig) {
+export function route(routeConfig: RouteConfig) {
   return (
     target: object,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<RouteTarget>
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- as it helps enforce the decorator target type
+    descriptor: TypedPropertyDescriptor<RouteTarget>,
   ) => {
     const serviceName = "_Router" + target.constructor.name;
 
@@ -37,7 +37,7 @@ export function route(routeConfig) {
           methodName: propertyKey,
         } as RouteInvocation,
       ],
-      target,
+      target
     );
     Router.register({
       routeConfig,
@@ -69,7 +69,7 @@ export class Router {
           const container = await scopeContainer(
             request,
             reply,
-            routeConfig.authenticate,
+            routeConfig.authenticate
           );
           const routingService = container.get<any>(serviceName);
 

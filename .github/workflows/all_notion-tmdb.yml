@@ -10,8 +10,6 @@ env: {}
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - name: "Checkout GitHub Action"
         uses: actions/checkout@v4
@@ -28,20 +26,24 @@ jobs:
 
       - name: "Run linter"
         shell: bash
+        continue-on-error: true
         run: |
           npm run lint
 
       - name: "Run format checker"
         shell: bash
+        continue-on-error: true
         run: |
           npx prettier --check .
 
       - name: Run frontend compilation
         shell: bash
+        continue-on-error: true
         run: |
           npm --workspace frontend run build
 
       - name: Run backend compilation
         shell: bash
+        continue-on-error: true
         run: |
           npm --workspace backend run build

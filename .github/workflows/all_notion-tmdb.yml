@@ -10,6 +10,8 @@ env: {}
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     steps:
       - name: "Checkout GitHub Action"
         uses: actions/checkout@v4

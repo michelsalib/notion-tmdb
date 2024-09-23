@@ -90,7 +90,7 @@ export async function scopeContainer(
 ): Promise<Container> {
   const container = rootContainer.createChild({
     // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
-    // defaultScope: "Singleton",
+    defaultScope: "Singleton",
   });
   const userId = getUserId(request);
   const domain = computeDomain(request);

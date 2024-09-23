@@ -6,6 +6,7 @@ import {
   PageObjectResponse,
   UpdatePageParameters,
 } from "@notionhq/client/build/src/api-endpoints.js";
+import { FastifyRequest } from "fastify";
 import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
 import {
@@ -15,7 +16,6 @@ import {
   USER,
 } from "../../fx/keys.js";
 import { UserData } from "../../types.js";
-import { FastifyRequest } from "fastify";
 
 @provide(AnonymousNotionClient)
 export class AnonymousNotionClient {
@@ -45,8 +45,10 @@ export class AnonymousNotionClient {
       /notion-\w+\.localhost/,
       "localhost",
     );
+    // this is because fastify protocol is wrong when using inject
+    const protocol = domain.includes("localhost") ? "http" : "https";
 
-    return `${this.request.protocol}://${domain}/login`;
+    return `${protocol}://${domain}/login`;
   }
 }
 

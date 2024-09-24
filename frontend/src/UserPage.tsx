@@ -1,6 +1,8 @@
 import {
   Alert,
   Button,
+  Box,
+  CircularProgress,
   Container,
   Paper,
   Stack,
@@ -37,7 +39,11 @@ export function UserPage({
   }, []);
 
   if (!userConfig) {
-    return;
+    return (
+      <Stack alignItems={"center"} sx={{ margin: 5 }}>
+        <CircularProgress />
+      </Stack>
+    );
   }
 
   async function save() {

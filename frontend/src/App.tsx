@@ -13,6 +13,7 @@ import { Login } from "./Login";
 import { UserPage } from "./UserPage";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
+import { Footer } from "./Footer";
 
 type LOGIN_STATE = "sso" | "embed" | "none";
 
@@ -89,6 +90,7 @@ export function App() {
       ) : (
         ""
       )}
+      {loggedIn.status != 'embed' ? <Footer/> : ""}
     </ThemeProvider>
   );
 }

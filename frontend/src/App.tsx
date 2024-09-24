@@ -90,7 +90,7 @@ export function App() {
       ) : (
         ""
       )}
-      {loggedIn.status != 'embed' ? <Footer/> : ""}
+      {loggedIn.status != "embed" ? <Footer /> : ""}
     </ThemeProvider>
   );
 }

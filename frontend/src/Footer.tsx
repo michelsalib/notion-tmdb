@@ -23,7 +23,12 @@ export function Footer() {
   return (
     <Paper
       variant="outlined"
-      sx={{ borderLeft: "none", borderRight: "none", borderRadius: 0, marginTop: 6 }}
+      sx={{
+        borderLeft: "none",
+        borderRight: "none",
+        borderRadius: 0,
+        marginTop: 6,
+      }}
     >
       <Container maxWidth="sm" sx={{ padding: 2 }}>
         <Stack

@@ -25,20 +25,7 @@ export function route(routeConfig: RouteConfig) {
     descriptor: TypedPropertyDescriptor<RouteTarget>,
   ) => {
     const serviceName = "_Router" + target.constructor.name;
-
-    const existingMetadata = Reflect.getMetadata("routes", target) || [];
-    Reflect.defineMetadata(
-      "routes",
-      [
-        ...existingMetadata,
-        {
-          routeConfig,
-          serviceName,
-          methodName: propertyKey,
-        } as RouteInvocation,
-      ],
-      target,
-    );
+    
     Router.register({
       routeConfig,
       serviceName,

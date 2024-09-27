@@ -41,7 +41,7 @@ export class Api {
     const notionClient = container.get(NotionClient);
     const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
-    const entriesToLoad = await notionClient.listDatabaseEntries();
+    const entriesToLoad = await notionClient.listDatabaseEntries(user.dbConfig);
 
     for (const entry of entriesToLoad) {
       const url: string = (
@@ -123,5 +123,17 @@ export class Api {
     await cosmos.putUserConfig(userId, dbConfig);
 
     return "Config saved";
+  }
+
+  @route({ path: "/api/backup", method: "GET", authenticate: true })
+  async backup(container: Container) {
+    const notion = container.get(NotionClient);
+    const result = [];
+
+    for await(const item of notion.listContent()) {
+      result.push(item);
+    }
+
+    return result;
   }
 }

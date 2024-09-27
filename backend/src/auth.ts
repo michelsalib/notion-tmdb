@@ -3,7 +3,7 @@ import { Container } from "inversify";
 import { REPLY, REQUEST } from "./fx/keys.js";
 import { route } from "./fx/router.js";
 import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
-import { AnonymousNotionClient } from "./providers/Notion/NotionClient.js";
+import { AnonymousNotionClient } from "./providers/Notion/AnonymousNotionClient.js";
 import type { UserData } from "./types.js";
 
 export class Auth {

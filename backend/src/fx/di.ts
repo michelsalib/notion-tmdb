@@ -24,6 +24,7 @@ import {
 // load services
 import "../providers/Cosmos/CosmosClient.js";
 import "../providers/GBook/GBookClient.js";
+import "../providers/Notion/AnonymousNotionClient.js";
 import "../providers/Notion/NotionClient.js";
 import "../providers/Tmdb/TmdbClient.js";
 

@@ -1,6 +1,10 @@
 import { Client } from "@notionhq/client";
 import { provide } from "inversify-binding-decorators";
-import { NOTION_CLIENT_ID, NOTION_CLIENT_SECRET, REQUEST } from "../../fx/keys.js";
+import {
+  NOTION_CLIENT_ID,
+  NOTION_CLIENT_SECRET,
+  REQUEST,
+} from "../../fx/keys.js";
 import { inject } from "inversify";
 import { FastifyRequest } from "fastify";
 import { OauthTokenResponse } from "@notionhq/client/build/src/api-endpoints.js";

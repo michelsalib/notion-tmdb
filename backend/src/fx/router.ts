@@ -25,7 +25,7 @@ export function route(routeConfig: RouteConfig) {
     descriptor: TypedPropertyDescriptor<RouteTarget>,
   ) => {
     const serviceName = "_Router" + target.constructor.name;
-    
+
     Router.register({
       routeConfig,
       serviceName,

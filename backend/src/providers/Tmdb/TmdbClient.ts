@@ -1,18 +1,18 @@
 import axios, { AxiosInstance } from "axios";
 import { inject } from "inversify";
-import {
-  TMDB_API_KEY,
-  DOMAIN as DOMAIN_KEY,
-  DATA_PROVIDER,
-} from "../../fx/keys.js";
-import { DbConfig, DOMAIN, NotionItem, Suggestion } from "../../types.js";
-import { DataProvider } from "../DataProvider.js";
 import { fluentProvide } from "inversify-binding-decorators";
+import {
+  DATA_PROVIDER,
+  DOMAIN as DOMAIN_KEY,
+  TMDB_API_KEY,
+} from "../../fx/keys.js";
+import { DOMAIN, NotionItem, Suggestion, TmdbDbConfig } from "../../types.js";
+import { DataProvider } from "../DataProvider.js";
 
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
   .done())
-export class TmdbClient implements DataProvider {
+export class TmdbClient implements DataProvider<TmdbDbConfig> {
   private readonly client: AxiosInstance;
 
   constructor(@inject(TMDB_API_KEY) tmdbApiKey: string) {
@@ -55,7 +55,7 @@ export class TmdbClient implements DataProvider {
 
   async loadNotionEntry(
     tmdbId: string,
-    dbConfig: DbConfig,
+    dbConfig: TmdbDbConfig,
   ): Promise<NotionItem> {
     const { data } = await this.client.get(`/movie/${tmdbId}`, {
       params: {
@@ -99,9 +99,11 @@ export class TmdbClient implements DataProvider {
       };
     }
 
-    if (dbConfig.year) {
-      movieItem.properties[dbConfig.year] = {
-        number: Number(data.release_date.split("-")[0]),
+    if (dbConfig.releaseDate) {
+      movieItem.properties[dbConfig.releaseDate] = {
+        date: {
+          start: data.release_date,
+        },
       };
     }
 

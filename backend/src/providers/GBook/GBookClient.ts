@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import { fluentProvide } from "inversify-binding-decorators";
-import { DbConfig, DOMAIN, NotionItem, Suggestion } from "../../types.js";
+import { DOMAIN, GBookDbConfig, NotionItem, Suggestion } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 
@@ -19,7 +19,7 @@ interface VolumeInfo {
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook")
   .done())
-export class GBookClient implements DataProvider {
+export class GBookClient implements DataProvider<GBookDbConfig> {
   private readonly client: AxiosInstance;
 
   constructor() {
@@ -57,7 +57,10 @@ export class GBookClient implements DataProvider {
     });
   }
 
-  async loadNotionEntry(id: string, dbConfig: DbConfig): Promise<NotionItem> {
+  async loadNotionEntry(
+    id: string,
+    dbConfig: GBookDbConfig,
+  ): Promise<NotionItem> {
     const { data } = await this.client.get(`/volumes/${id}`);
     const volumeInfo: VolumeInfo = data.volumeInfo;
 
@@ -96,14 +99,16 @@ export class GBookClient implements DataProvider {
       };
     }
 
-    if (dbConfig.year) {
-      bookItem.properties[dbConfig.year] = {
-        number: Number(volumeInfo.publishedDate.split("-")[0]),
+    if (dbConfig.releaseDate) {
+      bookItem.properties[dbConfig.releaseDate] = {
+        date: {
+          start: volumeInfo.publishedDate,
+        },
       };
     }
 
-    if (dbConfig.director) {
-      bookItem.properties[dbConfig.director] = {
+    if (dbConfig.author) {
+      bookItem.properties[dbConfig.author] = {
         rich_text: [
           {
             text: {

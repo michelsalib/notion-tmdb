@@ -10,15 +10,26 @@ export interface NotionData {
   accessToken: string;
 }
 
-interface DbConfig {
+export interface DbConfig {
+  // Database identifier
   id: string;
+  // DB Entry identifer in the Data provider (book ulr, movie url, ...)
   url: string;
+  // Sync status
   status: string;
+  // other common fields
   title: string;
-  director: string;
-  year: string;
+  releaseDate: string;
   genre: string;
+}
+
+export interface TmdbDbConfig extends DbConfig {
+  director: string;
   rating: string;
+}
+
+export interface GBookDbConfig extends DbConfig {
+  author: string;
 }
 
 export interface UserData {
@@ -27,9 +38,11 @@ export interface UserData {
   notionWorkspace: NotionData;
 }
 
-export interface UserConfig {
-  notionDatabases: DatabaseObjectResponse[];
-  dbConfig: DbConfig;
+export type NotionDatabase = DatabaseObjectResponse;
+
+export interface UserConfig<T extends DbConfig> {
+  notionDatabases: NotionDatabases[];
+  dbConfig: T;
 }
 
 export interface Suggestion {

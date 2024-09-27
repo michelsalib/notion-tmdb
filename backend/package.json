@@ -26,4 +26,3 @@
     "local:prepare": "func azure functionapp fetch-app-settings notion-tmdb-fr && func settings decrypt && func settings delete WEBSITE_RUN_FROM_PACKAGE"
   }
 }
-  

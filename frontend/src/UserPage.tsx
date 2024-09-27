@@ -7,34 +7,32 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import type { DOMAIN, UserConfig } from "backend/src/types";
+import type { DbConfig, DOMAIN, UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
-import { DbConfig } from "./DbConfig";
+import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
 
-async function loadUserData(): Promise<UserConfig> {
+async function loadUserData<T extends DbConfig>(): Promise<UserConfig<T>> {
   const resp = await fetch("/api/config");
 
   return await resp.json();
 }
 
-export function UserPage({
+export function UserPage<T extends DbConfig>({
   userId,
   domain,
 }: {
   userId: string;
   domain: DOMAIN;
 }) {
-  const [userConfig, setUserConfig] = useState<UserConfig | undefined>(
+  const [userConfig, setUserConfig] = useState<UserConfig<T> | undefined>(
     undefined,
   );
-  const [newDbConfig, setNewDbConfig] = useState<
-    UserConfig["dbConfig"] | undefined
-  >(undefined);
+  const [newDbConfig, setNewDbConfig] = useState<T | undefined>(undefined);
 
   useEffect(() => {
-    loadUserData().then((data) => setUserConfig(data));
+    loadUserData<T>().then((data) => setUserConfig(data));
   }, []);
 
   if (!userConfig) {
@@ -89,7 +87,8 @@ export function UserPage({
           </Alert>
         )}
 
-        <DbConfig
+        <DbConfigForm<T>
+          domain={domain}
           notionDatabases={userConfig.notionDatabases}
           initialConfig={userConfig.dbConfig}
           onConfigChange={(newConfig) => setNewDbConfig(newConfig)}

@@ -130,7 +130,7 @@ export class Api {
     const notion = container.get(NotionClient);
     const result = [];
 
-    for await(const item of notion.listContent()) {
+    for await (const item of notion.listContent()) {
       result.push(item);
     }
 

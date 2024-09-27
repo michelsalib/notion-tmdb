@@ -1,4 +1,7 @@
 SYNC_SUCESS: Movies synched.
+SYNC_FAILURE: Movies synch failed.
+ADD_SUCCESS: Movie successfully added.
+ADD_FAILURE: Movie failed to be added.
 PRIMARY_COLOR: lightBlue
 TITLE: Notion - TMDB
 LOGO_PATH: /tmdb.jpeg

@@ -1,4 +1,7 @@
 SYNC_SUCESS: Books synched.
+SYNC_FAILURE: Books synch failed.
+ADD_SUCCESS: Book successfully added.
+ADD_FAILURE: Book failed to be added.
 PRIMARY_COLOR: orange
 TITLE: Notion - GBook
 LOGO_PATH: /gbook.jpeg

@@ -13,6 +13,7 @@ i18n
     fallbackLng: "en",
     supportedLngs: ["en"],
     defaultNS: domainState(),
+    fallbackNS: "translation",
     interpolation: {
       escapeValue: false,
     },

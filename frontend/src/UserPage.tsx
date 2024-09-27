@@ -1,14 +1,18 @@
 import {
   Alert,
+  AlertColor,
   Button,
   CircularProgress,
   Container,
+  LinearProgress,
   Paper,
+  Snackbar,
   Stack,
   TextField,
 } from "@mui/material";
 import type { DbConfig, DOMAIN, UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
@@ -26,10 +30,17 @@ export function UserPage<T extends DbConfig>({
   userId: string;
   domain: DOMAIN;
 }) {
+  const { t } = useTranslation();
   const [userConfig, setUserConfig] = useState<UserConfig<T> | undefined>(
     undefined,
   );
   const [newDbConfig, setNewDbConfig] = useState<T | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    message: string;
+    severity: AlertColor;
+  }>({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
     loadUserData<T>().then((data) => setUserConfig(data));
@@ -44,15 +55,43 @@ export function UserPage<T extends DbConfig>({
   }
 
   async function save() {
-    await fetch("/api/config", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        dbConfig: newDbConfig,
-      }),
-    });
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/config", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dbConfig: newDbConfig,
+        }),
+      });
+
+      if (response.status != 200) {
+        setAlert({
+          open: true,
+          message: t("SETTINGS_FAILURE"),
+          severity: "error",
+        });
+
+        return;
+      }
+
+      setAlert({
+        open: true,
+        message: t("SETTINGS_SUCESS"),
+        severity: "success",
+      });
+    } catch {
+      setAlert({
+        open: true,
+        message: t("SETTINGS_FAILURE"),
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -77,7 +116,7 @@ export function UserPage<T extends DbConfig>({
               />
             </Alert>
             <Paper>
-              <EmbedPage domain={domain} />
+              <EmbedPage />
             </Paper>
           </Fragment>
         ) : (
@@ -94,8 +133,41 @@ export function UserPage<T extends DbConfig>({
           onConfigChange={(newConfig) => setNewDbConfig(newConfig)}
         />
 
-        <Button onClick={save}>Save</Button>
+        <Button
+          variant="contained"
+          onClick={save}
+          disabled={loading}
+          sx={{
+            display: "block",
+          }}
+        >
+          Save
+          {loading ? (
+            <LinearProgress
+              sx={{
+                marginBottom: "-4px", // has it is hardcoded within the component
+              }}
+            ></LinearProgress>
+          ) : (
+            ""
+          )}
+        </Button>
       </Stack>
+
+      <Snackbar
+        open={alert.open}
+        onClose={() => setAlert((p) => ({ ...p, open: false }))}
+        autoHideDuration={5000}
+        anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
+      >
+        <Alert
+          variant="filled"
+          severity={alert.severity}
+          onClose={() => setAlert((p) => ({ ...p, open: false }))}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

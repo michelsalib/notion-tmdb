@@ -29,9 +29,19 @@ export function EmbedPage() {
     setLoading(true);
 
     try {
-      await fetch("/api/add?id=" + value.id, {
+      const response = await fetch("/api/add?id=" + value.id, {
         method: "POST",
       });
+
+      if (response.status != 200) {
+        setAlert({
+          open: true,
+          message: t("ADD_FAILURE"),
+          severity: "error",
+        });
+
+        return;
+      }
 
       setAlert({
         open: true,
@@ -53,9 +63,19 @@ export function EmbedPage() {
     setLoading(true);
 
     try {
-      await fetch("/api/sync", {
+      const response = await fetch("/api/sync", {
         method: "POST",
       });
+
+      if (response.status != 200) {
+        setAlert({
+          open: true,
+          message: t("SYNC_FAILURE"),
+          severity: "error",
+        });
+
+        return;
+      }
 
       setAlert({
         open: true,

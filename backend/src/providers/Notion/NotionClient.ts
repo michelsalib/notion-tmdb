@@ -15,7 +15,7 @@ import { DbConfig, UserData } from "../../types.js";
 export class NotionClient {
   private readonly client: Client;
 
-  constructor(@inject(USER) private readonly user: UserData) {
+  constructor(@inject(USER) private readonly user: UserData<any>) {
     this.client = new Client({
       auth: this.user.notionWorkspace.accessToken,
     });

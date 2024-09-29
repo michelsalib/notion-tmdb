@@ -8,8 +8,8 @@ import {
   Typography,
 } from "@mui/material";
 import type {
-  DbConfig,
   DOMAIN,
+  DomainToDbConfig,
   GBookDbConfig,
   NotionDatabase,
   TmdbDbConfig,
@@ -18,10 +18,10 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 
 type NotionPropertyType = NotionDatabase["properties"][0]["type"];
 
-interface DbField<T extends DbConfig> {
+interface DbField<T extends DOMAIN> {
   label: string;
   required: boolean;
-  dbConfigField: keyof T;
+  dbConfigField: keyof DomainToDbConfig<T>;
   columnType: NotionPropertyType;
   helperText?: string;
 }
@@ -49,11 +49,11 @@ function typeToEmoji(type: NotionPropertyType): string {
   return "📝";
 }
 
-function computeDefaultState<T extends DbConfig>(
+function computeDefaultState<T extends DOMAIN>(
   dbId: string,
-  domain: DOMAIN,
-): T {
-  if (domain == "GBook") {
+  domain: T,
+): DomainToDbConfig<T> {
+  if (domain === "GBook") {
     return {
       id: dbId,
       url: "",
@@ -62,7 +62,7 @@ function computeDefaultState<T extends DbConfig>(
       author: "",
       genre: "",
       releaseDate: "",
-    } as GBookDbConfig as any;
+    } as GBookDbConfig as DomainToDbConfig<T>;
   }
 
   return {
@@ -74,10 +74,10 @@ function computeDefaultState<T extends DbConfig>(
     rating: "",
     releaseDate: "",
     title: "",
-  } as TmdbDbConfig as any;
+  } as TmdbDbConfig as DomainToDbConfig<T>;
 }
 
-function getdbFields<T extends DbConfig>(domain: DOMAIN): DbField<T>[] {
+function getdbFields<T extends DOMAIN>(domain: T): DbField<T>[] {
   const result: DbField<T>[] = [
     {
       label: "URL",
@@ -121,43 +121,43 @@ function getdbFields<T extends DbConfig>(domain: DOMAIN): DbField<T>[] {
       columnType: "rich_text",
       dbConfigField: "author",
       required: false,
-    } as DbField<GBookDbConfig> as any);
+    } as DbField<"GBook"> as DbField<T>);
   } else {
     result.push({
       label: "Director",
       columnType: "rich_text",
       dbConfigField: "director",
       required: false,
-    } as DbField<TmdbDbConfig> as any);
+    } as DbField<"TMDB"> as DbField<T>);
     result.push({
       label: "Rating",
       columnType: "number",
       dbConfigField: "rating",
       required: false,
-    } as DbField<TmdbDbConfig> as any);
+    } as DbField<"TMDB"> as DbField<T>);
   }
 
   return result;
 }
 
-export function DbConfigForm<T extends DbConfig>({
+export function DbConfigForm<T extends DOMAIN>({
   domain,
   notionDatabases,
   initialConfig,
   onConfigChange,
 }: {
-  domain: DOMAIN;
+  domain: T;
   notionDatabases: NotionDatabase[];
-  initialConfig?: T;
-  onConfigChange: (dbConfig: T) => any;
+  initialConfig?: DomainToDbConfig<T>;
+  onConfigChange: (dbConfig: DomainToDbConfig<T>) => any;
 }) {
-  const [config, setConfig] = useState<T>({
-    ...computeDefaultState<T>(notionDatabases[0].id, domain),
+  const [config, setConfig] = useState<DomainToDbConfig<T>>({
+    ...computeDefaultState(notionDatabases[0].id, domain),
     ...initialConfig,
   });
 
   useEffect(() => onConfigChange(config), [config]);
-  const dbFields = useMemo(() => getdbFields<T>(domain), []);
+  const dbFields = useMemo(() => getdbFields(domain), []);
 
   const database = notionDatabases.find(
     (db) => db.id == config.id,

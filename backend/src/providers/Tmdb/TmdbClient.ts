@@ -12,7 +12,7 @@ import { DataProvider } from "../DataProvider.js";
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
   .done())
-export class TmdbClient implements DataProvider<TmdbDbConfig> {
+export class TmdbClient implements DataProvider<"TMDB"> {
   private readonly client: AxiosInstance;
 
   constructor(@inject(TMDB_API_KEY) tmdbApiKey: string) {

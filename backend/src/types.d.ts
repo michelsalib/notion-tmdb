@@ -1,6 +1,6 @@
 import type {
-  DatabaseObjectResponse,
   CreatePageParameters,
+  DatabaseObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints.js";
 
 export interface NotionData {
@@ -10,39 +10,47 @@ export interface NotionData {
   accessToken: string;
 }
 
-export interface DbConfig {
+interface DbConfigBase {
   // Database identifier
   id: string;
   // DB Entry identifer in the Data provider (book ulr, movie url, ...)
   url: string;
   // Sync status
   status: string;
-  // other common fields
+}
+
+export interface TmdbDbConfig extends DbConfigBase {
   title: string;
   releaseDate: string;
   genre: string;
-}
-
-export interface TmdbDbConfig extends DbConfig {
   director: string;
   rating: string;
 }
 
-export interface GBookDbConfig extends DbConfig {
+export interface GBookDbConfig extends DbConfigBase {
+  title: string;
+  releaseDate: string;
+  genre: string;
   author: string;
 }
 
-export interface UserData {
+export type DbConfig = TmdbDbConfig | GBookDbConfig;
+
+export type DomainToDbConfig<T extends DOMAIN> = T extends "GBook"
+  ? GBookDbConfig
+  : TmdbDbConfig;
+
+export interface UserData<T extends DOMAIN = any> {
   id: string;
-  dbConfig?: DbConfig;
+  dbConfig?: DomainToDbConfig<T>;
   notionWorkspace: NotionData;
 }
 
 export type NotionDatabase = DatabaseObjectResponse;
 
-export interface UserConfig<T extends DbConfig> {
+export interface UserConfig<T extends DOMAIN> {
   notionDatabases: NotionDatabases[];
-  dbConfig: T;
+  dbConfig: DomainToDbConfig<T>;
 }
 
 export interface Suggestion {

@@ -41,10 +41,10 @@ jobs:
         shell: bash
         if: always()
         run: |
-          npm --workspace frontend run build
+          npx --workspace frontend tsc --noEmit
 
       - name: Run backend compilation
         shell: bash
         if: always()
         run: |
-          npm --workspace backend run build
+          npx --workspace backend tsc --noEmit

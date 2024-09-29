@@ -10,31 +10,33 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import type { DbConfig, DOMAIN, UserConfig } from "backend/src/types";
+import type { DOMAIN, DomainToDbConfig, UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
 
-async function loadUserData<T extends DbConfig>(): Promise<UserConfig<T>> {
+async function loadUserData<T extends DOMAIN>(): Promise<UserConfig<T>> {
   const resp = await fetch("/api/config");
 
   return await resp.json();
 }
 
-export function UserPage<T extends DbConfig>({
+export function UserPage<T extends DOMAIN>({
   userId,
   domain,
 }: {
   userId: string;
-  domain: DOMAIN;
+  domain: T;
 }) {
   const { t } = useTranslation();
   const [userConfig, setUserConfig] = useState<UserConfig<T> | undefined>(
     undefined,
   );
-  const [newDbConfig, setNewDbConfig] = useState<T | undefined>(undefined);
+  const [newDbConfig, setNewDbConfig] = useState<
+    DomainToDbConfig<T> | undefined
+  >(undefined);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{
     open: boolean;

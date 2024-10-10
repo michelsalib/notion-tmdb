@@ -34,13 +34,18 @@ export interface GBookDbConfig extends DbConfigBase {
   author: string;
 }
 
-export type DbConfig = TmdbDbConfig | GBookDbConfig;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface BackupDbConfig extends DbConfigBase {
+
+}
+
+export type DbConfig = TmdbDbConfig | GBookDbConfig | BackupDbConfig;
 
 export type DomainToDbConfig<T extends DOMAIN> = T extends "GBook"
   ? GBookDbConfig
-  : TmdbDbConfig;
+  : (T extends "TMDB" ? TmdbDbConfig : BackupDbConfig);
 
-export interface UserData<T extends DOMAIN = any> {
+export interface UserData<T extends DOMAIN> {
   id: string;
   dbConfig?: DomainToDbConfig<T>;
   notionWorkspace: NotionData;
@@ -63,4 +68,4 @@ export interface Suggestion {
 
 export type NotionItem = Omit<CreatePageParameters, "parent">;
 
-export type DOMAIN = "GBook" | "TMDB";
+export type DOMAIN = "GBook" | "TMDB" | "backup";

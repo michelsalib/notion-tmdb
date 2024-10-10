@@ -16,7 +16,7 @@ import { Fragment } from "react/jsx-runtime";
 export function Navigation({ domain }: { domain: DOMAIN }) {
   const theme = useTheme();
   const h6 = theme.typography.h6;
-  const [user, setUser] = useState<UserData | undefined>(undefined);
+  const [user, setUser] = useState<UserData<any> | undefined>(undefined);
 
   useEffect(() => {
     fetch("/api/user")
@@ -28,7 +28,7 @@ export function Navigation({ domain }: { domain: DOMAIN }) {
     window.location.href = `${window.location.origin}/logout`;
   }, []);
 
-  const switchDomain = useCallback((target: "gbook" | "tmdb") => {
+  const switchDomain = useCallback((target: "gbook" | "tmdb" | "backup") => {
     window.location.href = window.location.origin.replace(
       /notion-\w+/,
       "notion-" + target,
@@ -65,6 +65,12 @@ export function Navigation({ domain }: { domain: DOMAIN }) {
                 sx={{ fontSize: "large", fontWeight: h6.fontWeight }}
               >
                 GBook
+              </MenuItem>
+              <MenuItem
+                value="backup"
+                sx={{ fontSize: "large", fontWeight: h6.fontWeight }}
+              >
+                backup
               </MenuItem>
             </Select>
           </Typography>

@@ -1,16 +1,24 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
-import { DATA_PROVIDER, REPLY, REQUEST, USER, USER_ID } from "./fx/keys.js";
+import {
+  DATA_PROVIDER,
+  DOMAIN as DOMAIN_KEY,
+  REPLY,
+  REQUEST,
+  USER,
+  USER_ID,
+} from "./fx/keys.js";
 import { route } from "./fx/router.js";
 import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
 import { DataProvider } from "./providers/DataProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
-import { DbConfig, UserData } from "./types.js";
+import { Backup } from "./services/Backup.js";
+import { DbConfig, DOMAIN, UserData } from "./types.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
   async getUser(container: Container) {
-    const user = container.get<UserData>(USER);
+    const user = container.get<UserData<any>>(USER);
     user.notionWorkspace.accessToken = "***"; // hide sensitive data
 
     return { user };
@@ -28,7 +36,7 @@ export class Api {
 
   @route({ path: "/api/sync", method: "POST", authenticate: true })
   async sync(container: Container) {
-    const user = container.get<UserData>(USER);
+    const user = container.get<UserData<"GBook" | "TMDB">>(USER);
 
     if (!user.dbConfig) {
       return {
@@ -66,7 +74,7 @@ export class Api {
 
   @route({ path: "/api/add", method: "POST", authenticate: true })
   async add(container: Container) {
-    const user = container.get<UserData>(USER);
+    const user = container.get<UserData<"GBook" | "TMDB">>(USER);
     const request = container.get<FastifyRequest>(REQUEST);
 
     if (!user.dbConfig) {
@@ -103,9 +111,13 @@ export class Api {
 
   @route({ path: "/api/config", method: "GET", authenticate: true })
   async getConfig(container: Container) {
-    const user = container.get<UserData>(USER);
+    const user = container.get<UserData<any>>(USER);
+    const domain = container.get<DOMAIN>(DOMAIN_KEY);
 
-    const notionDatabases = await container.get(NotionClient).listDatabases();
+    const notionDatabases =
+      domain != "backup"
+        ? await container.get(NotionClient).listDatabases()
+        : undefined;
 
     return {
       notionDatabases,
@@ -125,15 +137,21 @@ export class Api {
     return "Config saved";
   }
 
+  @route({ path: "/api/backup", method: "POST", authenticate: true })
+  async generateBackup(container: Container) {
+    const backup = container.get<Backup>(Backup);
+
+    await backup.backup();
+
+    return "Done";
+  }
+
   @route({ path: "/api/backup", method: "GET", authenticate: true })
-  async backup(container: Container) {
-    const notion = container.get(NotionClient);
-    const result = [];
+  async getBackup(container: Container) {
+    const backup = container.get<Backup>(Backup);
 
-    for await (const item of notion.listContent()) {
-      result.push(item);
-    }
-
-    return result;
+    return {
+      link: await backup.getLink(),
+    };
   }
 }

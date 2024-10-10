@@ -13,6 +13,7 @@ import {
 import type { DOMAIN, DomainToDbConfig, UserConfig } from "backend/src/types";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Backup } from "./Backup";
 import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
@@ -101,7 +102,7 @@ export function UserPage<T extends DOMAIN>({
       <Navigation domain={domain} />
 
       <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-        {userConfig.dbConfig ? (
+        {domain == "backup" || userConfig.dbConfig ? (
           <Fragment>
             <Alert variant="outlined" severity="info">
               Your plugin is ready to be embeded in notion
@@ -117,9 +118,7 @@ export function UserPage<T extends DOMAIN>({
                 sx={{ width: "100%" }}
               />
             </Alert>
-            <Paper>
-              <EmbedPage />
-            </Paper>
+            <Paper>{domain == "backup" ? <Backup /> : <EmbedPage />}</Paper>
           </Fragment>
         ) : (
           <Alert variant="outlined" severity="warning">
@@ -128,32 +127,38 @@ export function UserPage<T extends DOMAIN>({
           </Alert>
         )}
 
-        <DbConfigForm<T>
-          domain={domain}
-          notionDatabases={userConfig.notionDatabases}
-          initialConfig={userConfig.dbConfig}
-          onConfigChange={(newConfig) => setNewDbConfig(newConfig)}
-        />
+        {domain != "backup" ? (
+          <Fragment>
+            <DbConfigForm<T>
+              domain={domain}
+              notionDatabases={userConfig.notionDatabases}
+              initialConfig={userConfig.dbConfig}
+              onConfigChange={(newConfig) => setNewDbConfig(newConfig)}
+            />
 
-        <Button
-          variant="contained"
-          onClick={save}
-          disabled={loading}
-          sx={{
-            display: "block",
-          }}
-        >
-          Save
-          {loading ? (
-            <LinearProgress
+            <Button
+              variant="contained"
+              onClick={save}
+              disabled={loading}
               sx={{
-                marginBottom: "-4px", // has it is hardcoded within the component
+                display: "block",
               }}
-            ></LinearProgress>
-          ) : (
-            ""
-          )}
-        </Button>
+            >
+              Save
+              {loading ? (
+                <LinearProgress
+                  sx={{
+                    marginBottom: "-4px", // has it is hardcoded within the component
+                  }}
+                ></LinearProgress>
+              ) : (
+                ""
+              )}
+            </Button>
+          </Fragment>
+        ) : (
+          ""
+        )}
       </Stack>
 
       <Snackbar

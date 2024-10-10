@@ -37,7 +37,7 @@ export class Auth {
       .generateUserToken();
     const existingUser = await cosmos.getUser(tokenResponse.workspace_id);
 
-    const userData: UserData = {
+    const userData: UserData<any> = {
       id: tokenResponse.workspace_id,
       notionWorkspace: {
         workspaceId: tokenResponse.workspace_id,

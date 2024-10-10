@@ -4,7 +4,7 @@ param appName string = resourceGroup().name
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
-var distros = ['notion-tmdb', 'notion-gbook']
+var distros = ['notion-tmdb', 'notion-gbook', 'notion-backup']
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: appName
@@ -56,6 +56,18 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
           value: insights.properties.InstrumentationKey
+        }
+        {
+          name: 'Storage:Key'
+          value: storageAccount.listKeys().keys[0].value
+        }
+        {
+          name: 'Storage:Account'
+          value: storageAccount.name
+        }
+        {
+          name: 'Storage:Container'
+          value: '${storageAccount.properties.primaryEndpoints.blob}${storageContainer.name}'
         }
         {
           name: 'AzureWebJobsSecretStorageType'
@@ -188,3 +200,36 @@ resource appCustomDomains 'Microsoft.Web/sites/hostNameBindings@2023-12-01' = [ 
     thumbprint: certificates[i].properties.thumbprint
   }
 }]
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: replace(appName, '-', '')
+  location: location
+  kind: 'StorageV2'
+  sku: {
+    name: 'Standard_LRS'
+  }
+}
+
+resource storageBlobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+  name: 'default'
+  parent: storageAccount
+  properties: {
+    restorePolicy: {
+      enabled: true
+      days: 30
+    }
+    isVersioningEnabled: true
+    changeFeed: {
+      enabled: true
+    }
+    deleteRetentionPolicy: {
+      enabled: true
+      days: 60
+    }
+  }
+}
+
+resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  name: 'notion-backup'
+  parent: storageBlobService
+}

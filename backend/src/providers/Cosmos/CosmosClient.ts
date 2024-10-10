@@ -29,17 +29,17 @@ export class CosmosClient {
       .container(`notion-${this.domain.toLowerCase()}`);
   }
 
-  async getUser(userId: string): Promise<UserData> {
+  async getUser(userId: string): Promise<UserData<any>> {
     const item = await this.client.item(userId, userId).read();
 
     return item.resource;
   }
 
-  async getLoggedUser(): Promise<UserData> {
+  async getLoggedUser(): Promise<UserData<any>> {
     return await this.getUser(this.userId);
   }
 
-  async putUser(userData: UserData): Promise<void> {
+  async putUser(userData: UserData<any>): Promise<void> {
     await this.client.items.upsert(userData);
   }
 

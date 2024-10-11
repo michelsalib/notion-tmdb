@@ -27,6 +27,7 @@ export class NotionClient {
     let contentCursor;
     let i = 0;
 
+    // on all page/db
     do {
       const result = await this.client.search({
         start_cursor: contentCursor || undefined,
@@ -40,6 +41,7 @@ export class NotionClient {
         if (content.object == "page") {
           let blockCursor;
 
+          // on all page blocks
           do {
             const blocks = await this.client.blocks.children.list({
               block_id: content.id,

@@ -8,6 +8,8 @@ import {
   COSMOS_DB_DATABASE,
   COSMOS_DB_KEY,
   DOMAIN as DOMAIN_KEY,
+  NOTION_BACKUP_CLIENT_ID,
+  NOTION_BACKUP_CLIENT_SECRET,
   NOTION_CLIENT_ID,
   NOTION_CLIENT_SECRET,
   NOTION_GBOOK_CLIENT_ID,
@@ -16,6 +18,9 @@ import {
   NOTION_TMDB_CLIENT_SECRET,
   REPLY,
   REQUEST,
+  STORAGE_ACCOUNT,
+  STORAGE_CONTAINER,
+  STORAGE_KEY,
   TMDB_API_KEY,
   USER,
   USER_ID,
@@ -26,7 +31,9 @@ import "../providers/Cosmos/CosmosClient.js";
 import "../providers/GBook/GBookClient.js";
 import "../providers/Notion/AnonymousNotionClient.js";
 import "../providers/Notion/NotionClient.js";
+import "../providers/Storage/StorageClient.js";
 import "../providers/Tmdb/TmdbClient.js";
+import "../services/Backup.js";
 
 // setup container
 export const rootContainer = new Container();
@@ -43,6 +50,12 @@ export function loadEnvironmentConfig(env: {
     .bind(NOTION_TMDB_CLIENT_SECRET)
     .toConstantValue(env["NOTION_TMDB_CLIENT_SECRET"]);
   rootContainer
+    .bind(NOTION_BACKUP_CLIENT_ID)
+    .toConstantValue(env["NOTION_BACKUP_CLIENT_ID"]);
+  rootContainer
+    .bind(NOTION_BACKUP_CLIENT_SECRET)
+    .toConstantValue(env["NOTION_BACKUP_CLIENT_SECRET"]);
+  rootContainer
     .bind(NOTION_GBOOK_CLIENT_ID)
     .toConstantValue(env["NOTION_GBOOK_CLIENT_ID"]);
   rootContainer
@@ -56,6 +69,11 @@ export function loadEnvironmentConfig(env: {
   rootContainer
     .bind(COSMOS_DB_DATABASE)
     .toConstantValue(env["CosmosDb:Database"]);
+  rootContainer.bind(STORAGE_ACCOUNT).toConstantValue(env["Storage:Account"]);
+  rootContainer.bind(STORAGE_KEY).toConstantValue(env["Storage:Key"]);
+  rootContainer
+    .bind(STORAGE_CONTAINER)
+    .toConstantValue(env["Storage:Container"]);
 
   rootContainer
     .bind(NOTION_CLIENT_ID)
@@ -69,6 +87,12 @@ export function loadEnvironmentConfig(env: {
     .when(
       (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB",
     );
+  rootContainer
+    .bind(NOTION_CLIENT_ID)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_BACKUP_CLIENT_ID))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup",
+    );
 
   rootContainer
     .bind(NOTION_CLIENT_SECRET)
@@ -81,6 +105,12 @@ export function loadEnvironmentConfig(env: {
     .toDynamicValue((ctx) => ctx.container.get(NOTION_TMDB_CLIENT_SECRET))
     .when(
       (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB",
+    );
+  rootContainer
+    .bind(NOTION_CLIENT_SECRET)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_BACKUP_CLIENT_SECRET))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup",
     );
 }
 
@@ -135,6 +165,10 @@ function computeDomain(request: FastifyRequest): DOMAIN {
 
   if (unlinted == "gbook") {
     return "GBook";
+  }
+
+  if (unlinted == "backup") {
+    return "backup";
   }
 
   return "TMDB";

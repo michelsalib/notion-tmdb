@@ -77,7 +77,7 @@ function computeDefaultState<T extends DOMAIN>(
   } as TmdbDbConfig as DomainToDbConfig<T>;
 }
 
-function getdbFields<T extends DOMAIN>(domain: T): DbField<T>[] {
+function getdbFields<T extends "GBook" | "TMDB">(domain: T): DbField<T>[] {
   const result: DbField<T>[] = [
     {
       label: "URL",
@@ -140,7 +140,7 @@ function getdbFields<T extends DOMAIN>(domain: T): DbField<T>[] {
   return result;
 }
 
-export function DbConfigForm<T extends DOMAIN>({
+export function DbConfigForm<T extends "GBook" | "TMDB">({
   domain,
   notionDatabases,
   initialConfig,

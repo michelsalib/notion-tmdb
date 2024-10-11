@@ -35,15 +35,15 @@ export interface GBookDbConfig extends DbConfigBase {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface BackupDbConfig extends DbConfigBase {
-
-}
+export interface BackupDbConfig extends DbConfigBase {}
 
 export type DbConfig = TmdbDbConfig | GBookDbConfig | BackupDbConfig;
 
 export type DomainToDbConfig<T extends DOMAIN> = T extends "GBook"
   ? GBookDbConfig
-  : (T extends "TMDB" ? TmdbDbConfig : BackupDbConfig);
+  : T extends "TMDB"
+    ? TmdbDbConfig
+    : BackupDbConfig;
 
 export interface UserData<T extends DOMAIN> {
   id: string;

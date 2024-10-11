@@ -129,11 +129,11 @@ export function UserPage<T extends DOMAIN>({
 
         {domain != "backup" ? (
           <Fragment>
-            <DbConfigForm<T>
+            <DbConfigForm
               domain={domain}
               notionDatabases={userConfig.notionDatabases}
-              initialConfig={userConfig.dbConfig}
-              onConfigChange={(newConfig) => setNewDbConfig(newConfig)}
+              initialConfig={userConfig.dbConfig as any}
+              onConfigChange={(newConfig) => setNewDbConfig(newConfig as any)}
             />
 
             <Button

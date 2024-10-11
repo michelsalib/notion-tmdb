@@ -6,15 +6,15 @@ import {
 } from "@mui/material";
 import * as colors from "@mui/material/colors";
 import type { DOMAIN } from "backend/src/types";
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
+import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
+import { Backup } from "./Backup";
 import { EmbedPage } from "./EmbedPage";
+import { Footer } from "./Footer";
 import "./i18n";
 import { Login } from "./Login";
 import { UserPage } from "./UserPage";
-import { Helmet } from "react-helmet-async";
-import { useTranslation } from "react-i18next";
-import { Footer } from "./Footer";
-import { Backup } from "./Backup";
 
 type LOGIN_STATE = "sso" | "embed" | "none";
 
@@ -89,7 +89,15 @@ export function App() {
         <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
       </Helmet>
       {loggedIn.status == "none" ? <Login domain={domain} /> : ""}
-      {loggedIn.status == "embed" ? (domain == "backup" ? <Backup/> : <EmbedPage/>) : ""}
+      {loggedIn.status == "embed" ? (
+        domain == "backup" ? (
+          <Backup />
+        ) : (
+          <EmbedPage />
+        )
+      ) : (
+        ""
+      )}
       {loggedIn.status == "sso" ? (
         <UserPage userId={loggedIn.userId as string} domain={domain} />
       ) : (

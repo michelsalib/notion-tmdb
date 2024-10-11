@@ -20,9 +20,9 @@ export class Backup {
     }
 
     // put in a zip
-    const archive = archiver('zip');
+    const archive = archiver("zip");
     archive.append(JSON.stringify(result), {
-        name: 'data.json',
+      name: "data.json",
     });
     archive.finalize();
 

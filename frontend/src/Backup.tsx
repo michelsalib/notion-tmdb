@@ -45,8 +45,11 @@ export function Backup() {
 
     try {
       for await (const chunk of streamingBackup()) {
-        const message = chunk.split(';').filter(i => !!i).pop()!;
-        
+        const message = chunk
+          .split(";")
+          .filter((i) => !!i)
+          .pop()!;
+
         setAlert({
           message,
           open: true,

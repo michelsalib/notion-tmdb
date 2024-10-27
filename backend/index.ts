@@ -56,15 +56,18 @@ if (
       if (request.method == "POST" && request.url.endsWith("/api/backup")) {
         const stream = await Router.execute("POST", "/api/backup", {
           hostname: new URL(request.url).hostname,
-          cookies: (request.headers.get('cookie') || '').split(';').reduce((res, cur) => {
-            const [key, value] = cur.split('=');
+          cookies: (request.headers.get("cookie") || "").split(";").reduce(
+            (res, cur) => {
+              const [key, value] = cur.split("=");
 
-            res[key] = value.trim();
+              res[key] = value.trim();
 
-            return res;
-          }, {} as Record<string, string>),
+              return res;
+            },
+            {} as Record<string, string>,
+          ),
           headers: {
-            referer: request.headers.get('referer'),
+            referer: request.headers.get("referer"),
           },
         } as any);
 

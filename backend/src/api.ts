@@ -14,6 +14,7 @@ import { DataProvider } from "./providers/DataProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { Backup } from "./services/Backup.js";
 import { DbConfig, DOMAIN, UserData } from "./types.js";
+import { Readable } from "node:stream";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
@@ -114,10 +115,16 @@ export class Api {
     const user = container.get<UserData<any>>(USER);
     const domain = container.get<DOMAIN>(DOMAIN_KEY);
 
-    const notionDatabases =
-      domain != "backup"
-        ? await container.get(NotionClient).listDatabases()
-        : undefined;
+    if (domain == "backup") {
+      const backup = container.get(Backup);
+
+      return {
+        backupDate: await backup.getBackupDate(),
+        dbConfig: user.dbConfig,
+      };
+    }
+
+    const notionDatabases = await container.get(NotionClient).listDatabases();
 
     return {
       notionDatabases,
@@ -141,9 +148,7 @@ export class Api {
   async generateBackup(container: Container) {
     const backup = container.get<Backup>(Backup);
 
-    await backup.backup();
-
-    return "Done";
+    return Readable.from(backup.backup());
   }
 
   @route({ path: "/api/backup", method: "GET", authenticate: true })

@@ -55,7 +55,8 @@ export type NotionDatabase = DatabaseObjectResponse;
 
 export interface UserConfig<T extends DOMAIN> {
   notionDatabases: NotionDatabases[];
-  dbConfig: DomainToDbConfig<T>;
+  dbConfig?: DomainToDbConfig<T>;
+  backupDate?: Date;
 }
 
 export interface Suggestion {

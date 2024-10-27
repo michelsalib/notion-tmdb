@@ -9,12 +9,14 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import type { DOMAIN, UserData } from "backend/src/types";
-import { useCallback, useEffect, useState } from "react";
+import type { UserData } from "backend/src/types";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Fragment } from "react/jsx-runtime";
+import { DomainContext } from "./Context";
 
-export function Navigation({ domain }: { domain: DOMAIN }) {
+export function Navigation() {
   const theme = useTheme();
+  const domain = useContext(DomainContext);
   const h6 = theme.typography.h6;
   const [user, setUser] = useState<UserData<any> | undefined>(undefined);
 

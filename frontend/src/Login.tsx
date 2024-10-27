@@ -10,7 +10,8 @@ import {
   useTheme,
 } from "@mui/material";
 import type { DOMAIN } from "backend/src/types";
-import { useCallback } from "react";
+import { useCallback, useContext } from "react";
+import { DomainContext } from "./Context";
 
 const AUTH_KEYS: Record<DOMAIN, string> = {
   backup: "11bd872b-594c-805e-9a8e-0037587bf62d",
@@ -18,9 +19,10 @@ const AUTH_KEYS: Record<DOMAIN, string> = {
   TMDB: "e19ffced-a96f-4f22-8f58-163bd4c86f5a",
 };
 
-export function Login({ domain }: { domain: DOMAIN }) {
+export function Login() {
   const theme = useTheme();
   const h2 = theme.typography.h2;
+  const domain = useContext(DomainContext);
 
   const login = useCallback(() => {
     let redirectUrl = `${window.location.origin}/login`;

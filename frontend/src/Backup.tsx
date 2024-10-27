@@ -5,9 +5,30 @@ import {
   LinearProgress,
   Snackbar,
   Stack,
+  Typography,
 } from "@mui/material";
-import { Fragment, useState } from "react";
+import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ConfigContext } from "./Context";
+import { UserConfig } from "backend/src/types";
+
+async function* streamingBackup() {
+  const response = await fetch("/api/backup", {
+    method: "POST",
+  });
+
+  // Attach Reader
+  const reader = response.body!.getReader();
+
+  while (true) {
+    // wait for next encoded chunk
+    const { done, value } = await reader.read();
+    // check if stream is done
+    if (done) break;
+    // Decodes data chunk and yields it
+    yield new TextDecoder().decode(value);
+  }
+}
 
 export function Backup() {
   const { t } = useTranslation();
@@ -17,23 +38,20 @@ export function Backup() {
     message: string;
     severity: AlertColor;
   }>({ open: false, message: "", severity: "success" });
+  const config = useContext(ConfigContext) as UserConfig<"backup">;
 
   async function backup() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/backup", {
-        method: "POST",
-      });
-
-      if (response.status != 200) {
+      for await (const chunk of streamingBackup()) {
+        const message = chunk.split(';').filter(i => !!i).pop()!;
+        
         setAlert({
+          message,
           open: true,
-          message: t("BACKUP_FAILURE"),
-          severity: "error",
+          severity: "info",
         });
-
-        return;
       }
 
       setAlert({
@@ -108,6 +126,12 @@ export function Backup() {
         >
           Download
         </Button>
+        <Stack direction="column">
+          <Typography variant="caption">Last backup made on</Typography>
+          <Typography>
+            {new Date(config.backupDate!).toLocaleString()}
+          </Typography>
+        </Stack>
       </Stack>
 
       <Snackbar

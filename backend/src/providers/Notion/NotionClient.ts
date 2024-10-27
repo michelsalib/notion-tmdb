@@ -25,7 +25,6 @@ export class NotionClient {
     DatabaseObjectResponse | PageObjectResponse | BlockObjectResponse
   > {
     let contentCursor;
-    let i = 0;
 
     // on all page/db
     do {
@@ -34,8 +33,6 @@ export class NotionClient {
       });
 
       for (const content of result.results) {
-        console.log(`${++i} ${content.id} ${content.object}`);
-
         yield content as DatabaseObjectResponse | PageObjectResponse;
 
         if (content.object == "page") {
@@ -49,8 +46,6 @@ export class NotionClient {
             });
 
             for (const block of blocks.results) {
-              console.log(`${++i} ${block.id} ${block.object}`);
-
               yield block as BlockObjectResponse;
             }
 

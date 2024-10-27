@@ -14,7 +14,8 @@ import type {
   NotionDatabase,
   TmdbDbConfig,
 } from "backend/src/types";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useContext, useEffect, useMemo, useState } from "react";
+import { DomainContext } from "./Context";
 
 type NotionPropertyType = NotionDatabase["properties"][0]["type"];
 
@@ -141,16 +142,15 @@ function getdbFields<T extends "GBook" | "TMDB">(domain: T): DbField<T>[] {
 }
 
 export function DbConfigForm<T extends "GBook" | "TMDB">({
-  domain,
   notionDatabases,
   initialConfig,
   onConfigChange,
 }: {
-  domain: T;
   notionDatabases: NotionDatabase[];
   initialConfig?: DomainToDbConfig<T>;
   onConfigChange: (dbConfig: DomainToDbConfig<T>) => any;
 }) {
+  const domain = useContext<T>(DomainContext as any);
   const [config, setConfig] = useState<DomainToDbConfig<T>>({
     ...computeDefaultState(notionDatabases[0].id, domain),
     ...initialConfig,

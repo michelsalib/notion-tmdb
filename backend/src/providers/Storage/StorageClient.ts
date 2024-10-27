@@ -52,4 +52,16 @@ export class StorageClient {
       expiresOn: addHours(new Date(), 1),
     });
   }
+
+  async getBackupMeta(): Promise<{
+    lastModified: Date;
+  }> {
+    const blob = this.getBackupBlob();
+
+    const props = await blob.getProperties();
+
+    return {
+      lastModified: props.lastModified as Date,
+    };
+  }
 }

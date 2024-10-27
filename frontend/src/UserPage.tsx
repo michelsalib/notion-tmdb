@@ -10,44 +10,29 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import type { DOMAIN, DomainToDbConfig, UserConfig } from "backend/src/types";
-import { Fragment, useEffect, useState } from "react";
+import type { DbConfig } from "backend/src/types";
+import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
+import { AuthContext, ConfigContext, DomainContext } from "./Context";
 import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
 
-async function loadUserData<T extends DOMAIN>(): Promise<UserConfig<T>> {
-  const resp = await fetch("/api/config");
-
-  return await resp.json();
-}
-
-export function UserPage<T extends DOMAIN>({
-  userId,
-  domain,
-}: {
-  userId: string;
-  domain: T;
-}) {
+export function UserPage() {
+  const domain = useContext(DomainContext);
+  const auth = useContext(AuthContext);
   const { t } = useTranslation();
-  const [userConfig, setUserConfig] = useState<UserConfig<T> | undefined>(
+  const userConfig = useContext(ConfigContext);
+  const [newDbConfig, setNewDbConfig] = useState<DbConfig | undefined>(
     undefined,
   );
-  const [newDbConfig, setNewDbConfig] = useState<
-    DomainToDbConfig<T> | undefined
-  >(undefined);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{
     open: boolean;
     message: string;
     severity: AlertColor;
   }>({ open: false, message: "", severity: "success" });
-
-  useEffect(() => {
-    loadUserData<T>().then((data) => setUserConfig(data));
-  }, []);
 
   if (!userConfig) {
     return (
@@ -99,7 +84,7 @@ export function UserPage<T extends DOMAIN>({
 
   return (
     <Container maxWidth="sm" sx={{ padding: 2 }}>
-      <Navigation domain={domain} />
+      <Navigation />
 
       <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
         {domain == "backup" || userConfig.dbConfig ? (
@@ -107,7 +92,7 @@ export function UserPage<T extends DOMAIN>({
             <Alert variant="outlined" severity="info">
               Your plugin is ready to be embeded in notion
               <TextField
-                defaultValue={window.location.origin + "?userId=" + userId}
+                defaultValue={`${window.location.origin}?userId=${auth.userId}`}
                 size="small"
                 slotProps={{
                   input: {
@@ -130,7 +115,6 @@ export function UserPage<T extends DOMAIN>({
         {domain != "backup" ? (
           <Fragment>
             <DbConfigForm
-              domain={domain}
               notionDatabases={userConfig.notionDatabases}
               initialConfig={userConfig.dbConfig as any}
               onConfigChange={(newConfig) => setNewDbConfig(newConfig as any)}

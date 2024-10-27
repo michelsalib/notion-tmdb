@@ -5,65 +5,22 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import * as colors from "@mui/material/colors";
-import type { DOMAIN } from "backend/src/types";
-import { useMemo } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
+import { AuthContext, ConfigContext, DomainContext } from "./Context";
 import { EmbedPage } from "./EmbedPage";
 import { Footer } from "./Footer";
 import "./i18n";
 import { Login } from "./Login";
 import { UserPage } from "./UserPage";
-
-type LOGIN_STATE = "sso" | "embed" | "none";
-
-function loginState(): {
-  userId?: string;
-  status: LOGIN_STATE;
-} {
-  const regex = /userId=([\w-]+)/;
-
-  const paramExec = regex.exec(document.location.search);
-
-  if (paramExec?.[1]) {
-    return {
-      status: "embed",
-      userId: paramExec[1],
-    };
-  }
-
-  const cookieExec = regex.exec(document.cookie);
-
-  if (cookieExec?.[1]) {
-    return {
-      status: "sso",
-      userId: cookieExec[1],
-    };
-  }
-
-  return {
-    status: "none",
-  };
-}
-
-export function domainState(): DOMAIN {
-  const unlinted = /notion-(\w+)/.exec(window.location.origin)?.[1];
-
-  if (unlinted == "gbook") {
-    return "GBook";
-  }
-
-  if (unlinted == "backup") {
-    return "backup";
-  }
-
-  return "TMDB";
-}
+import { UserConfig } from "backend/src/types";
 
 export function App() {
-  const loggedIn = useMemo(() => loginState(), []);
-  const domain = useMemo(() => domainState(), []);
+  const loggedIn = useContext(AuthContext);
+  const domain = useContext(DomainContext);
+  const [config, setConfig] = useState<UserConfig<any> | null>(null);
   const { t } = useTranslation();
 
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
@@ -80,30 +37,33 @@ export function App() {
       }),
     [prefersDarkMode],
   );
+  useEffect(() => {
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((r) => setConfig(r as any));
+  }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Helmet>
-        <title>{t("TITLE")}</title>
-        <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
-      </Helmet>
-      {loggedIn.status == "none" ? <Login domain={domain} /> : ""}
-      {loggedIn.status == "embed" ? (
-        domain == "backup" ? (
-          <Backup />
+    <ConfigContext.Provider value={config}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Helmet>
+          <title>{t("TITLE")}</title>
+          <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
+        </Helmet>
+        {loggedIn.status == "none" ? <Login /> : ""}
+        {loggedIn.status == "embed" ? (
+          domain == "backup" ? (
+            <Backup />
+          ) : (
+            <EmbedPage />
+          )
         ) : (
-          <EmbedPage />
-        )
-      ) : (
-        ""
-      )}
-      {loggedIn.status == "sso" ? (
-        <UserPage userId={loggedIn.userId as string} domain={domain} />
-      ) : (
-        ""
-      )}
-      {loggedIn.status != "embed" ? <Footer /> : ""}
-    </ThemeProvider>
+          ""
+        )}
+        {loggedIn.status == "sso" ? <UserPage /> : ""}
+        {loggedIn.status != "embed" ? <Footer /> : ""}
+      </ThemeProvider>
+    </ConfigContext.Provider>
   );
 }

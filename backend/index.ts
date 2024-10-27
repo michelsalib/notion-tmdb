@@ -4,7 +4,7 @@ import fastifyStatic from "@fastify/static";
 import dotenv from "dotenv";
 import fastify from "fastify";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, URL } from "node:url";
 import "reflect-metadata";
 import "./src/api.js";
 import "./src/auth.js";
@@ -34,6 +34,10 @@ if (
     ...process.env,
   });
 
+  azure.app.setup({
+    enableHttpStream: true,
+  });
+
   azure.app.http("azureFunctionToFastify", {
     route: "{*path}",
     methods: [
@@ -48,8 +52,29 @@ if (
       "TRACE",
     ],
     handler: async (request: azure.HttpRequest) => {
-      const payload = await request.text();
+      // special handling of streamed responses
+      if (request.method == "POST" && request.url.endsWith("/api/backup")) {
+        const stream = await Router.execute("POST", "/api/backup", {
+          hostname: new URL(request.url).hostname,
+          cookies: (request.headers.get('cookie') || '').split(';').reduce((res, cur) => {
+            const [key, value] = cur.split('=');
 
+            res[key] = value.trim();
+
+            return res;
+          }, {} as Record<string, string>),
+          headers: {
+            referer: request.headers.get('referer'),
+          },
+        } as any);
+
+        return {
+          body: stream,
+        };
+      }
+
+      // standard request/response goes through fastify inject
+      const payload = await request.text();
       const fastResponse = await fastApp.inject({
         method: request.method as any,
         url: request.url,

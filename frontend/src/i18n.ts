@@ -3,7 +3,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import Backend from "i18next-http-backend";
 import { initReactI18next } from "react-i18next";
 import { parse } from "yaml";
-import { domainState } from "./App";
+import { domainState } from "./Context";
 
 i18n
   .use(Backend)

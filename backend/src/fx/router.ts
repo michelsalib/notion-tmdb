@@ -65,4 +65,17 @@ export class Router {
       });
     }
   }
+
+  static async execute(method: "GET" | "POST", path: string, request: FastifyRequest): Promise<any> {
+    const { methodName, routeConfig, serviceName } = Router.invocations.find(i => i.routeConfig.method == method && i.routeConfig.path == path)!;
+
+    const container = await scopeContainer(
+      request,
+      undefined as any,
+      routeConfig.authenticate,
+    );
+    const routingService = container.get<any>(serviceName);
+
+    return routingService[methodName](container);
+  }
 }

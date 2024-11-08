@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "eslint",
     "format": "prettier --write .",
-    "build": "npm run build --workspaces && rm -rf dist && node --loader ts-node/esm/transpile-only support/build.ts",
+    "build": "npm run build --workspaces && rm -rf dist && node --loader ts-node/esm support/build.ts",
     "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-fr -n notion-tmdb-fr --src out.zip",
     "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-fr -f azure/template.bicep"
   },

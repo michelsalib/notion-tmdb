@@ -9,20 +9,15 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import type { DOMAIN } from "backend/src/types";
 import { useCallback, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { DomainContext } from "./Context";
-
-const AUTH_KEYS: Record<DOMAIN, string> = {
-  backup: "11bd872b-594c-805e-9a8e-0037587bf62d",
-  GBook: "2a557a18-cd3a-4ac1-b9ce-3a5cb92468b7",
-  TMDB: "e19ffced-a96f-4f22-8f58-163bd4c86f5a",
-};
 
 export function Login() {
   const theme = useTheme();
   const h2 = theme.typography.h2;
   const domain = useContext(DomainContext);
+  const { t } = useTranslation();
 
   const login = useCallback(() => {
     let redirectUrl = `${window.location.origin}/login`;
@@ -31,7 +26,7 @@ export function Login() {
       redirectUrl = redirectUrl.replace(/notion-\w+\./, "");
     }
 
-    window.location.href = `https://api.notion.com/v1/oauth/authorize?client_id=${AUTH_KEYS[domain]}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUrl)}&state=${domain}`;
+    window.location.href = `https://api.notion.com/v1/oauth/authorize?client_id=${t("AUTH_KEY")}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUrl)}&state=${domain}`;
   }, []);
 
   const switchDomain = useCallback((target: "gbook" | "tmdb" | "backup") => {
@@ -74,6 +69,12 @@ export function Login() {
               sx={{ fontSize: "large", fontWeight: h2.fontWeight }}
             >
               backup
+            </MenuItem>
+            <MenuItem
+              value="GoCardless"
+              sx={{ fontSize: "large", fontWeight: h2.fontWeight }}
+            >
+              GoCardless
             </MenuItem>
           </Select>
         </Typography>

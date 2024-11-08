@@ -1,16 +1,19 @@
 import {
   Alert,
+  Autocomplete,
   FormControl,
   InputLabel,
   MenuItem,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import type {
   DOMAIN,
   DomainToDbConfig,
   GBookDbConfig,
+  GoCardlessDbConfig,
   NotionDatabase,
   TmdbDbConfig,
 } from "backend/src/types";
@@ -23,7 +26,7 @@ interface DbField<T extends DOMAIN> {
   label: string;
   required: boolean;
   dbConfigField: keyof DomainToDbConfig<T>;
-  columnType: NotionPropertyType;
+  columnType: NotionPropertyType | "string" | "string[]";
   helperText?: string;
 }
 
@@ -66,6 +69,21 @@ function computeDefaultState<T extends DOMAIN>(
     } as GBookDbConfig as DomainToDbConfig<T>;
   }
 
+  if (domain == "GoCardless") {
+    return {
+      id: dbId,
+      url: "",
+      status: "",
+      amount: "",
+      bookingDate: "",
+      title: "",
+      valueDate: "",
+      goCardlessAccounts: [],
+      goCardlessId: "",
+      goCardlessKey: "",
+    } as GoCardlessDbConfig as DomainToDbConfig<T>;
+  }
+
   return {
     id: dbId,
     url: "",
@@ -78,7 +96,72 @@ function computeDefaultState<T extends DOMAIN>(
   } as TmdbDbConfig as DomainToDbConfig<T>;
 }
 
-function getdbFields<T extends "GBook" | "TMDB">(domain: T): DbField<T>[] {
+function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
+  domain: T,
+): DbField<T>[] {
+  if (domain == "GoCardless") {
+    return [
+      {
+        label: "GoCardless id",
+        dbConfigField: "goCardlessId",
+        columnType: "string",
+        required: true,
+      },
+      {
+        label: "GoCardless key",
+        dbConfigField: "goCardlessKey",
+        columnType: "string",
+        required: true,
+      },
+      {
+        label: "GoCardless accounts",
+        dbConfigField: "goCardlessAccounts",
+        columnType: "string[]",
+        required: true,
+      },
+      {
+        label: "Id",
+        dbConfigField: "url",
+        columnType: "rich_text",
+        required: true,
+        helperText:
+          "This mandatory field helps associate your entry with the data provider.",
+      },
+      {
+        label: "Status",
+        dbConfigField: "status",
+        columnType: "status",
+        required: true,
+        helperText:
+          "This mandatory field helps the plugin to identify your entries that need to be synched.",
+      },
+      {
+        label: "Title",
+        dbConfigField: "title",
+        columnType: "title",
+        required: false,
+      },
+      {
+        label: "Amount",
+        dbConfigField: "amount",
+        columnType: "number",
+        required: false,
+      },
+      {
+        label: "Payment date",
+        dbConfigField: "valueDate",
+        columnType: "date",
+        required: false,
+      },
+      {
+        label: "Debit date",
+        dbConfigField: "bookingDate",
+        columnType: "date",
+        required: false,
+      },
+    ] as DbField<"GoCardless">[] as DbField<T>[];
+  }
+
   const result: DbField<T>[] = [
     {
       label: "URL",
@@ -114,7 +197,7 @@ function getdbFields<T extends "GBook" | "TMDB">(domain: T): DbField<T>[] {
       dbConfigField: "genre",
       required: false,
     },
-  ];
+  ] as DbField<"GBook" | "TMDB">[] as DbField<T>[];
 
   if (domain == "GBook") {
     result.push({
@@ -141,7 +224,7 @@ function getdbFields<T extends "GBook" | "TMDB">(domain: T): DbField<T>[] {
   return result;
 }
 
-export function DbConfigForm<T extends "GBook" | "TMDB">({
+export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
   notionDatabases,
   initialConfig,
   onConfigChange,
@@ -163,7 +246,9 @@ export function DbConfigForm<T extends "GBook" | "TMDB">({
     (db) => db.id == config.id,
   ) as NotionDatabase;
   const columns = Object.values(database.properties);
-  const urlColumns: any[] = columns.filter((p: any) => p.type == "url");
+  const idColumns: any[] = columns.filter(
+    (p: any) => p.type == (domain == "GoCardless" ? "rich_text" : "url"),
+  );
   const statusColumns: any[] = columns.filter((p: any) => p.type == "status");
 
   return (
@@ -189,7 +274,7 @@ export function DbConfigForm<T extends "GBook" | "TMDB">({
         </Select>
       </FormControl>
 
-      {!urlColumns.length || !statusColumns.length ? (
+      {!idColumns.length || !statusColumns.length ? (
         <Alert severity="warning">
           Database <strong>{database.title[0].plain_text}</strong> is missing
           mandatory url and status columns
@@ -204,34 +289,66 @@ export function DbConfigForm<T extends "GBook" | "TMDB">({
                 required={dbField.required}
                 key={dbField.dbConfigField as string}
               >
-                <InputLabel>{dbField.label}</InputLabel>
-                <Select
-                  label={dbField.label}
-                  value={config[dbField.dbConfigField]}
-                  onChange={(event) =>
-                    setConfig({
-                      ...config,
-                      [dbField.dbConfigField]: event.target.value,
-                    })
-                  }
-                >
-                  {!dbField.required ? (
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                  ) : (
-                    ""
-                  )}
-                  {columns.map((property: any) => (
-                    <MenuItem
-                      value={property.id}
-                      key={property.id}
-                      disabled={property.type != dbField.columnType}
+                {dbField.columnType == "string" ? (
+                  <TextField
+                    label={dbField.label}
+                    value={config[dbField.dbConfigField]}
+                    required={dbField.required}
+                    onChange={(event) =>
+                      setConfig({
+                        ...config,
+                        [dbField.dbConfigField]: event.target.value,
+                      })
+                    }
+                  />
+                ) : dbField.columnType == "string[]" ? (
+                  <TextField
+                    label={dbField.label}
+                    value={(config[dbField.dbConfigField] as string[]).join(
+                      ", ",
+                    )}
+                    required={dbField.required}
+                    onChange={(event) =>
+                      setConfig({
+                        ...config,
+                        [dbField.dbConfigField]: event.target.value
+                          .split(",")
+                          .map((i) => i.trim()),
+                      })
+                    }
+                  />
+                ) : (
+                  <Fragment>
+                    <InputLabel>{dbField.label}</InputLabel>
+                    <Select
+                      label={dbField.label}
+                      value={config[dbField.dbConfigField]}
+                      onChange={(event) =>
+                        setConfig({
+                          ...config,
+                          [dbField.dbConfigField]: event.target.value,
+                        })
+                      }
                     >
-                      {typeToEmoji(property.type)} {property.name}
-                    </MenuItem>
-                  ))}
-                </Select>
+                      {!dbField.required ? (
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                      ) : (
+                        ""
+                      )}
+                      {columns.map((property: any) => (
+                        <MenuItem
+                          value={property.id}
+                          key={property.id}
+                          disabled={property.type != dbField.columnType}
+                        >
+                          {typeToEmoji(property.type)} {property.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Fragment>
+                )}
               </FormControl>
             );
           })}

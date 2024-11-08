@@ -13,6 +13,7 @@ import type {
   TmdbDbConfig,
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
+import { NotionClient } from "../Notion/NotionClient.js";
 
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
@@ -30,8 +31,30 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       },
     });
   }
+  
+  async sync(notionClient: NotionClient, dbConfig: TmdbDbConfig): Promise<void> {
+    const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
 
-  extractId(url: string): string {
+    for (const entry of entriesToLoad) {
+      const url: string = (
+        Object.values(entry.properties).find(
+          (p) => p.id == dbConfig.url,
+        ) as any
+      ).url;
+      const id = this.extractId(url);
+
+      // load from tmdb
+      const newEntry = await this.loadNotionEntry(id, dbConfig);
+
+      // populate in notion
+      await notionClient.updatePage({
+        ...newEntry,
+        page_id: entry.id,
+      });
+    }
+  }
+
+  private extractId(url: string): string {
     return /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(
       url,
     )?.[1] as string;

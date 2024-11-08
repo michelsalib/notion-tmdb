@@ -51,27 +51,9 @@ export class Api {
     const notionClient = container.get(NotionClient);
     const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
-    const entriesToLoad = await notionClient.listDatabaseEntries(user.dbConfig);
+    await dataProvider.sync(notionClient, user.dbConfig);
 
-    for (const entry of entriesToLoad) {
-      const url: string = (
-        Object.values(entry.properties).find(
-          (p) => p.id == user.dbConfig?.url,
-        ) as any
-      ).url;
-      const id = dataProvider.extractId(url);
-
-      // load from tmdb
-      const newEntry = await dataProvider.loadNotionEntry(id, user.dbConfig);
-
-      // populate in notion
-      await notionClient.updatePage({
-        ...newEntry,
-        page_id: entry.id,
-      });
-    }
-
-    return `Sucess ${entriesToLoad.length} item(s).`;
+    return `Sucess.`;
   }
 
   @route({ path: "/api/add", method: "POST", authenticate: true })

@@ -34,16 +34,32 @@ export interface GBookDbConfig extends DbConfigBase {
   author: string;
 }
 
+export interface GoCardlessDbConfig extends DbConfigBase {
+  goCardlessId: string;
+  goCardlessKey: string;
+  goCardlessAccounts: string[];
+  title: string;
+  valueDate: string;
+  bookingDate: string;
+  amount: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BackupDbConfig extends DbConfigBase {}
 
-export type DbConfig = TmdbDbConfig | GBookDbConfig | BackupDbConfig;
+export type DbConfig =
+  | TmdbDbConfig
+  | GBookDbConfig
+  | BackupDbConfig
+  | GoCardlessDbConfig;
 
 export type DomainToDbConfig<T extends DOMAIN> = T extends "GBook"
   ? GBookDbConfig
   : T extends "TMDB"
     ? TmdbDbConfig
-    : BackupDbConfig;
+    : T extends "GoCardless"
+      ? GoCardlessDbConfig
+      : BackupDbConfig;
 
 export interface UserData<T extends DOMAIN> {
   id: string;
@@ -69,4 +85,4 @@ export interface Suggestion {
 
 export type NotionItem = Omit<CreatePageParameters, "parent">;
 
-export type DOMAIN = "GBook" | "TMDB" | "backup";
+export type DOMAIN = "GBook" | "TMDB" | "backup" | "GoCardless";

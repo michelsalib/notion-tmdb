@@ -74,6 +74,12 @@ export function Navigation() {
               >
                 backup
               </MenuItem>
+              <MenuItem
+                value="GoCardless"
+                sx={{ fontSize: "large", fontWeight: h6.fontWeight }}
+              >
+                GoCardless
+              </MenuItem>
             </Select>
           </Typography>
           <Typography component="div" sx={{ marginRight: 2 }}>

@@ -7,12 +7,14 @@ import {
   Stack,
 } from "@mui/material";
 import type { Suggestion } from "backend/src/types";
-import { Fragment, useState } from "react";
+import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DomainContext } from "./Context";
 import { Search } from "./Search";
 
 export function EmbedPage() {
   const { t } = useTranslation();
+  const domain = useContext(DomainContext);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState<Suggestion | null>(null);
   const [alert, setAlert] = useState<{
@@ -104,17 +106,22 @@ export function EmbedPage() {
       )}
 
       <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-        <Stack direction="row" spacing={2}>
-          <Search onChange={(m) => setValue(m)} />
-          <Button
-            variant="contained"
-            size="large"
-            onClick={submit}
-            disabled={loading || !value}
-          >
-            Create
-          </Button>
-        </Stack>
+        {domain != "GoCardless" ? (
+          <Stack direction="row" spacing={2}>
+            <Search onChange={(m) => setValue(m)} />
+            <Button
+              variant="contained"
+              size="large"
+              onClick={submit}
+              disabled={loading || !value}
+            >
+              Create
+            </Button>
+          </Stack>
+        ) : (
+          ""
+        )}
+
         <Button
           variant="contained"
           size="large"

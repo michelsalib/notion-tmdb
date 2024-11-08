@@ -8,6 +8,7 @@ import type {
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
+import { NotionClient } from "../Notion/NotionClient.js";
 
 interface VolumeInfo {
   title: string;
@@ -33,7 +34,29 @@ export class GBookClient implements DataProvider<"GBook"> {
     });
   }
 
-  extractId(url: string): string {
+  async sync(notionClient: NotionClient, dbConfig: GBookDbConfig): Promise<void> {
+    const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
+
+    for (const entry of entriesToLoad) {
+      const url: string = (
+        Object.values(entry.properties).find(
+          (p) => p.id == dbConfig.url,
+        ) as any
+      ).url;
+      const id = this.extractId(url);
+
+      // load from tmdb
+      const newEntry = await this.loadNotionEntry(id, dbConfig);
+
+      // populate in notion
+      await notionClient.updatePage({
+        ...newEntry,
+        page_id: entry.id,
+      });
+    }
+  }
+
+  private extractId(url: string): string {
     return /https:\/\/www\.googleapis\.com\/books\/v1\/volumes\/(.*)$/i.exec(
       url,
     )?.[1] as string;

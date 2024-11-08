@@ -1,10 +1,10 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
-import { REPLY, REQUEST } from "./fx/keys.js";
+import { DB_PROVIDER, REPLY, REQUEST } from "./fx/keys.js";
 import { route } from "./fx/router.js";
-import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
 import { AnonymousNotionClient } from "./providers/Notion/AnonymousNotionClient.js";
 import type { UserData } from "./types.js";
+import { DbProvider } from "./providers/DbProvider.js";
 
 export class Auth {
   @route({ path: "/logout", method: "GET", authenticate: false })
@@ -31,11 +31,11 @@ export class Auth {
       return;
     }
 
-    const cosmos = container.get(CosmosClient);
+    const db = container.get<DbProvider>(DB_PROVIDER);
     const tokenResponse = await container
       .get(AnonymousNotionClient)
       .generateUserToken();
-    const existingUser = await cosmos.getUser(tokenResponse.workspace_id);
+    const existingUser = await db.getUser(tokenResponse.workspace_id);
 
     const userData: UserData<any> = {
       id: tokenResponse.workspace_id,
@@ -48,7 +48,7 @@ export class Auth {
       dbConfig: existingUser?.dbConfig,
     };
 
-    await cosmos.putUser(userData);
+    await db.putUser(userData);
 
     reply.status(302);
     reply.header("location", "/");

@@ -6,7 +6,7 @@ import {
   DOMAIN as DOMAIN_KEY,
   TMDB_API_KEY,
 } from "../../fx/keys.js";
-import { DOMAIN, NotionItem, Suggestion, TmdbDbConfig } from "../../types.js";
+import type { DOMAIN, NotionItem, Suggestion, TmdbDbConfig } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 
 @(fluentProvide(DATA_PROVIDER)

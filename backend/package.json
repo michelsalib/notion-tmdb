@@ -16,6 +16,7 @@
     "inversify": "^6.0.2",
     "inversify-binding-decorators": "^4.0.0",
     "mime": "^4.0.4",
+    "mongodb": "^6.10.0",
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
@@ -27,6 +28,6 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "start": "func start",
-    "local:prepare": "func azure functionapp fetch-app-settings notion-tmdb-fr && func settings decrypt && func settings delete WEBSITE_RUN_FROM_PACKAGE"
+    "local:prepare": "func azure functionapp fetch-app-settings notion-tmdb-fr && func settings decrypt && func settings delete WEBSITE_RUN_FROM_PACKAGE && node --loader ts-node/esm/transpile-only ./support/copyDb.ts"
   }
 }

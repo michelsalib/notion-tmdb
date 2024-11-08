@@ -1,17 +1,22 @@
 import { Container, CosmosClient as Cosmos } from "@azure/cosmos";
 import { inject } from "inversify";
-import { provide } from "inversify-binding-decorators";
+import { fluentProvide } from "inversify-binding-decorators";
 import {
   COSMOS_DB_ACCOUNT,
   COSMOS_DB_DATABASE,
   COSMOS_DB_KEY,
-  USER_ID,
+  DB_ENGINE,
+  DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
+  USER_ID,
 } from "../../fx/keys.js";
-import { DbConfig, DOMAIN, UserData } from "../../types.js";
+import type { DbConfig, DOMAIN, UserData } from "../../types.js";
+import { DbProvider } from "../DbProvider.js";
 
-@provide(CosmosClient)
-export class CosmosClient {
+@(fluentProvide(DB_PROVIDER)
+  .when((r) => r.parentContext.container.get(DB_ENGINE) == "COSMOS")
+  .done())
+export class CosmosClient implements DbProvider {
   private readonly client: Container;
 
   constructor(

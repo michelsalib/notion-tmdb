@@ -1,12 +1,14 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
 import { buildProviderModule } from "inversify-binding-decorators";
-import { CosmosClient } from "../providers/Cosmos/CosmosClient.js";
+import { DbProvider } from "../providers/DbProvider.js";
 import type { DOMAIN } from "../types.js";
 import {
   COSMOS_DB_ACCOUNT,
   COSMOS_DB_DATABASE,
   COSMOS_DB_KEY,
+  DB_ENGINE,
+  DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   NOTION_BACKUP_CLIENT_ID,
   NOTION_BACKUP_CLIENT_SECRET,
@@ -29,6 +31,7 @@ import {
 // load services
 import "../providers/Cosmos/CosmosClient.js";
 import "../providers/GBook/GBookClient.js";
+import "../providers/MongoDb/MongoDbClient.js";
 import "../providers/Notion/AnonymousNotionClient.js";
 import "../providers/Notion/NotionClient.js";
 import "../providers/Storage/StorageClient.js";
@@ -74,6 +77,7 @@ export function loadEnvironmentConfig(env: {
   rootContainer
     .bind(STORAGE_CONTAINER)
     .toConstantValue(env["Storage:Container"]);
+  rootContainer.bind(DB_ENGINE).toConstantValue(env["DB_ENGINE"]);
 
   rootContainer
     .bind(NOTION_CLIENT_ID)
@@ -136,7 +140,9 @@ export async function scopeContainer(
       throw "User must be authenticated";
     }
 
-    const userInfo = await container.get(CosmosClient).getLoggedUser();
+    const userInfo = await container
+      .get<DbProvider>(DB_PROVIDER)
+      .getLoggedUser();
 
     if (!userInfo) {
       throw "Unknown user";

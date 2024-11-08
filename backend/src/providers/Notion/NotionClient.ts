@@ -9,7 +9,7 @@ import {
 import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
 import { USER } from "../../fx/keys.js";
-import { DbConfig, UserData } from "../../types.js";
+import type { DbConfig, UserData } from "../../types.js";
 
 @provide(NotionClient)
 export class NotionClient {

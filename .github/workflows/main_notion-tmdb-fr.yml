@@ -33,7 +33,7 @@ jobs:
       - name: "Create dist"
         shell: bash
         run: |
-          node support/build.js
+          node --loader ts-node/esm/transpile-only support/build.ts
           cd dist
           npm prune --workspace backend --omit dev
 

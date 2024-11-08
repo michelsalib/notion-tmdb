@@ -25,3 +25,5 @@ export const DATA_PROVIDER = Symbol.for("DATA_PROVIDER");
 export const STORAGE_ACCOUNT = Symbol.for("STORAGE_ACCOUNT");
 export const STORAGE_KEY = Symbol.for("STORAGE_KEY");
 export const STORAGE_CONTAINER = Symbol.for("STORAGE_CONTAINER");
+export const DB_ENGINE = Symbol.for("DB_ENGINE");
+export const DB_PROVIDER = Symbol.for("DB_PROVIDER");

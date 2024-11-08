@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
 import {
   DATA_PROVIDER,
+  DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   REPLY,
   REQUEST,
@@ -9,12 +10,12 @@ import {
   USER_ID,
 } from "./fx/keys.js";
 import { route } from "./fx/router.js";
-import { CosmosClient } from "./providers/Cosmos/CosmosClient.js";
 import { DataProvider } from "./providers/DataProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { Backup } from "./services/Backup.js";
-import { DbConfig, DOMAIN, UserData } from "./types.js";
+import type { DbConfig, DOMAIN, UserData } from "./types.js";
 import { Readable } from "node:stream";
+import { DbProvider } from "./providers/DbProvider.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
@@ -136,7 +137,7 @@ export class Api {
   async postConfig(container: Container) {
     const request = container.get<FastifyRequest>(REQUEST);
     const dbConfig: DbConfig = (request.body as any).dbConfig;
-    const cosmos = container.get(CosmosClient);
+    const cosmos = container.get<DbProvider>(DB_PROVIDER);
     const userId = container.get<string>(USER_ID);
 
     await cosmos.putUserConfig(userId, dbConfig);

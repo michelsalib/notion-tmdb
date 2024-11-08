@@ -32,6 +32,7 @@ if (
 
   loadEnvironmentConfig({
     ...process.env,
+    DB_ENGINE: "COSMOS",
   });
 
   azure.app.setup({
@@ -108,6 +109,7 @@ if (
   loadEnvironmentConfig({
     ...process.env,
     ...settings.default.Values,
+    DB_ENGINE: "MONGO",
   });
 
   fastApp.listen({

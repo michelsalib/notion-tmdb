@@ -18,7 +18,9 @@ export class AnonymousNotionClient {
   @inject(NOTION_CLIENT_SECRET)
   private readonly clientSecret!: string;
 
-  constructor(@inject(REQUEST) private readonly request: fastify.FastifyRequest) {
+  constructor(
+    @inject(REQUEST) private readonly request: fastify.FastifyRequest,
+  ) {
     this.client = new Client();
   }
 

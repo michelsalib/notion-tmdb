@@ -1,6 +1,11 @@
 import axios, { AxiosInstance } from "axios";
 import { fluentProvide } from "inversify-binding-decorators";
-import type { DOMAIN, GBookDbConfig, NotionItem, Suggestion } from "../../types.js";
+import type {
+  DOMAIN,
+  GBookDbConfig,
+  NotionItem,
+  Suggestion,
+} from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 

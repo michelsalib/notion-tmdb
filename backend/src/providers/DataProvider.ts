@@ -1,4 +1,9 @@
-import type { DOMAIN, DomainToDbConfig, NotionItem, Suggestion } from "../types.js";
+import type {
+  DOMAIN,
+  DomainToDbConfig,
+  NotionItem,
+  Suggestion,
+} from "../types.js";
 
 export interface DataProvider<T extends DOMAIN = any> {
   extractId(url: string): string;

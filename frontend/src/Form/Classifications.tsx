@@ -39,7 +39,7 @@ export function Classifications({
                 }}
               ></TextField>
             </FormControl>
-            <FormControl required sx={{flexGrow: 1}}>
+            <FormControl required sx={{ flexGrow: 1 }}>
               <MultiTextInput
                 required
                 label="Filter"

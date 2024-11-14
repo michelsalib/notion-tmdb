@@ -5,7 +5,7 @@ import {
   MenuItem,
   Select,
   Stack,
-  Typography
+  Typography,
 } from "@mui/material";
 import type {
   DOMAIN,

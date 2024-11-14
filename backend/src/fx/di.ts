@@ -142,7 +142,8 @@ export function loadEnvironmentConfig(env: {
     .bind(NOTION_CLIENT_SECRET)
     .toDynamicValue((ctx) => ctx.container.get(NOTION_GOCARDLESS_CLIENT_SECRET))
     .when(
-      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GoCardless",
+      (ctx) =>
+        ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GoCardless",
     );
 }
 

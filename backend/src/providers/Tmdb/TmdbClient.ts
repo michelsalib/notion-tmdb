@@ -31,15 +31,16 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       },
     });
   }
-  
-  async *sync(notionClient: NotionClient, dbConfig: TmdbDbConfig): AsyncGenerator<string> {
+
+  async *sync(
+    notionClient: NotionClient,
+    dbConfig: TmdbDbConfig,
+  ): AsyncGenerator<string> {
     const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
 
     for (const entry of entriesToLoad) {
       const url: string = (
-        Object.values(entry.properties).find(
-          (p) => p.id == dbConfig.url,
-        ) as any
+        Object.values(entry.properties).find((p) => p.id == dbConfig.url) as any
       ).url;
       const id = this.extractId(url);
 
@@ -52,7 +53,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
         page_id: entry.id,
       });
 
-      yield `Loaded ${title}.`
+      yield `Loaded ${title}.`;
     }
 
     yield "Finished synching movies.";

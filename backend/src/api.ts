@@ -41,7 +41,7 @@ export class Api {
     const user = container.get<UserData<any>>(USER);
     const domain = container.get<DOMAIN>(DOMAIN_KEY);
     const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
-    reply.header('content-type', 'multipart/text');
+    reply.header("content-type", "multipart/text");
 
     if (domain == "backup") {
       const backup = container.get<Backup>(DATA_PROVIDER);

@@ -47,5 +47,9 @@ export function domainState(): DOMAIN {
     return "backup";
   }
 
+  if (unlinted == "gocardless") {
+    return "GoCardless";
+  }
+
   return "TMDB";
 }

@@ -16,6 +16,8 @@ import {
   NOTION_CLIENT_SECRET,
   NOTION_GBOOK_CLIENT_ID,
   NOTION_GBOOK_CLIENT_SECRET,
+  NOTION_GOCARDLESS_CLIENT_ID,
+  NOTION_GOCARDLESS_CLIENT_SECRET,
   NOTION_TMDB_CLIENT_ID,
   NOTION_TMDB_CLIENT_SECRET,
   REPLY,
@@ -36,6 +38,7 @@ import "../providers/Notion/AnonymousNotionClient.js";
 import "../providers/Notion/NotionClient.js";
 import "../providers/Storage/StorageClient.js";
 import "../providers/Tmdb/TmdbClient.js";
+import "../providers/GoCardless/GoCardlessClient.js";
 import "../services/Backup.js";
 
 // setup container
@@ -45,26 +48,37 @@ rootContainer.load(buildProviderModule()); // load based on decorators
 export function loadEnvironmentConfig(env: {
   [key: string]: string | undefined;
 }): void {
-  // load config
+  // notion tmdb
   rootContainer
     .bind(NOTION_TMDB_CLIENT_ID)
     .toConstantValue(env["NOTION_TMDB_CLIENT_ID"]);
   rootContainer
     .bind(NOTION_TMDB_CLIENT_SECRET)
     .toConstantValue(env["NOTION_TMDB_CLIENT_SECRET"]);
+  // notion backup
   rootContainer
     .bind(NOTION_BACKUP_CLIENT_ID)
     .toConstantValue(env["NOTION_BACKUP_CLIENT_ID"]);
   rootContainer
     .bind(NOTION_BACKUP_CLIENT_SECRET)
     .toConstantValue(env["NOTION_BACKUP_CLIENT_SECRET"]);
+  // notion gbook
   rootContainer
     .bind(NOTION_GBOOK_CLIENT_ID)
     .toConstantValue(env["NOTION_GBOOK_CLIENT_ID"]);
   rootContainer
     .bind(NOTION_GBOOK_CLIENT_SECRET)
     .toConstantValue(env["NOTION_GBOOK_CLIENT_SECRET"]);
+  // notion gocardless
+  rootContainer
+    .bind(NOTION_GOCARDLESS_CLIENT_ID)
+    .toConstantValue(env["NOTION_GOCARDLESS_CLIENT_ID"]);
+  rootContainer
+    .bind(NOTION_GOCARDLESS_CLIENT_SECRET)
+    .toConstantValue(env["NOTION_GOCARDLESS_CLIENT_SECRET"]);
+  // tmdb api
   rootContainer.bind(TMDB_API_KEY).toConstantValue(env["TMDB_API_KEY"]);
+  // db
   rootContainer
     .bind(COSMOS_DB_ACCOUNT)
     .toConstantValue(env["CosmosDb:Account"]);
@@ -72,6 +86,7 @@ export function loadEnvironmentConfig(env: {
   rootContainer
     .bind(COSMOS_DB_DATABASE)
     .toConstantValue(env["CosmosDb:Database"]);
+  // storage
   rootContainer.bind(STORAGE_ACCOUNT).toConstantValue(env["Storage:Account"]);
   rootContainer.bind(STORAGE_KEY).toConstantValue(env["Storage:Key"]);
   rootContainer
@@ -97,6 +112,13 @@ export function loadEnvironmentConfig(env: {
     .when(
       (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup",
     );
+  rootContainer
+    .bind(NOTION_CLIENT_ID)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_GOCARDLESS_CLIENT_ID))
+    .when(
+      (ctx) =>
+        ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GoCardless",
+    );
 
   rootContainer
     .bind(NOTION_CLIENT_SECRET)
@@ -115,6 +137,13 @@ export function loadEnvironmentConfig(env: {
     .toDynamicValue((ctx) => ctx.container.get(NOTION_BACKUP_CLIENT_SECRET))
     .when(
       (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup",
+    );
+  rootContainer
+    .bind(NOTION_CLIENT_SECRET)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_GOCARDLESS_CLIENT_SECRET))
+    .when(
+      (ctx) =>
+        ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GoCardless",
     );
 }
 
@@ -175,6 +204,10 @@ function computeDomain(request: FastifyRequest): DOMAIN {
 
   if (unlinted == "backup") {
     return "backup";
+  }
+
+  if (unlinted == "gocardless") {
+    return "GoCardless";
   }
 
   return "TMDB";

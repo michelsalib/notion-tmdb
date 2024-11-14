@@ -7,12 +7,15 @@ import {
   Stack,
 } from "@mui/material";
 import type { Suggestion } from "backend/src/types";
-import { Fragment, useState } from "react";
+import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DomainContext } from "./Context";
 import { Search } from "./Search";
+import { streaming } from "./stream";
 
 export function EmbedPage() {
   const { t } = useTranslation();
+  const domain = useContext(DomainContext);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState<Suggestion | null>(null);
   const [alert, setAlert] = useState<{
@@ -63,18 +66,17 @@ export function EmbedPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/sync", {
-        method: "POST",
-      });
+      for await (const chunk of streaming("/api/sync")) {
+        const message = chunk
+          .split(".")
+          .filter((i) => !!i)
+          .pop()!;
 
-      if (response.status != 200) {
         setAlert({
+          message,
           open: true,
-          message: t("SYNC_FAILURE"),
-          severity: "error",
+          severity: "info",
         });
-
-        return;
       }
 
       setAlert({
@@ -104,17 +106,22 @@ export function EmbedPage() {
       )}
 
       <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-        <Stack direction="row" spacing={2}>
-          <Search onChange={(m) => setValue(m)} />
-          <Button
-            variant="contained"
-            size="large"
-            onClick={submit}
-            disabled={loading || !value}
-          >
-            Create
-          </Button>
-        </Stack>
+        {domain != "GoCardless" ? (
+          <Stack direction="row" spacing={2}>
+            <Search onChange={(m) => setValue(m)} />
+            <Button
+              variant="contained"
+              size="large"
+              onClick={submit}
+              disabled={loading || !value}
+            >
+              Create
+            </Button>
+          </Stack>
+        ) : (
+          ""
+        )}
+
         <Button
           variant="contained"
           size="large"

@@ -13,6 +13,7 @@ import type {
   TmdbDbConfig,
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
+import { NotionClient } from "../Notion/NotionClient.js";
 
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
@@ -31,7 +32,34 @@ export class TmdbClient implements DataProvider<"TMDB"> {
     });
   }
 
-  extractId(url: string): string {
+  async *sync(
+    notionClient: NotionClient,
+    dbConfig: TmdbDbConfig,
+  ): AsyncGenerator<string> {
+    const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
+
+    for (const entry of entriesToLoad) {
+      const url: string = (
+        Object.values(entry.properties).find((p) => p.id == dbConfig.url) as any
+      ).url;
+      const id = this.extractId(url);
+
+      // load from tmdb
+      const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
+
+      // populate in notion
+      await notionClient.updatePage({
+        ...notionItem,
+        page_id: entry.id,
+      });
+
+      yield `Loaded ${title}.`;
+    }
+
+    yield "Finished synching movies.";
+  }
+
+  private extractId(url: string): string {
     return /https:\/\/www\.themoviedb\.org\/movie\/(.*)$/i.exec(
       url,
     )?.[1] as string;
@@ -61,7 +89,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
   async loadNotionEntry(
     tmdbId: string,
     dbConfig: TmdbDbConfig,
-  ): Promise<NotionItem> {
+  ): Promise<{ notionItem: NotionItem; title: string }> {
     const { data } = await this.client.get(`/movie/${tmdbId}`, {
       params: {
         append_to_response: "credits",
@@ -85,19 +113,20 @@ export class TmdbClient implements DataProvider<"TMDB"> {
           url: `https://www.themoviedb.org/movie/${tmdbId}`,
         },
         [dbConfig.status]: {
-          status: {
-            name: "Done",
+          date: {
+            start: new Date().toISOString(),
           },
         },
       },
     };
 
+    const title = data.title;
     if (dbConfig.title) {
       movieItem.properties[dbConfig.title] = {
         title: [
           {
             text: {
-              content: data.title,
+              content: title,
             },
           },
         ],
@@ -145,6 +174,9 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       };
     }
 
-    return movieItem;
+    return {
+      notionItem: movieItem,
+      title,
+    };
   }
 }

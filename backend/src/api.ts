@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
+import { Readable } from "node:stream";
 import {
   DATA_PROVIDER,
   DB_PROVIDER,
@@ -11,11 +12,10 @@ import {
 } from "./fx/keys.js";
 import { route } from "./fx/router.js";
 import { DataProvider } from "./providers/DataProvider.js";
+import { DbProvider } from "./providers/DbProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { Backup } from "./services/Backup.js";
 import type { DbConfig, DOMAIN, UserData } from "./types.js";
-import { Readable } from "node:stream";
-import { DbProvider } from "./providers/DbProvider.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
@@ -38,7 +38,16 @@ export class Api {
 
   @route({ path: "/api/sync", method: "POST", authenticate: true })
   async sync(container: Container) {
-    const user = container.get<UserData<"GBook" | "TMDB">>(USER);
+    const user = container.get<UserData<any>>(USER);
+    const domain = container.get<DOMAIN>(DOMAIN_KEY);
+    const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+    reply.header("content-type", "multipart/text");
+
+    if (domain == "backup") {
+      const backup = container.get<Backup>(DATA_PROVIDER);
+
+      return Readable.from(backup.sync());
+    }
 
     if (!user.dbConfig) {
       return {
@@ -47,31 +56,10 @@ export class Api {
       };
     }
 
-    // const notionClient = createNotionClient(user.notionWorkspace.accessToken);
     const notionClient = container.get(NotionClient);
     const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
-    const entriesToLoad = await notionClient.listDatabaseEntries(user.dbConfig);
-
-    for (const entry of entriesToLoad) {
-      const url: string = (
-        Object.values(entry.properties).find(
-          (p) => p.id == user.dbConfig?.url,
-        ) as any
-      ).url;
-      const id = dataProvider.extractId(url);
-
-      // load from tmdb
-      const newEntry = await dataProvider.loadNotionEntry(id, user.dbConfig);
-
-      // populate in notion
-      await notionClient.updatePage({
-        ...newEntry,
-        page_id: entry.id,
-      });
-    }
-
-    return `Sucess ${entriesToLoad.length} item(s).`;
+    return Readable.from(dataProvider.sync(notionClient, user.dbConfig));
   }
 
   @route({ path: "/api/add", method: "POST", authenticate: true })
@@ -87,28 +75,24 @@ export class Api {
       return "Notion db needs to be configured first";
     }
 
-    // const notionClient = createNotionClient(user.notionWorkspace.accessToken);
     const notionClient = container.get(NotionClient);
     const client = container.get<DataProvider>(DATA_PROVIDER);
 
     // get from tmdb
-    const entry = await client.loadNotionEntry(
+    const { notionItem, title } = await client.loadNotionEntry(
       (request.query as any)["id"],
       user.dbConfig,
     );
 
     // put into notion
     await notionClient.createPage({
-      ...entry,
+      ...notionItem,
       parent: {
         database_id: user.dbConfig.id,
       },
     });
 
-    return (
-      "Sucess loading " +
-      (entry as any).properties[user.dbConfig.title].title[0].text.content
-    );
+    return `Sucess loading ${title}`;
   }
 
   @route({ path: "/api/config", method: "GET", authenticate: true })
@@ -117,7 +101,7 @@ export class Api {
     const domain = container.get<DOMAIN>(DOMAIN_KEY);
 
     if (domain == "backup") {
-      const backup = container.get(Backup);
+      const backup = container.get<Backup>(DATA_PROVIDER);
 
       return {
         backupDate: await backup.getBackupDate(),
@@ -145,16 +129,9 @@ export class Api {
     return "Config saved";
   }
 
-  @route({ path: "/api/backup", method: "POST", authenticate: true })
-  async generateBackup(container: Container) {
-    const backup = container.get<Backup>(Backup);
-
-    return Readable.from(backup.backup());
-  }
-
   @route({ path: "/api/backup", method: "GET", authenticate: true })
   async getBackup(container: Container) {
-    const backup = container.get<Backup>(Backup);
+    const backup = container.get<Backup>(DATA_PROVIDER);
 
     return {
       link: await backup.getLink(),

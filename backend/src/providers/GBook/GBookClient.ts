@@ -34,32 +34,31 @@ export class GBookClient implements DataProvider<"GBook"> {
     });
   }
 
-  async sync(notionClient: NotionClient, dbConfig: GBookDbConfig): Promise<void> {
+  async *sync(
+    notionClient: NotionClient,
+    dbConfig: GBookDbConfig,
+  ): AsyncGenerator<string> {
     const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
 
     for (const entry of entriesToLoad) {
       const url: string = (
-        Object.values(entry.properties).find(
-          (p) => p.id == dbConfig.url,
-        ) as any
+        Object.values(entry.properties).find((p) => p.id == dbConfig.url) as any
       ).url;
-      const id = this.extractId(url);
+      const id = /\?id=(.*)$/i.exec(url)?.[1] as string;
 
       // load from tmdb
-      const newEntry = await this.loadNotionEntry(id, dbConfig);
+      const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
 
       // populate in notion
       await notionClient.updatePage({
-        ...newEntry,
+        ...notionItem,
         page_id: entry.id,
       });
-    }
-  }
 
-  private extractId(url: string): string {
-    return /https:\/\/www\.googleapis\.com\/books\/v1\/volumes\/(.*)$/i.exec(
-      url,
-    )?.[1] as string;
+      yield `Updated ${title}`;
+    }
+
+    yield "Finished synching books.";
   }
 
   async search(query: string): Promise<Suggestion[]> {
@@ -88,7 +87,7 @@ export class GBookClient implements DataProvider<"GBook"> {
   async loadNotionEntry(
     id: string,
     dbConfig: GBookDbConfig,
-  ): Promise<NotionItem> {
+  ): Promise<{ notionItem: NotionItem; title: string }> {
     const { data } = await this.client.get(`/volumes/${id}`);
     const volumeInfo: VolumeInfo = data.volumeInfo;
 
@@ -108,19 +107,20 @@ export class GBookClient implements DataProvider<"GBook"> {
           url: volumeInfo.canonicalVolumeLink,
         },
         [dbConfig.status]: {
-          status: {
-            name: "Done",
+          date: {
+            start: new Date().toISOString(),
           },
         },
       },
     };
 
+    const title = volumeInfo.title;
     if (dbConfig.title) {
       bookItem.properties[dbConfig.title] = {
         title: [
           {
             text: {
-              content: volumeInfo.title,
+              content: title,
             },
           },
         ],
@@ -163,6 +163,9 @@ export class GBookClient implements DataProvider<"GBook"> {
       };
     }
 
-    return bookItem;
+    return {
+      notionItem: bookItem,
+      title,
+    };
   }
 }

@@ -11,24 +11,7 @@ import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfigContext } from "./Context";
 import { UserConfig } from "backend/src/types";
-
-async function* streamingBackup() {
-  const response = await fetch("/api/backup", {
-    method: "POST",
-  });
-
-  // Attach Reader
-  const reader = response.body!.getReader();
-
-  while (true) {
-    // wait for next encoded chunk
-    const { done, value } = await reader.read();
-    // check if stream is done
-    if (done) break;
-    // Decodes data chunk and yields it
-    yield new TextDecoder().decode(value);
-  }
-}
+import { streaming } from "./stream";
 
 export function Backup() {
   const { t } = useTranslation();
@@ -44,9 +27,9 @@ export function Backup() {
     setLoading(true);
 
     try {
-      for await (const chunk of streamingBackup()) {
+      for await (const chunk of streaming("/api/sync")) {
         const message = chunk
-          .split(";")
+          .split(".")
           .filter((i) => !!i)
           .pop()!;
 

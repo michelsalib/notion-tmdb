@@ -11,6 +11,9 @@ export interface DataProvider<T extends DOMAIN = any> {
   loadNotionEntry(
     id: string,
     dbConfig: DomainToDbConfig<T>,
-  ): Promise<NotionItem>;
-  sync(notionClient: NotionClient, dbConfig: DomainToDbConfig<T>): Promise<void>;
+  ): Promise<{ notionItem: NotionItem; title: string }>;
+  sync(
+    notionClient: NotionClient,
+    dbConfig: DomainToDbConfig<T>,
+  ): AsyncGenerator<string>;
 }

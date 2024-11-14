@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { fluentProvide } from "inversify-binding-decorators";
+import { isMatch } from "matcher";
 import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 import {
   DOMAIN,
@@ -37,10 +38,10 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     });
   }
 
-  async sync(
+  async *sync(
     notionClient: NotionClient,
     dbConfig: GoCardlessDbConfig,
-  ): Promise<void> {
+  ): AsyncGenerator<string> {
     // connect to go cardless
     const token = await this.client.post("/token/new/", {
       secret_id: dbConfig.goCardlessId,
@@ -61,16 +62,34 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
             },
           );
 
+          if (
+            !process.env["AZURE_FUNCTIONS_ENVIRONMENT"] &&
+            !process.env["WEBSITE_RUN_FROM_PACKAGE"]
+          ) {
+            // store backup
+            await writeFile(
+              new URL(`../../../../support/${account}.json`, import.meta.url),
+              JSON.stringify(transactions.data, null, 2),
+            );
+
+            console.log("Written backup");
+          }
+
           return [
             ...transactions.data.transactions.booked,
             ...transactions.data.transactions.pending,
           ] as Transaction[];
         } catch {
           const mock = await JSON.parse(
-            await readFile(new URL(`./${account}.json`, import.meta.url), {
-              encoding: 'utf8'
-            }),
+            await readFile(
+              new URL(`../../../../support/${account}.json`, import.meta.url),
+              {
+                encoding: "utf8",
+              },
+            ),
           );
+
+          console.log("Used backup");
 
           return [
             ...mock.transactions.booked,
@@ -82,7 +101,20 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
 
     const transactions = accountsTransactions.flatMap((t) => t);
 
-    for (const transaction of transactions) {
+    yield `Synching ${transactions.length} from GoCardless.`;
+
+    const existingTransactionIds = await notionClient.listExistingItems(
+      dbConfig,
+      transactions.map((t) => t.transactionId),
+    );
+
+    const transactionToInsert = transactions.filter(
+      (t) => !existingTransactionIds.includes(t.transactionId),
+    );
+
+    yield `Adding ${transactionToInsert.length} into Notion.`;
+
+    for (const transaction of transactionToInsert) {
       const entry = this.transactionToEntry(transaction, dbConfig);
 
       await notionClient.createPage({
@@ -91,14 +123,18 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
           database_id: dbConfig.id,
         },
       });
+
+      yield `Inserted transaction ${transaction.remittanceInformationUnstructuredArray.join(", ")}`;
     }
+
+    yield `Sync done.`;
   }
 
   async search(): Promise<Suggestion[]> {
     throw "Not supported";
   }
 
-  loadNotionEntry(): Promise<NotionItem> {
+  loadNotionEntry(): Promise<any> {
     throw "Method not implemented.";
   }
 
@@ -116,20 +152,21 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
           ],
         },
         [dbConfig.status]: {
-          status: {
-            name: "Done",
+          date: {
+            start: new Date().toISOString(),
           },
         },
       },
     };
+
+    const name = transaction.remittanceInformationUnstructuredArray.join(", ");
 
     if (dbConfig.title) {
       item.properties[dbConfig.title] = {
         title: [
           {
             text: {
-              content:
-                transaction.remittanceInformationUnstructuredArray.join(", "),
+              content: name,
             },
           },
         ],
@@ -139,6 +176,30 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     if (dbConfig.amount) {
       item.properties[dbConfig.amount] = {
         number: Number(transaction.transactionAmount.amount),
+      };
+    }
+
+    if (dbConfig.bookingDate) {
+      item.properties[dbConfig.bookingDate] = {
+        date: {
+          start: transaction.bookingDate,
+        },
+      };
+    }
+
+    if (dbConfig.valueDate) {
+      item.properties[dbConfig.valueDate] = {
+        date: {
+          start: transaction.valueDate,
+        },
+      };
+    }
+
+    if (dbConfig.classification) {
+      item.properties[dbConfig.classification] = {
+        multi_select: dbConfig.classificationRules
+          .filter((r) => r.matchers.some((matcher) => isMatch(name, matcher)))
+          .map((r) => ({ name: r.category })),
       };
     }
 

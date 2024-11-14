@@ -34,6 +34,11 @@ export interface GBookDbConfig extends DbConfigBase {
   author: string;
 }
 
+export interface ClassificationRule {
+  category: string;
+  matchers: string[];
+}
+
 export interface GoCardlessDbConfig extends DbConfigBase {
   goCardlessId: string;
   goCardlessKey: string;
@@ -42,6 +47,8 @@ export interface GoCardlessDbConfig extends DbConfigBase {
   valueDate: string;
   bookingDate: string;
   amount: string;
+  classification: string;
+  classificationRules: ClassificationRule[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

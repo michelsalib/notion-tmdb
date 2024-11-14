@@ -11,6 +11,7 @@ import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DomainContext } from "./Context";
 import { Search } from "./Search";
+import { streaming } from "./stream";
 
 export function EmbedPage() {
   const { t } = useTranslation();
@@ -65,18 +66,17 @@ export function EmbedPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/sync", {
-        method: "POST",
-      });
+      for await (const chunk of streaming("/api/sync")) {
+        const message = chunk
+          .split(".")
+          .filter((i) => !!i)
+          .pop()!;
 
-      if (response.status != 200) {
         setAlert({
+          message,
           open: true,
-          message: t("SYNC_FAILURE"),
-          severity: "error",
+          severity: "info",
         });
-
-        return;
       }
 
       setAlert({

@@ -82,8 +82,8 @@ export class NotionClient {
           },
           {
             property: dbConfig.status,
-            status: {
-              equals: "Not started",
+            date: {
+              is_empty: true,
             },
           },
         ],
@@ -91,6 +91,44 @@ export class NotionClient {
     });
 
     return results as PageObjectResponse[];
+  }
+
+  async listExistingItems(
+    dbConfig: DbConfig,
+    ids: string[],
+  ): Promise<string[]> {
+    const existingItems: PageObjectResponse[] = [];
+
+    for (let page = 0; page * 100 < ids.length; page++) {
+      const existingItemsToSearch = ids.slice(page * 100, (page + 1) * 100);
+      let cursor = undefined;
+
+      do {
+        const { results, next_cursor } = await this.client.databases.query({
+          database_id: dbConfig.id,
+          start_cursor: cursor,
+          filter: {
+            or: existingItemsToSearch.map((id) => {
+              return {
+                property: dbConfig.url,
+                rich_text: {
+                  equals: id,
+                },
+              };
+            }),
+          },
+        });
+
+        existingItems.push(...(results as PageObjectResponse[]));
+        cursor = next_cursor;
+      } while (cursor);
+    }
+
+    return (existingItems as PageObjectResponse[]).map(
+      (i) =>
+        (Object.values(i.properties).find((p) => p.id == dbConfig.url) as any)
+          .rich_text[0].text.content,
+    );
   }
 
   async updatePage(page: UpdatePageParameters): Promise<void> {

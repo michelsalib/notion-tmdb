@@ -15,6 +15,7 @@
     "fastify": "^5.0.0",
     "inversify": "^6.0.2",
     "inversify-binding-decorators": "^4.0.0",
+    "matcher": "^5.0.0",
     "mime": "^4.0.4",
     "mongodb": "^6.10.0",
     "reflect-metadata": "^0.2.2"

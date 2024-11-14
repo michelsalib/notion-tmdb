@@ -1,13 +1,11 @@
 import {
   Alert,
-  Autocomplete,
   FormControl,
   InputLabel,
   MenuItem,
   Select,
   Stack,
-  TextField,
-  Typography,
+  Typography
 } from "@mui/material";
 import type {
   DOMAIN,
@@ -19,39 +17,7 @@ import type {
 } from "backend/src/types";
 import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import { DomainContext } from "./Context";
-
-type NotionPropertyType = NotionDatabase["properties"][0]["type"];
-
-interface DbField<T extends DOMAIN> {
-  label: string;
-  required: boolean;
-  dbConfigField: keyof DomainToDbConfig<T>;
-  columnType: NotionPropertyType | "string" | "string[]";
-  helperText?: string;
-}
-
-function typeToEmoji(type: NotionPropertyType): string {
-  if (type == "status") {
-    return "🟢";
-  }
-  if (type == "url") {
-    return "🔗";
-  }
-  if (type == "title") {
-    return "🗒️";
-  }
-  if (type == "multi_select") {
-    return "✔️";
-  }
-  if (type == "number") {
-    return "🔢";
-  }
-  if (type == "date") {
-    return "📆";
-  }
-
-  return "📝";
-}
+import { DbConfigField, DbField } from "./Form/DbConfigField";
 
 function computeDefaultState<T extends DOMAIN>(
   dbId: string,
@@ -81,6 +47,8 @@ function computeDefaultState<T extends DOMAIN>(
       goCardlessAccounts: [],
       goCardlessId: "",
       goCardlessKey: "",
+      classification: "",
+      classificationRules: [],
     } as GoCardlessDbConfig as DomainToDbConfig<T>;
   }
 
@@ -130,7 +98,7 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
       {
         label: "Status",
         dbConfigField: "status",
-        columnType: "status",
+        columnType: "date",
         required: true,
         helperText:
           "This mandatory field helps the plugin to identify your entries that need to be synched.",
@@ -159,6 +127,18 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
         columnType: "date",
         required: false,
       },
+      {
+        label: "Classification",
+        dbConfigField: "classification",
+        columnType: "multi_select",
+        required: false,
+      },
+      {
+        label: "Classification rules",
+        dbConfigField: "classificationRules",
+        columnType: "classification[]",
+        required: false,
+      },
     ] as DbField<"GoCardless">[] as DbField<T>[];
   }
 
@@ -174,7 +154,7 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
     {
       label: "Status",
       dbConfigField: "status",
-      columnType: "status",
+      columnType: "date",
       required: true,
       helperText:
         "This mandatory field helps the plugin to identify your entries that need to be synched.",
@@ -246,10 +226,10 @@ export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
     (db) => db.id == config.id,
   ) as NotionDatabase;
   const columns = Object.values(database.properties);
-  const idColumns: any[] = columns.filter(
-    (p: any) => p.type == (domain == "GoCardless" ? "rich_text" : "url"),
+  const idColumns = columns.filter(
+    (p) => p.type == (domain == "GoCardless" ? "rich_text" : "url"),
   );
-  const statusColumns: any[] = columns.filter((p: any) => p.type == "status");
+  const statusColumns = columns.filter((p) => p.type == "date");
 
   return (
     <Stack spacing={2}>
@@ -289,66 +269,17 @@ export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
                 required={dbField.required}
                 key={dbField.dbConfigField as string}
               >
-                {dbField.columnType == "string" ? (
-                  <TextField
-                    label={dbField.label}
-                    value={config[dbField.dbConfigField]}
-                    required={dbField.required}
-                    onChange={(event) =>
-                      setConfig({
-                        ...config,
-                        [dbField.dbConfigField]: event.target.value,
-                      })
-                    }
-                  />
-                ) : dbField.columnType == "string[]" ? (
-                  <TextField
-                    label={dbField.label}
-                    value={(config[dbField.dbConfigField] as string[]).join(
-                      ", ",
-                    )}
-                    required={dbField.required}
-                    onChange={(event) =>
-                      setConfig({
-                        ...config,
-                        [dbField.dbConfigField]: event.target.value
-                          .split(",")
-                          .map((i) => i.trim()),
-                      })
-                    }
-                  />
-                ) : (
-                  <Fragment>
-                    <InputLabel>{dbField.label}</InputLabel>
-                    <Select
-                      label={dbField.label}
-                      value={config[dbField.dbConfigField]}
-                      onChange={(event) =>
-                        setConfig({
-                          ...config,
-                          [dbField.dbConfigField]: event.target.value,
-                        })
-                      }
-                    >
-                      {!dbField.required ? (
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-                      ) : (
-                        ""
-                      )}
-                      {columns.map((property: any) => (
-                        <MenuItem
-                          value={property.id}
-                          key={property.id}
-                          disabled={property.type != dbField.columnType}
-                        >
-                          {typeToEmoji(property.type)} {property.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Fragment>
-                )}
+                <DbConfigField
+                  onChange={(v) =>
+                    setConfig({
+                      ...config,
+                      [dbField.dbConfigField]: v,
+                    })
+                  }
+                  columns={columns}
+                  dbField={dbField}
+                  value={config[dbField.dbConfigField]}
+                />
               </FormControl>
             );
           })}

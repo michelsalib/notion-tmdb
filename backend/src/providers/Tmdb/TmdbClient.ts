@@ -32,7 +32,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
     });
   }
   
-  async sync(notionClient: NotionClient, dbConfig: TmdbDbConfig): Promise<void> {
+  async *sync(notionClient: NotionClient, dbConfig: TmdbDbConfig): AsyncGenerator<string> {
     const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
 
     for (const entry of entriesToLoad) {
@@ -44,14 +44,18 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       const id = this.extractId(url);
 
       // load from tmdb
-      const newEntry = await this.loadNotionEntry(id, dbConfig);
+      const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
 
       // populate in notion
       await notionClient.updatePage({
-        ...newEntry,
+        ...notionItem,
         page_id: entry.id,
       });
+
+      yield `Loaded ${title}.`
     }
+
+    yield "Finished synching movies.";
   }
 
   private extractId(url: string): string {
@@ -84,7 +88,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
   async loadNotionEntry(
     tmdbId: string,
     dbConfig: TmdbDbConfig,
-  ): Promise<NotionItem> {
+  ): Promise<{ notionItem: NotionItem; title: string }> {
     const { data } = await this.client.get(`/movie/${tmdbId}`, {
       params: {
         append_to_response: "credits",
@@ -108,19 +112,20 @@ export class TmdbClient implements DataProvider<"TMDB"> {
           url: `https://www.themoviedb.org/movie/${tmdbId}`,
         },
         [dbConfig.status]: {
-          status: {
-            name: "Done",
+          date: {
+            start: new Date().toISOString(),
           },
         },
       },
     };
 
+    const title = data.title;
     if (dbConfig.title) {
       movieItem.properties[dbConfig.title] = {
         title: [
           {
             text: {
-              content: data.title,
+              content: title,
             },
           },
         ],
@@ -168,6 +173,9 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       };
     }
 
-    return movieItem;
+    return {
+      notionItem: movieItem,
+      title,
+    };
   }
 }

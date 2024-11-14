@@ -54,7 +54,7 @@ if (
     ],
     handler: async (request: azure.HttpRequest) => {
       // special handling of streamed responses
-      if (request.method == "POST" && request.url.endsWith("/api/backup")) {
+      if (request.method == "POST" && request.url.endsWith("/api/sync")) {
         const stream = await Router.execute("POST", "/api/sync", {
           hostname: new URL(request.url).hostname,
           cookies: (request.headers.get("cookie") || "").split(";").reduce(
@@ -74,6 +74,9 @@ if (
 
         return {
           body: stream,
+          headers: {
+            "content-type": "multipart/text",
+          },
         };
       }
 

@@ -77,7 +77,9 @@ export class Router {
 
     const container = await scopeContainer(
       request,
-      undefined as any,
+      {
+        header: () => {},
+      } as any,
       routeConfig.authenticate,
     );
     const routingService = container.get<any>(serviceName);

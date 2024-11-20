@@ -40,9 +40,7 @@ export interface ClassificationRule {
 }
 
 export interface GoCardlessDbConfig extends DbConfigBase {
-  goCardlessId: string;
-  goCardlessKey: string;
-  goCardlessAccounts: string[];
+  goCardlessAccounts: GoCardlessAccount[];
   title: string;
   valueDate: string;
   bookingDate: string;
@@ -50,6 +48,13 @@ export interface GoCardlessDbConfig extends DbConfigBase {
   account: string;
   classification: string;
   classificationRules: ClassificationRule[];
+}
+
+export interface GoCardlessAccount {
+  requisitionId: string;
+  accountIds: string[];
+  name: string;
+  logo: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -89,6 +94,12 @@ export interface Suggestion {
   releaseDate: string;
   posterPath: string;
   subtitle: string;
+}
+
+export interface Bank {
+  id: string;
+  name: string;
+  logo: string;
 }
 
 export type NotionItem = Omit<CreatePageParameters, "parent">;

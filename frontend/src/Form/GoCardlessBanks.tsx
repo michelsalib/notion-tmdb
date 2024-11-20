@@ -71,7 +71,9 @@ export function GoCardlessBanks({ value }: { value: GoCardlessAccount[] }) {
           onChange={(event, newValue) => setBankToAdd(newValue)}
           getOptionLabel={(o) => o.name}
           isOptionEqualToValue={(o, v) => o.id == v.id}
-          renderInput={(params) => <TextField {...params} placeholder="Search your bank" fullWidth />}
+          renderInput={(params) => (
+            <TextField {...params} placeholder="Search your bank" fullWidth />
+          )}
           renderOption={(props, option) => {
             const { key, ...optionProps } = props;
 

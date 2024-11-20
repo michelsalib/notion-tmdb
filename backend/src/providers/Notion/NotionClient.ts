@@ -15,10 +15,10 @@ type ReducedObject<T, R> = {
   [K in keyof T]: T[K] extends R ? K : never;
 }[keyof T];
 
-function retriable<T extends object, A extends ReducedObject<T, (...args: any[]) => Promise<any>>>(
-  instance: T,
-  action: A,
-): T[A] {
+function retriable<
+  T extends object,
+  A extends ReducedObject<T, (...args: any[]) => Promise<any>>,
+>(instance: T, action: A): T[A] {
   const callable: any = async (...args: any[]) => {
     const method: any = instance[action];
 
@@ -51,7 +51,10 @@ export class NotionClient {
 
     // on all page/db
     do {
-      const result = await retriable(this.client, "search")({
+      const result = await retriable(
+        this.client,
+        "search",
+      )({
         start_cursor: contentCursor || undefined,
       });
 
@@ -63,7 +66,10 @@ export class NotionClient {
 
           // on all page blocks
           do {
-            const blocks = await retriable(this.client.blocks.children, "list")({
+            const blocks = await retriable(
+              this.client.blocks.children,
+              "list",
+            )({
               block_id: content.id,
               start_cursor: blockCursor || undefined,
             });
@@ -127,7 +133,10 @@ export class NotionClient {
       let cursor = undefined;
 
       do {
-        const { results, next_cursor } = await retriable(this.client.databases, "query")({
+        const { results, next_cursor } = await retriable(
+          this.client.databases,
+          "query",
+        )({
           database_id: dbConfig.id,
           start_cursor: cursor,
           filter: {

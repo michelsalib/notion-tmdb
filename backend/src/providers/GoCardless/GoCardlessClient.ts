@@ -33,7 +33,6 @@ interface Transaction {
   remittanceInformationUnstructuredArray?: string[];
   creditorName?: string;
   remittanceInformationUnstructured?: string;
-
 }
 
 @(fluentProvide(DATA_PROVIDER)
@@ -104,7 +103,7 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     notionClient: NotionClient,
     dbConfig: GoCardlessDbConfig,
   ): AsyncGenerator<string> {
-    const accounts = dbConfig.goCardlessAccounts.flatMap(f => f.accountIds);
+    const accounts = dbConfig.goCardlessAccounts.flatMap((f) => f.accountIds);
 
     const client = await this.createClient();
 
@@ -123,7 +122,9 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
             ...transactionsResponse.data.transactions.pending,
           ].map((t) => ({
             ...t,
-            account: detailsResponse.data.account.name || detailsResponse.data.account.ownerName,
+            account:
+              detailsResponse.data.account.name ||
+              detailsResponse.data.account.ownerName,
           }));
 
           if (
@@ -181,7 +182,7 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     yield `Adding ${transactionToInsert.length} into Notion.`;
 
     for (const transaction of transactionToInsert) {
-      const {name, entry} = this.transactionToEntry(transaction, dbConfig);
+      const { name, entry } = this.transactionToEntry(transaction, dbConfig);
 
       await notionClient.createPage({
         ...entry,
@@ -208,8 +209,8 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     transaction: Transaction,
     dbConfig: GoCardlessDbConfig,
   ): {
-    entry: NotionItem,
-    name: string,
+    entry: NotionItem;
+    name: string;
   } {
     const item: NotionItem = {
       properties: {
@@ -232,7 +233,9 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
       transaction.creditorName,
       transaction.remittanceInformationUnstructured,
       ...(transaction.remittanceInformationUnstructuredArray || []),
-    ].filter(i => !!i).join(', ');
+    ]
+      .filter((i) => !!i)
+      .join(", ");
 
     if (dbConfig.title) {
       item.properties[dbConfig.title] = {

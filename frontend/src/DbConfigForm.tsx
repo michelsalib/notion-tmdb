@@ -233,7 +233,7 @@ export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
       ) : (
         ""
       )}
-      
+
       <Typography variant="h6">Pick your database</Typography>
       <FormControl>
         <InputLabel>Database</InputLabel>

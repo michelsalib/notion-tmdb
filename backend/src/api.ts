@@ -16,6 +16,7 @@ import { DbProvider } from "./providers/DbProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { Backup } from "./services/Backup.js";
 import type { DbConfig, DOMAIN, UserData } from "./types.js";
+import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
@@ -136,5 +137,55 @@ export class Api {
     return {
       link: await backup.getLink(),
     };
+  }
+
+  @route({ path: "/api/banks", method: "GET", authenticate: true })
+  async listBanks(container: Container) {
+    const goCardless = container.get<GoCardlessClient>(DATA_PROVIDER);
+
+    return {
+      banks: await goCardless.listBanks(),
+    };
+  }
+
+  @route({ path: "/api/accounts", method: "POST", authenticate: true })
+  async addAccount(container: Container) {
+    const goCardless = container.get<GoCardlessClient>(DATA_PROVIDER);
+    const request = container.get<FastifyRequest>(REQUEST);
+
+    return {
+      link: await goCardless.addAccount(
+        (request.query as any)["id"],
+        request.headers["referer"]!,
+      ),
+    };
+  }
+
+  @route({ path: "/api/accounts", method: "GET", authenticate: true })
+  async storeAccount(container: Container) {
+    const request = container.get<FastifyRequest>(REQUEST);
+    const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+    const userId = container.get<string>(USER_ID);
+    const { dbConfig } = container.get<UserData<"GoCardless">>(USER);
+    const cosmos = container.get<DbProvider>(DB_PROVIDER);
+    const goCardless = container.get<GoCardlessClient>(DATA_PROVIDER);
+
+    if (!dbConfig) {
+      const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+
+      reply.status(400);
+
+      return "Notion db needs to be configured first";
+    }
+
+    const account = await goCardless.retrieveAccount(
+      (request.query as any)["ref"],
+    );
+    dbConfig.goCardlessAccounts.push(account);
+
+    await cosmos.putUserConfig(userId, dbConfig);
+
+    reply.status(302);
+    reply.header("location", "/");
   }
 }

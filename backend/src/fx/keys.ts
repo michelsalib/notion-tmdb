@@ -33,3 +33,5 @@ export const STORAGE_KEY = Symbol.for("STORAGE_KEY");
 export const STORAGE_CONTAINER = Symbol.for("STORAGE_CONTAINER");
 export const DB_ENGINE = Symbol.for("DB_ENGINE");
 export const DB_PROVIDER = Symbol.for("DB_PROVIDER");
+export const GOCARDLESS_ID = Symbol.for("GOCARDLESS_ID");
+export const GOCARDLESS_SECRET = Symbol.for("GOCARDLESS_SECRET");

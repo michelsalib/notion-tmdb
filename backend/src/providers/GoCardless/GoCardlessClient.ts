@@ -1,10 +1,18 @@
 import axios, { AxiosInstance } from "axios";
 import { readFile, writeFile } from "fs/promises";
+import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
 import { isMatch } from "matcher";
-import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 import {
+  DATA_PROVIDER,
+  DOMAIN as DOMAIN_KEY,
+  GOCARDLESS_ID,
+  GOCARDLESS_SECRET,
+} from "../../fx/keys.js";
+import type {
+  Bank,
   DOMAIN,
+  GoCardlessAccount,
   GoCardlessDbConfig,
   NotionItem,
   Suggestion,
@@ -13,15 +21,18 @@ import { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 interface Transaction {
+  account: string;
   transactionId: string;
-  valueDate: string;
+  valueDate?: string;
   bookingDate: string;
   internalTransactionId: string;
   transactionAmount: {
     amount: string;
     currency: string;
   };
-  remittanceInformationUnstructuredArray: string[];
+  remittanceInformationUnstructuredArray?: string[];
+  creditorName?: string;
+  remittanceInformationUnstructured?: string;
 }
 
 @(fluentProvide(DATA_PROVIDER)
@@ -30,37 +41,91 @@ interface Transaction {
   )
   .done())
 export class GoCardlessClient implements DataProvider<"GoCardless"> {
-  private readonly client: AxiosInstance;
+  constructor(
+    @inject(GOCARDLESS_ID) private readonly clientId: string,
+    @inject(GOCARDLESS_SECRET) private readonly clientsecret: string,
+  ) {}
 
-  constructor() {
-    this.client = axios.create({
+  private async createClient(): Promise<AxiosInstance> {
+    const client = axios.create({
       baseURL: "https://bankaccountdata.gocardless.com/api/v2/",
     });
+
+    const token = await client.post("/token/new/", {
+      secret_id: this.clientId,
+      secret_key: this.clientsecret,
+    });
+
+    client.defaults.headers["Authorization"] = `Bearer ${token.data.access}`;
+
+    return client;
+  }
+
+  async listBanks(): Promise<Bank[]> {
+    const client = await this.createClient();
+
+    const banks = await client.get("/institutions/", {
+      params: {
+        country: "fr",
+      },
+    });
+
+    return banks.data;
+  }
+
+  async addAccount(id: string, referer: string): Promise<string> {
+    const client = await this.createClient();
+    const link = await client.post("/requisitions/", {
+      institution_id: id,
+      user_language: "fr",
+      redirect: `${referer}api/accounts`,
+    });
+
+    return link.data.link;
+  }
+
+  async retrieveAccount(connectionId: string): Promise<GoCardlessAccount> {
+    const client = await this.createClient();
+    const accounts = await client.get(`/requisitions/${connectionId}/`);
+
+    const banks = await this.listBanks();
+    const bank = banks.find((b) => b.id == accounts.data.institution_id)!;
+
+    return {
+      logo: bank.logo,
+      requisitionId: connectionId,
+      accountIds: accounts.data.accounts,
+      name: bank.name,
+    };
   }
 
   async *sync(
     notionClient: NotionClient,
     dbConfig: GoCardlessDbConfig,
   ): AsyncGenerator<string> {
-    // connect to go cardless
-    const token = await this.client.post("/token/new/", {
-      secret_id: dbConfig.goCardlessId,
-      secret_key: dbConfig.goCardlessKey,
-    });
-    const goCardlessToken = token.data.access;
+    const accounts = dbConfig.goCardlessAccounts.flatMap((f) => f.accountIds);
+
+    const client = await this.createClient();
 
     // get transactions
     const accountsTransactions = await Promise.all(
-      dbConfig.goCardlessAccounts.map(async (account) => {
+      accounts.map(async (account) => {
         try {
-          const transactions = await this.client.get(
-            `/accounts/${account}/transactions/`,
-            {
-              headers: {
-                Authorization: `Bearer ${goCardlessToken}`,
-              },
-            },
-          );
+          const [transactionsResponse, detailsResponse] = await Promise.all([
+            client.get(`/accounts/${account}/transactions/`),
+            client.get(`/accounts/${account}/details/`),
+          ]);
+
+          // populate transactions with account details
+          const transactions: Transaction[] = [
+            ...transactionsResponse.data.transactions.booked,
+            ...transactionsResponse.data.transactions.pending,
+          ].map((t) => ({
+            ...t,
+            account:
+              detailsResponse.data.account.name ||
+              detailsResponse.data.account.ownerName,
+          }));
 
           if (
             !process.env["AZURE_FUNCTIONS_ENVIRONMENT"] &&
@@ -69,18 +134,15 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
             // store backup
             await writeFile(
               new URL(`../../../../support/${account}.json`, import.meta.url),
-              JSON.stringify(transactions.data, null, 2),
+              JSON.stringify(transactions, null, 2),
             );
 
             console.log("Written backup");
           }
 
-          return [
-            ...transactions.data.transactions.booked,
-            ...transactions.data.transactions.pending,
-          ] as Transaction[];
+          return transactions;
         } catch {
-          const mock = await JSON.parse(
+          const mock: Transaction[] = await JSON.parse(
             await readFile(
               new URL(`../../../../support/${account}.json`, import.meta.url),
               {
@@ -91,15 +153,20 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
 
           console.log("Used backup");
 
-          return [
-            ...mock.transactions.booked,
-            ...mock.transactions.pending,
-          ] as Transaction[];
+          return mock;
         }
       }),
     );
 
-    const transactions = accountsTransactions.flatMap((t) => t);
+    const transactions = accountsTransactions
+      .flatMap((t) => t)
+      .reduce<Transaction[]>((res, cur) => {
+        if (!res.find((i) => i.transactionId == cur.transactionId)) {
+          res.push(cur);
+        }
+
+        return res;
+      }, []);
 
     yield `Synching ${transactions.length} from GoCardless.`;
 
@@ -115,7 +182,7 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     yield `Adding ${transactionToInsert.length} into Notion.`;
 
     for (const transaction of transactionToInsert) {
-      const entry = this.transactionToEntry(transaction, dbConfig);
+      const { name, entry } = this.transactionToEntry(transaction, dbConfig);
 
       await notionClient.createPage({
         ...entry,
@@ -124,7 +191,7 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
         },
       });
 
-      yield `Inserted transaction ${transaction.remittanceInformationUnstructuredArray.join(", ")}`;
+      yield `Inserted transaction ${name}`;
     }
 
     yield `Sync done.`;
@@ -141,7 +208,10 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
   private transactionToEntry(
     transaction: Transaction,
     dbConfig: GoCardlessDbConfig,
-  ): NotionItem {
+  ): {
+    entry: NotionItem;
+    name: string;
+  } {
     const item: NotionItem = {
       properties: {
         [dbConfig.url]: {
@@ -159,7 +229,13 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
       },
     };
 
-    const name = transaction.remittanceInformationUnstructuredArray.join(", ");
+    const name = [
+      transaction.creditorName,
+      transaction.remittanceInformationUnstructured,
+      ...(transaction.remittanceInformationUnstructuredArray || []),
+    ]
+      .filter((i) => !!i)
+      .join(", ");
 
     if (dbConfig.title) {
       item.properties[dbConfig.title] = {
@@ -170,6 +246,14 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
             },
           },
         ],
+      };
+    }
+
+    if (dbConfig.account) {
+      item.properties[dbConfig.account] = {
+        select: {
+          name: transaction.account,
+        },
       };
     }
 
@@ -190,19 +274,24 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     if (dbConfig.valueDate) {
       item.properties[dbConfig.valueDate] = {
         date: {
-          start: transaction.valueDate,
+          start: transaction.valueDate || transaction.bookingDate,
         },
       };
     }
 
     if (dbConfig.classification) {
+      const categories = dbConfig.classificationRules.filter((r) =>
+        r.matchers.some((matcher) => isMatch(name, matcher)),
+      );
+
       item.properties[dbConfig.classification] = {
-        multi_select: dbConfig.classificationRules
-          .filter((r) => r.matchers.some((matcher) => isMatch(name, matcher)))
-          .map((r) => ({ name: r.category })),
+        multi_select: categories.map((r) => ({ name: r.category })),
       };
     }
 
-    return item;
+    return {
+      entry: item,
+      name,
+    };
   }
 }

@@ -10,6 +10,8 @@ import {
   DB_ENGINE,
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
+  GOCARDLESS_ID,
+  GOCARDLESS_SECRET,
   NOTION_BACKUP_CLIENT_ID,
   NOTION_BACKUP_CLIENT_SECRET,
   NOTION_CLIENT_ID,
@@ -76,6 +78,11 @@ export function loadEnvironmentConfig(env: {
   rootContainer
     .bind(NOTION_GOCARDLESS_CLIENT_SECRET)
     .toConstantValue(env["NOTION_GOCARDLESS_CLIENT_SECRET"]);
+  // gocardless api
+  rootContainer.bind(GOCARDLESS_ID).toConstantValue(env["GOCARDLESS_ID"]);
+  rootContainer
+    .bind(GOCARDLESS_SECRET)
+    .toConstantValue(env["GOCARDLESS_SECRET"]);
   // tmdb api
   rootContainer.bind(TMDB_API_KEY).toConstantValue(env["TMDB_API_KEY"]);
   // db

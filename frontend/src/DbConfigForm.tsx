@@ -18,6 +18,7 @@ import type {
 import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import { DomainContext } from "./Context";
 import { DbConfigField, DbField } from "./Form/DbConfigField";
+import { GoCardlessBanks } from "./Form/GoCardlessBanks";
 
 function computeDefaultState<T extends DOMAIN>(
   dbId: string,
@@ -48,6 +49,7 @@ function computeDefaultState<T extends DOMAIN>(
       goCardlessId: "",
       goCardlessKey: "",
       classification: "",
+      account: "",
       classificationRules: [],
     } as GoCardlessDbConfig as DomainToDbConfig<T>;
   }
@@ -70,24 +72,6 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
   if (domain == "GoCardless") {
     return [
       {
-        label: "GoCardless id",
-        dbConfigField: "goCardlessId",
-        columnType: "string",
-        required: true,
-      },
-      {
-        label: "GoCardless key",
-        dbConfigField: "goCardlessKey",
-        columnType: "string",
-        required: true,
-      },
-      {
-        label: "GoCardless accounts",
-        dbConfigField: "goCardlessAccounts",
-        columnType: "string[]",
-        required: true,
-      },
-      {
         label: "Id",
         dbConfigField: "url",
         columnType: "rich_text",
@@ -102,6 +86,12 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
         required: true,
         helperText:
           "This mandatory field helps the plugin to identify your entries that need to be synched.",
+      },
+      {
+        label: "Account",
+        columnType: "select",
+        dbConfigField: "account",
+        required: false,
       },
       {
         label: "Title",
@@ -233,6 +223,17 @@ export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
 
   return (
     <Stack spacing={2}>
+      {domain == "GoCardless" ? (
+        <Fragment>
+          <Typography variant="h6">Connect your bank</Typography>
+          <GoCardlessBanks
+            value={(config as GoCardlessDbConfig).goCardlessAccounts}
+          ></GoCardlessBanks>
+        </Fragment>
+      ) : (
+        ""
+      )}
+
       <Typography variant="h6">Pick your database</Typography>
       <FormControl>
         <InputLabel>Database</InputLabel>

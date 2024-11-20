@@ -37,6 +37,9 @@ function typeToEmoji(type: NotionPropertyType): string {
   if (type == "date") {
     return "📆";
   }
+  if (type == "select") {
+    return "📝";
+  }
 
   return "📝";
 }
@@ -87,6 +90,7 @@ export function DbConfigField<T extends DOMAIN>({
     case "title":
     case "number":
     case "url":
+    case "select":
     case "multi_select":
       return (
         <Fragment>

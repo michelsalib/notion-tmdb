@@ -48,6 +48,7 @@ function computeDefaultState<T extends DOMAIN>(
       goCardlessId: "",
       goCardlessKey: "",
       classification: "",
+      account: "",
       classificationRules: [],
     } as GoCardlessDbConfig as DomainToDbConfig<T>;
   }
@@ -102,6 +103,12 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
         required: true,
         helperText:
           "This mandatory field helps the plugin to identify your entries that need to be synched.",
+      },
+      {
+        label: "Account",
+        columnType: "select",
+        dbConfigField: "account",
+        required: false,
       },
       {
         label: "Title",

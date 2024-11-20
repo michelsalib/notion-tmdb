@@ -11,6 +11,29 @@ import { provide } from "inversify-binding-decorators";
 import { USER } from "../../fx/keys.js";
 import type { DbConfig, UserData } from "../../types.js";
 
+type ReducedObject<T, R> = {
+  [K in keyof T]: T[K] extends R ? K : never;
+}[keyof T];
+
+function retriable<T extends object, A extends ReducedObject<T, (...args: any[]) => Promise<any>>>(
+  instance: T,
+  action: A,
+): T[A] {
+  const callable: any = async (...args: any[]) => {
+    const method: any = instance[action];
+
+    try {
+      return await method.call(instance, ...args);
+    } catch (err) {
+      console.error("Retry after ", err);
+
+      return await method.call(instance, ...args);
+    }
+  };
+
+  return callable;
+}
+
 @provide(NotionClient)
 export class NotionClient {
   private readonly client: Client;
@@ -28,7 +51,7 @@ export class NotionClient {
 
     // on all page/db
     do {
-      const result = await this.client.search({
+      const result = await retriable(this.client, "search")({
         start_cursor: contentCursor || undefined,
       });
 
@@ -40,7 +63,7 @@ export class NotionClient {
 
           // on all page blocks
           do {
-            const blocks = await this.client.blocks.children.list({
+            const blocks = await retriable(this.client.blocks.children, "list")({
               block_id: content.id,
               start_cursor: blockCursor || undefined,
             });
@@ -104,7 +127,7 @@ export class NotionClient {
       let cursor = undefined;
 
       do {
-        const { results, next_cursor } = await this.client.databases.query({
+        const { results, next_cursor } = await retriable(this.client.databases, "query")({
           database_id: dbConfig.id,
           start_cursor: cursor,
           filter: {

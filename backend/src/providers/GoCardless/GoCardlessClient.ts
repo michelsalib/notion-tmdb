@@ -13,6 +13,7 @@ import { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 interface Transaction {
+  account: string;
   transactionId: string;
   valueDate: string;
   bookingDate: string;
@@ -53,14 +54,28 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     const accountsTransactions = await Promise.all(
       dbConfig.goCardlessAccounts.map(async (account) => {
         try {
-          const transactions = await this.client.get(
-            `/accounts/${account}/transactions/`,
-            {
+          throw "use backup please";
+          const [transactionsResponse, detailsResponse] = await Promise.all([
+            this.client.get(`/accounts/${account}/transactions/`, {
               headers: {
                 Authorization: `Bearer ${goCardlessToken}`,
               },
-            },
-          );
+            }),
+            this.client.get(`/accounts/${account}/details/`, {
+              headers: {
+                Authorization: `Bearer ${goCardlessToken}`,
+              },
+            }),
+          ]);
+
+          // populate transactions with account details
+          const transactions: Transaction[] = [
+            ...transactionsResponse.data.transactions.booked,
+            ...transactionsResponse.data.transactions.pending,
+          ].map((t) => ({
+            ...t,
+            account: detailsResponse.data.account.name,
+          }));
 
           if (
             !process.env["AZURE_FUNCTIONS_ENVIRONMENT"] &&
@@ -69,18 +84,15 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
             // store backup
             await writeFile(
               new URL(`../../../../support/${account}.json`, import.meta.url),
-              JSON.stringify(transactions.data, null, 2),
+              JSON.stringify(transactions, null, 2),
             );
 
             console.log("Written backup");
           }
 
-          return [
-            ...transactions.data.transactions.booked,
-            ...transactions.data.transactions.pending,
-          ] as Transaction[];
+          return transactions;
         } catch {
-          const mock = await JSON.parse(
+          const mock: Transaction[] = await JSON.parse(
             await readFile(
               new URL(`../../../../support/${account}.json`, import.meta.url),
               {
@@ -91,15 +103,20 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
 
           console.log("Used backup");
 
-          return [
-            ...mock.transactions.booked,
-            ...mock.transactions.pending,
-          ] as Transaction[];
+          return mock;
         }
       }),
     );
 
-    const transactions = accountsTransactions.flatMap((t) => t);
+    const transactions = accountsTransactions
+      .flatMap((t) => t)
+      .reduce<Transaction[]>((res, cur) => {
+        if (!res.find((i) => i.transactionId == cur.transactionId)) {
+          res.push(cur);
+        }
+
+        return res;
+      }, []);
 
     yield `Synching ${transactions.length} from GoCardless.`;
 
@@ -173,6 +190,14 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
       };
     }
 
+    if (dbConfig.account) {
+      item.properties[dbConfig.account] = {
+        select: {
+          name: transaction.account,
+        },
+      };
+    }
+
     if (dbConfig.amount) {
       item.properties[dbConfig.amount] = {
         number: Number(transaction.transactionAmount.amount),
@@ -196,10 +221,12 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     }
 
     if (dbConfig.classification) {
+      const categories = dbConfig.classificationRules.filter((r) =>
+        r.matchers.some((matcher) => isMatch(name, matcher)),
+      );
+
       item.properties[dbConfig.classification] = {
-        multi_select: dbConfig.classificationRules
-          .filter((r) => r.matchers.some((matcher) => isMatch(name, matcher)))
-          .map((r) => ({ name: r.category })),
+        multi_select: categories.map((r) => ({ name: r.category })),
       };
     }
 

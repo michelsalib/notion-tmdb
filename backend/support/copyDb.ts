@@ -11,7 +11,7 @@ dotenv.config();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const settings = await import(join(__dirname, "../local.settings.json"), {
-  assert: {
+  with: {
     type: "json",
   },
 });

@@ -29,12 +29,19 @@ export function MultiTextInput({
       }}
       options={value || []}
       getOptionLabel={(v) => v}
-      filterOptions={(o, p) => {
-        if (!p.inputValue) {
-          return [...o];
+      filterOptions={(options, event) => {
+        if (!event.inputValue) {
+          return [...options];
         }
 
-        return [...o, p.inputValue];
+        return [
+          ...options.filter((o) =>
+            o
+              .toLocaleLowerCase()
+              .includes(event.inputValue.toLocaleLowerCase()),
+          ),
+          event.inputValue,
+        ];
       }}
       renderInput={(params) => (
         <TextField

@@ -47,6 +47,7 @@ export interface GoCardlessDbConfig extends DbConfigBase {
   valueDate: string;
   bookingDate: string;
   amount: string;
+  account: string;
   classification: string;
   classificationRules: ClassificationRule[];
 }

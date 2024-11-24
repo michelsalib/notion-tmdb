@@ -14,6 +14,7 @@ import type {
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
+import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
@@ -30,6 +31,9 @@ export class TmdbClient implements DataProvider<"TMDB"> {
         },
       },
     });
+
+    this.client.interceptors.request.use(requestLogger, errorLogger);
+    this.client.interceptors.response.use(responseLogger, errorLogger);
   }
 
   async *sync(

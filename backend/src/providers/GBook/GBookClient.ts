@@ -1,5 +1,7 @@
 import axios, { AxiosInstance } from "axios";
+import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { fluentProvide } from "inversify-binding-decorators";
+import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 import type {
   DOMAIN,
   GBookDbConfig,
@@ -7,7 +9,6 @@ import type {
   Suggestion,
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
-import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 interface VolumeInfo {
@@ -32,6 +33,9 @@ export class GBookClient implements DataProvider<"GBook"> {
     this.client = axios.create({
       baseURL: "https://www.googleapis.com/books/v1/",
     });
+
+    this.client.interceptors.request.use(requestLogger, errorLogger);
+    this.client.interceptors.response.use(responseLogger, errorLogger);
   }
 
   async *sync(

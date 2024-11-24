@@ -19,6 +19,7 @@ import type {
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
+import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 
 interface Transaction {
   account: string;
@@ -50,6 +51,9 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
     const client = axios.create({
       baseURL: "https://bankaccountdata.gocardless.com/api/v2/",
     });
+
+    client.interceptors.request.use(requestLogger, errorLogger);
+    client.interceptors.response.use(responseLogger, errorLogger);
 
     const token = await client.post("/token/new/", {
       secret_id: this.clientId,

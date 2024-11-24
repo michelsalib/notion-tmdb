@@ -6,7 +6,7 @@ import {
   REQUEST,
 } from "../../fx/keys.js";
 import { inject } from "inversify";
-import fastify from "fastify";
+import { FastifyRequest } from "fastify";
 import { OauthTokenResponse } from "@notionhq/client/build/src/api-endpoints.js";
 
 @provide(AnonymousNotionClient)
@@ -18,9 +18,7 @@ export class AnonymousNotionClient {
   @inject(NOTION_CLIENT_SECRET)
   private readonly clientSecret!: string;
 
-  constructor(
-    @inject(REQUEST) private readonly request: fastify.FastifyRequest,
-  ) {
+  constructor(@inject(REQUEST) private readonly request: FastifyRequest) {
     this.client = new Client();
   }
 

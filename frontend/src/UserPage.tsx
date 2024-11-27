@@ -1,12 +1,10 @@
 import {
   Alert,
-  AlertColor,
   Button,
   CircularProgress,
   Container,
   LinearProgress,
   Paper,
-  Snackbar,
   Stack,
   TextField,
 } from "@mui/material";
@@ -14,7 +12,12 @@ import type { DbConfig } from "backend/src/types";
 import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
-import { AuthContext, ConfigContext, DomainContext } from "./Context";
+import {
+  AuthContext,
+  ConfigContext,
+  DomainContext,
+  SnackbarContext,
+} from "./Context";
 import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
@@ -28,11 +31,7 @@ export function UserPage() {
     undefined,
   );
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{
-    open: boolean;
-    message: string;
-    severity: AlertColor;
-  }>({ open: false, message: "", severity: "success" });
+  const { setSnackbar } = useContext(SnackbarContext);
 
   if (!userConfig) {
     return (
@@ -57,25 +56,25 @@ export function UserPage() {
       });
 
       if (response.status != 200) {
-        setAlert({
+        setSnackbar({
           open: true,
           message: t("SETTINGS_FAILURE"),
-          severity: "error",
+          color: "error",
         });
 
         return;
       }
 
-      setAlert({
+      setSnackbar({
         open: true,
         message: t("SETTINGS_SUCESS"),
-        severity: "success",
+        color: "success",
       });
     } catch {
-      setAlert({
+      setSnackbar({
         open: true,
         message: t("SETTINGS_FAILURE"),
-        severity: "error",
+        color: "error",
       });
     } finally {
       setLoading(false);
@@ -144,21 +143,6 @@ export function UserPage() {
           ""
         )}
       </Stack>
-
-      <Snackbar
-        open={alert.open}
-        onClose={() => setAlert((p) => ({ ...p, open: false }))}
-        autoHideDuration={5000}
-        anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
-      >
-        <Alert
-          variant="filled"
-          severity={alert.severity}
-          onClose={() => setAlert((p) => ({ ...p, open: false }))}
-        >
-          {alert.message}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 }

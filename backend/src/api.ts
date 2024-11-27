@@ -13,10 +13,11 @@ import {
 import { route } from "./fx/router.js";
 import { DataProvider } from "./providers/DataProvider.js";
 import { DbProvider } from "./providers/DbProvider.js";
+import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { Backup } from "./services/Backup.js";
 import type { DbConfig, DOMAIN, UserData } from "./types.js";
-import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
+import { generatorSerializer } from "./utils/generator.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
@@ -47,7 +48,7 @@ export class Api {
     if (domain == "backup") {
       const backup = container.get<Backup>(DATA_PROVIDER);
 
-      return Readable.from(backup.sync());
+      return Readable.from(generatorSerializer(backup.sync()));
     }
 
     if (!user.dbConfig) {
@@ -60,7 +61,9 @@ export class Api {
     const notionClient = container.get(NotionClient);
     const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
-    return Readable.from(dataProvider.sync(notionClient, user.dbConfig));
+    return Readable.from(
+      generatorSerializer(dataProvider.sync(notionClient, user.dbConfig)),
+    );
   }
 
   @route({ path: "/api/add", method: "POST", authenticate: true })

@@ -1,28 +1,17 @@
-import {
-  Alert,
-  AlertColor,
-  Button,
-  LinearProgress,
-  Snackbar,
-  Stack,
-} from "@mui/material";
+import { Button, LinearProgress, Stack } from "@mui/material";
 import type { Suggestion } from "backend/src/types";
 import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DomainContext } from "./Context";
+import { DomainContext, SnackbarContext } from "./Context";
 import { Search } from "./Search";
-import { streaming } from "./stream";
+import { StreamButton } from "./StreamButton";
 
 export function EmbedPage() {
   const { t } = useTranslation();
   const domain = useContext(DomainContext);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState<Suggestion | null>(null);
-  const [alert, setAlert] = useState<{
-    open: boolean;
-    message: string;
-    severity: AlertColor;
-  }>({ open: false, message: "", severity: "success" });
+  const { setSnackbar } = useContext(SnackbarContext);
 
   async function submit() {
     if (!value) {
@@ -37,58 +26,25 @@ export function EmbedPage() {
       });
 
       if (response.status != 200) {
-        setAlert({
+        setSnackbar({
           open: true,
           message: t("ADD_FAILURE"),
-          severity: "error",
+          color: "error",
         });
 
         return;
       }
 
-      setAlert({
+      setSnackbar({
         open: true,
         message: t("ADD_SUCCESS"),
-        severity: "success",
+        color: "success",
       });
     } catch {
-      setAlert({
+      setSnackbar({
         open: true,
         message: t("ADD_FAILURE"),
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function sync() {
-    setLoading(true);
-
-    try {
-      for await (const chunk of streaming("/api/sync")) {
-        const message = chunk
-          .split(".")
-          .filter((i) => !!i)
-          .pop()!;
-
-        setAlert({
-          message,
-          open: true,
-          severity: "info",
-        });
-      }
-
-      setAlert({
-        open: true,
-        message: t("SYNC_SUCESS"),
-        severity: "success",
-      });
-    } catch {
-      setAlert({
-        open: true,
-        message: t("SYNC_FAILURE"),
-        severity: "error",
+        color: "error",
       });
     } finally {
       setLoading(false);
@@ -122,31 +78,13 @@ export function EmbedPage() {
           ""
         )}
 
-        <Button
-          variant="contained"
-          size="large"
-          color="success"
-          onClick={sync}
+        <StreamButton
+          onChange={(loading) => setLoading(loading)}
           disabled={loading}
         >
           Sync all
-        </Button>
+        </StreamButton>
       </Stack>
-
-      <Snackbar
-        open={alert.open}
-        onClose={() => setAlert((p) => ({ ...p, open: false }))}
-        autoHideDuration={5000}
-        anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
-      >
-        <Alert
-          variant="filled"
-          severity={alert.severity}
-          onClose={() => setAlert((p) => ({ ...p, open: false }))}
-        >
-          {alert.message}
-        </Alert>
-      </Snackbar>
     </Fragment>
   );
 }

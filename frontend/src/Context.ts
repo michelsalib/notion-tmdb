@@ -1,9 +1,20 @@
+import { AlertColor } from "@mui/material";
 import { DOMAIN, UserConfig } from "backend/src/types";
 import { createContext } from "react";
 
 export const AuthContext = createContext(loginState());
 export const DomainContext = createContext(domainState());
 export const ConfigContext = createContext<UserConfig<any> | null>(null);
+export const SnackbarContext = createContext<{
+  snackbar: SnackbarState;
+  setSnackbar: (config: SnackbarState) => void;
+}>(null as any);
+
+export interface SnackbarState {
+  open: boolean;
+  message: string;
+  color: AlertColor;
+}
 
 type LOGIN_STATE = "sso" | "embed" | "none";
 

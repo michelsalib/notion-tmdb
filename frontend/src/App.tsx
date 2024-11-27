@@ -1,25 +1,38 @@
 import {
+  Alert,
   createTheme,
   CssBaseline,
+  Snackbar,
   ThemeProvider,
   useMediaQuery,
 } from "@mui/material";
 import * as colors from "@mui/material/colors";
+import { UserConfig } from "backend/src/types";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
-import { AuthContext, ConfigContext, DomainContext } from "./Context";
+import {
+  AuthContext,
+  ConfigContext,
+  DomainContext,
+  SnackbarContext,
+  SnackbarState,
+} from "./Context";
 import { EmbedPage } from "./EmbedPage";
 import { Footer } from "./Footer";
 import "./i18n";
 import { Login } from "./Login";
 import { UserPage } from "./UserPage";
-import { UserConfig } from "backend/src/types";
 
 export function App() {
   const loggedIn = useContext(AuthContext);
   const domain = useContext(DomainContext);
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    open: false,
+    color: "success",
+    message: "",
+  });
   const [config, setConfig] = useState<UserConfig<any> | null>(null);
   const { t } = useTranslation();
 
@@ -51,18 +64,34 @@ export function App() {
           <title>{t("TITLE")}</title>
           <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
         </Helmet>
-        {loggedIn.status == "none" ? <Login /> : ""}
-        {loggedIn.status == "embed" ? (
-          domain == "backup" ? (
-            <Backup />
+        <SnackbarContext.Provider value={{ snackbar, setSnackbar }}>
+          {loggedIn.status == "none" ? <Login /> : ""}
+          {loggedIn.status == "embed" ? (
+            domain == "backup" ? (
+              <Backup />
+            ) : (
+              <EmbedPage />
+            )
           ) : (
-            <EmbedPage />
-          )
-        ) : (
-          ""
-        )}
-        {loggedIn.status == "sso" ? <UserPage /> : ""}
-        {loggedIn.status != "embed" ? <Footer /> : ""}
+            ""
+          )}
+          {loggedIn.status == "sso" ? <UserPage /> : ""}
+          {loggedIn.status != "embed" ? <Footer /> : ""}
+
+          <Snackbar
+            open={snackbar.open}
+            onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
+            anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
+          >
+            <Alert
+              variant="filled"
+              severity={snackbar.color}
+              onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
+            >
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
+        </SnackbarContext.Provider>
       </ThemeProvider>
     </ConfigContext.Provider>
   );

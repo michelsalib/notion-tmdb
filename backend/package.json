@@ -9,22 +9,21 @@
     "@fastify/static": "^8.0.3",
     "@notionhq/client": "^2.2.15",
     "archiver": "^7.0.1",
-    "axios": "^1.7.7",
+    "axios": "^1.7.8",
     "axios-logger": "^2.8.1",
     "date-fns": "^4.1.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.6",
     "fastify": "^5.1.0",
-    "inversify": "^6.1.4",
+    "inversify": "^6.1.5",
     "inversify-binding-decorators": "^4.0.0",
     "matcher": "^5.0.0",
     "mime": "^4.0.4",
-    "mongodb": "^6.10.0",
+    "mongodb": "^6.11.0",
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.3",
-    "@types/minimist": "^1.2.5",
-    "typescript": "^5.6.3"
+    "@types/minimist": "^1.2.5"
   },
   "scripts": {
     "build": "tsc",

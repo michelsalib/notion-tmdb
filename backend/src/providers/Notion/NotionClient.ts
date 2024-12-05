@@ -10,29 +10,7 @@ import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
 import { USER } from "../../fx/keys.js";
 import type { DbConfig, UserData } from "../../types.js";
-
-type ReducedObject<T, R> = {
-  [K in keyof T]: T[K] extends R ? K : never;
-}[keyof T];
-
-function retriable<
-  T extends object,
-  A extends ReducedObject<T, (...args: any[]) => Promise<any>>,
->(instance: T, action: A): T[A] {
-  const callable: any = async (...args: any[]) => {
-    const method: any = instance[action];
-
-    try {
-      return await method.call(instance, ...args);
-    } catch (err) {
-      console.error("Retry after ", err);
-
-      return await method.call(instance, ...args);
-    }
-  };
-
-  return callable;
-}
+import { retriable } from "../../utils/retriable.js";
 
 @provide(NotionClient)
 export class NotionClient {

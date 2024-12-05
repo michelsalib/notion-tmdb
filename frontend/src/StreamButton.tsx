@@ -23,19 +23,24 @@ export function StreamButton({
     onChange?.(true);
 
     try {
+      let error = false;
       for await (const chunk of streaming("/api/sync")) {
+        error = chunk.type == "error";
+
         setSnackbar({
           message: chunk.data,
           open: true,
-          color: "info",
+          color: chunk.type == "error" ? "error" : "info",
         });
       }
 
-      setSnackbar({
-        open: true,
-        message: t("SYNC_SUCESS"),
-        color: "success",
-      });
+      if (!error) {
+        setSnackbar({
+          open: true,
+          message: t("SYNC_SUCESS"),
+          color: "success",
+        });
+      }
     } catch {
       setSnackbar({
         open: true,

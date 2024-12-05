@@ -33,6 +33,7 @@ if (
   loadEnvironmentConfig({
     ...process.env,
     DB_ENGINE: "COSMOS",
+    STORAGE_ENGINE: "AZURE",
   });
 
   azure.app.setup({
@@ -69,6 +70,7 @@ if (
           ),
           headers: {
             referer: request.headers.get("referer"),
+            ["user-agent"]: request.headers.get("user-agent"),
           },
         } as any);
 
@@ -113,6 +115,7 @@ if (
     ...process.env,
     ...settings.default.Values,
     DB_ENGINE: "MONGO",
+    STORAGE_ENGINE: "FILESYSTEM",
   });
 
   fastApp.listen({

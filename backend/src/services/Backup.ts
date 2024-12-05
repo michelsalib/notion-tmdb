@@ -1,26 +1,54 @@
-import archiver, { Archiver } from "archiver";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
-import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../fx/keys.js";
-import { DataProvider } from "../providers/DataProvider.js";
-import { NotionClient } from "../providers/Notion/NotionClient.js";
-import { StorageClient } from "../providers/Storage/StorageClient.js";
-import { DOMAIN, Suggestion } from "../types.js";
 import {
   BlockObjectResponse,
   DatabaseObjectResponse,
   PageObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints.js";
-import axios from "axios";
+import archiver, { Archiver } from "archiver";
+import { Axios } from "axios";
+import { errorLogger, requestLogger, responseLogger } from "axios-logger";
+import { inject } from "inversify";
+import { fluentProvide } from "inversify-binding-decorators";
+import { Readable } from "stream";
+import {
+  DATA_PROVIDER,
+  DOMAIN as DOMAIN_KEY,
+  REQUEST,
+  STORAGE_PROVIDER,
+} from "../fx/keys.js";
+import { DataProvider } from "../providers/DataProvider.js";
+import { NotionClient } from "../providers/Notion/NotionClient.js";
+import { StorageProvider } from "../providers/Storage/StorageProvider.js";
+import { DOMAIN, Suggestion } from "../types.js";
+import { FastifyRequest } from "fastify";
+import { retriable } from "../utils/retriable.js";
 
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup")
   .done())
 export class Backup implements DataProvider<"backup"> {
+  private readonly client: Axios;
+
   constructor(
-    @inject(StorageClient) private readonly storage: StorageClient,
+    @inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
     @inject(NotionClient) private readonly notion: NotionClient,
-  ) {}
+    @inject(REQUEST) readonly request: FastifyRequest,
+  ) {
+    this.client = new Axios({
+      headers: {
+        "User-Agent": request.headers["user-agent"],
+      },
+    });
+
+    this.client.interceptors.request.use(requestLogger, errorLogger);
+    this.client.interceptors.response.use(
+      (res) =>
+        responseLogger(res, {
+          data: false,
+          headers: true,
+        }),
+      errorLogger,
+    );
+  }
 
   search(): Promise<Suggestion[]> {
     throw new Error("Method not implemented.");
@@ -97,7 +125,7 @@ export class Backup implements DataProvider<"backup"> {
       }
     }
 
-    await archive.finalize();
+    archive.finalize();
     yield `Done generating archive.`;
 
     // store in blob storage
@@ -120,11 +148,13 @@ export class Backup implements DataProvider<"backup"> {
     fileName: string,
     url: string,
   ): Promise<void> {
-    const file = await axios.get(url, {
-      responseType: "stream",
+    // TODO: stream would be better to avoid clutter RAM
+    const response = await retriable(this.client, "get")(url, {
+      responseType: "arraybuffer",
     });
+    const data: ArrayBuffer = response.data;
 
-    archive.append(file.data, {
+    archive.append(Buffer.from(data), {
       name: fileName,
     });
   }

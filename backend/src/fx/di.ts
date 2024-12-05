@@ -8,6 +8,7 @@ import {
   COSMOS_DB_DATABASE,
   COSMOS_DB_KEY,
   DB_ENGINE,
+  STORAGE_ENGINE,
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   GOCARDLESS_ID,
@@ -39,7 +40,8 @@ import "../providers/GoCardless/GoCardlessClient.js";
 import "../providers/MongoDb/MongoDbClient.js";
 import "../providers/Notion/AnonymousNotionClient.js";
 import "../providers/Notion/NotionClient.js";
-import "../providers/Storage/StorageClient.js";
+import "../providers/Storage/AzureStorageClient.js";
+import "../providers/Storage/FilesystemClient.js";
 import "../providers/Tmdb/TmdbClient.js";
 import "../services/Backup.js";
 
@@ -100,6 +102,7 @@ export function loadEnvironmentConfig(env: {
     .bind(STORAGE_CONTAINER)
     .toConstantValue(env["Storage:Container"]);
   rootContainer.bind(DB_ENGINE).toConstantValue(env["DB_ENGINE"]);
+  rootContainer.bind(STORAGE_ENGINE).toConstantValue(env["STORAGE_ENGINE"]);
 
   rootContainer
     .bind(NOTION_CLIENT_ID)

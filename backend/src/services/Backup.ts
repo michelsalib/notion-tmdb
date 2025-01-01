@@ -8,7 +8,6 @@ import { Axios } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
-import { Readable } from "stream";
 import {
   DATA_PROVIDER,
   DOMAIN as DOMAIN_KEY,

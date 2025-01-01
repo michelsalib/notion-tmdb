@@ -12,16 +12,16 @@ import { resolve } from "path";
 export class FilesystemStorage implements StorageProvider {
   constructor(@inject(USER_ID) private readonly userId: string) {}
 
-  private getBackupFilename(): string {
-    return resolve(`${this.userId}.zip`);
+  public getBackupFilename(): string {
+    return resolve(`support/${this.userId}.zip`);
   }
 
   async putBackup(data: Readable): Promise<void> {
     await writeFile(this.getBackupFilename(), data);
   }
 
-  getBackupLink(): Promise<string> {
-    throw new Error("Method not implemented.");
+  async getBackupLink(): Promise<string> {
+    return '/backup';
   }
 
   async getBackupMeta(): Promise<{ lastModified: Date }> {

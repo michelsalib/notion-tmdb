@@ -21,7 +21,7 @@ export class FilesystemStorage implements StorageProvider {
   }
 
   async getBackupLink(): Promise<string> {
-    return '/backup';
+    return "/backup";
   }
 
   async getBackupMeta(): Promise<{ lastModified: Date }> {

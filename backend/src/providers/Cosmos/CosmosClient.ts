@@ -31,7 +31,11 @@ export class CosmosClient implements DbProvider {
       key: cosmosKey,
     })
       .database(database)
-      .container(`notion-${this.domain.toLowerCase()}`);
+      .container(
+        domain == "BitwardenBackup"
+          ? "bitwarden-backup"
+          : `notion-${this.domain.toLowerCase()}`,
+      );
   }
 
   async getUser(userId: string): Promise<UserData<any>> {

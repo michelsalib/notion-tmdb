@@ -1,6 +1,6 @@
 import type {
   DOMAIN,
-  DomainToDbConfig,
+  DomainToConfig,
   NotionItem,
   Suggestion,
 } from "../types.js";
@@ -10,10 +10,10 @@ export interface DataProvider<T extends DOMAIN = any> {
   search(query: string): Promise<Suggestion[]>;
   loadNotionEntry(
     id: string,
-    dbConfig: DomainToDbConfig<T>,
+    dbConfig: DomainToConfig<T>,
   ): Promise<{ notionItem: NotionItem; title: string }>;
   sync(
     notionClient: NotionClient,
-    dbConfig: DomainToDbConfig<T>,
+    dbConfig: DomainToConfig<T>,
   ): AsyncGenerator<string>;
 }

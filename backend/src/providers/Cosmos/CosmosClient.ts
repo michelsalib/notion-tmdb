@@ -10,7 +10,7 @@ import {
   DOMAIN as DOMAIN_KEY,
   USER_ID,
 } from "../../fx/keys.js";
-import type { DbConfig, DOMAIN, UserData } from "../../types.js";
+import type { Config, DOMAIN, UserData } from "../../types.js";
 import { DbProvider } from "../DbProvider.js";
 
 @(fluentProvide(DB_PROVIDER)
@@ -48,12 +48,12 @@ export class CosmosClient implements DbProvider {
     await this.client.items.upsert(userData);
   }
 
-  async putUserConfig(userId: string, dbConfig: DbConfig) {
+  async putUserConfig(userId: string, config: Config) {
     await this.client.item(userId, userId).patch([
       {
         op: "add",
-        path: "/dbConfig",
-        value: dbConfig,
+        path: "/config",
+        value: config,
       },
     ]);
   }

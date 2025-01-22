@@ -10,6 +10,11 @@ export interface NotionData {
   accessToken: string;
 }
 
+export interface BitwardenData {
+  clientId: string;
+  clientSecret: string;
+}
+
 interface DbConfigBase {
   // Database identifier
   id: string;
@@ -60,31 +65,36 @@ export interface GoCardlessAccount {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BackupDbConfig extends DbConfigBase {}
 
-export type DbConfig =
-  | TmdbDbConfig
-  | GBookDbConfig
-  | BackupDbConfig
-  | GoCardlessDbConfig;
+export type Config = TmdbConfig | GBookConfig | BackupConfig | GoCardlessConfig;
 
-export type DomainToDbConfig<T extends DOMAIN> = T extends "GBook"
+export type DomainToConfig<T extends DOMAIN> = T extends "GBook"
   ? GBookDbConfig
   : T extends "TMDB"
     ? TmdbDbConfig
     : T extends "GoCardless"
       ? GoCardlessDbConfig
-      : BackupDbConfig;
+      : T extends "Backup"
+        ? BackupDbConfig
+        : { [key: string]: never };
 
 export interface UserData<T extends DOMAIN> {
   id: string;
-  dbConfig?: DomainToDbConfig<T>;
+  config: DomainToConfig<T>;
+}
+
+export interface NotionUserData<T extends DOMAIN> extends UserData<T> {
   notionWorkspace: NotionData;
+}
+
+export interface BitwardenUserData extends UserData<"BitwardenBackup"> {
+  bitwardenVault: BitwardenData;
 }
 
 export type NotionDatabase = DatabaseObjectResponse;
 
 export interface UserConfig<T extends DOMAIN> {
-  notionDatabases: NotionDatabases[];
-  dbConfig?: DomainToDbConfig<T>;
+  notionDatabases?: NotionDatabases[];
+  config?: DomainToConfig<T>;
   backupDate?: Date;
 }
 
@@ -104,4 +114,9 @@ export interface Bank {
 
 export type NotionItem = Omit<CreatePageParameters, "parent">;
 
-export type DOMAIN = "GBook" | "TMDB" | "backup" | "GoCardless";
+export type DOMAIN =
+  | "GBook"
+  | "TMDB"
+  | "backup"
+  | "GoCardless"
+  | "BitwardenBackup";

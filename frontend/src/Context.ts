@@ -22,7 +22,7 @@ function loginState(): {
   userId?: string;
   status: LOGIN_STATE;
 } {
-  const regex = /userId=([\w-]+)/;
+  const regex = /userId=([\w-.]+)/;
 
   const paramExec = regex.exec(document.location.search);
 
@@ -47,20 +47,42 @@ function loginState(): {
   };
 }
 
-export function domainState(): DOMAIN {
-  const unlinted = /notion-(\w+)/.exec(window.location.origin)?.[1];
+export type PreDomain = "Bitwarden" | "Notion";
+export type PostDomain = "backup" | "GBook" | "GoCardless" | "TMDB";
 
-  if (unlinted == "gbook") {
-    return "GBook";
+export function domainState(): {
+  domain: DOMAIN;
+  pre: PreDomain;
+  post: PostDomain;
+} {
+  try {
+    const [, pre, post]: any =
+      /(bitwarden|notion)-(backup|gbook|gocardless|tmdb)/.exec(
+        window.location.origin,
+      )!;
+
+    if (pre == "bitwarden") {
+      return {
+        domain: "BitwardenBackup",
+        pre: "Bitwarden",
+        post: "backup",
+      };
+    }
+
+    if (post == "gbook") {
+      return { domain: "GBook", pre: "Notion", post: "GBook" };
+    }
+
+    if (post == "backup") {
+      return { domain: "backup", pre: "Notion", post: "backup" };
+    }
+
+    if (post == "gocardless") {
+      return { domain: "GoCardless", pre: "Notion", post: "GoCardless" };
+    }
+  } catch {
+    // default
   }
 
-  if (unlinted == "backup") {
-    return "backup";
-  }
-
-  if (unlinted == "gocardless") {
-    return "GoCardless";
-  }
-
-  return "TMDB";
+  return { domain: "TMDB", pre: "Notion", post: "TMDB" };
 }

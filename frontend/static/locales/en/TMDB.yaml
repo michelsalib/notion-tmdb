@@ -3,7 +3,6 @@ SYNC_FAILURE: Movies synch failed.
 ADD_SUCCESS: Movie successfully added.
 ADD_FAILURE: Movie failed to be added.
 PRIMARY_COLOR: lightBlue
-TITLE: Notion - TMDB
 LOGO_PATH: /tmdb.jpeg
 SEARCH_PLACEHOLDER: TMDB lookup
 AUTH_KEY: e19ffced-a96f-4f22-8f58-163bd4c86f5a

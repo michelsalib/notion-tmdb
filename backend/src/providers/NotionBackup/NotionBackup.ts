@@ -13,18 +13,18 @@ import {
   DOMAIN as DOMAIN_KEY,
   REQUEST,
   STORAGE_PROVIDER,
-} from "../fx/keys.js";
-import { DataProvider } from "../providers/DataProvider.js";
-import { NotionClient } from "../providers/Notion/NotionClient.js";
-import { StorageProvider } from "../providers/Storage/StorageProvider.js";
-import { DOMAIN, Suggestion } from "../types.js";
+} from "../../fx/keys.js";
+import { NotionClient } from "../Notion/NotionClient.js";
+import { StorageProvider } from "../Storage/StorageProvider.js";
+import { DOMAIN, Suggestion } from "../../types.js";
 import { FastifyRequest } from "fastify";
-import { retriable } from "../utils/retriable.js";
+import { retriable } from "../../utils/retriable.js";
+import { BackupDataProvider } from "../BackupDataProvider.js";
 
 @(fluentProvide(DATA_PROVIDER)
   .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup")
   .done())
-export class Backup implements DataProvider<"backup"> {
+export class NotionBackup implements BackupDataProvider<"backup"> {
   private readonly client: Axios;
 
   constructor(
@@ -132,7 +132,7 @@ export class Backup implements DataProvider<"backup"> {
     yield `Done storing archive.`;
   }
 
-  async getBackupDate(): Promise<Date> {
+  async getBackupDate(): Promise<Date | undefined> {
     const meta = await this.storage.getBackupMeta();
 
     return meta.lastModified;

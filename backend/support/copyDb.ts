@@ -40,7 +40,7 @@ for (const domain of domains) {
       return {
         id: item.id!,
         notionWorkspace: item.notionWorkspace,
-        dbConfig: item.dbConfig,
+        config: item.config,
       };
     });
     await mongoDbCollection.insertMany(itemsToInsert);

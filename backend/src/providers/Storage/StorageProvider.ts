@@ -6,6 +6,6 @@ export interface StorageProvider {
   getBackupLink(): Promise<string>;
 
   getBackupMeta(): Promise<{
-    lastModified: Date;
+    lastModified?: Date;
   }>;
 }

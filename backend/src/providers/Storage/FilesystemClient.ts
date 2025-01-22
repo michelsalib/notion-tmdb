@@ -24,11 +24,17 @@ export class FilesystemStorage implements StorageProvider {
     return "/backup";
   }
 
-  async getBackupMeta(): Promise<{ lastModified: Date }> {
-    const stats = await stat(this.getBackupFilename());
+  async getBackupMeta(): Promise<{ lastModified?: Date }> {
+    try {
+      const stats = await stat(this.getBackupFilename());
 
-    return {
-      lastModified: stats.mtime,
-    };
+      return {
+        lastModified: stats.mtime,
+      };
+    } catch {
+      return {
+        lastModified: undefined,
+      };
+    }
   }
 }

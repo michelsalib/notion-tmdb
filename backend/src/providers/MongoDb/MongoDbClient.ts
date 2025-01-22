@@ -7,7 +7,7 @@ import {
   DOMAIN as DOMAIN_KEY,
   USER_ID,
 } from "../../fx/keys.js";
-import type { DbConfig, DOMAIN, UserData } from "../../types.js";
+import type { Config, DOMAIN, UserData } from "../../types.js";
 import { DbProvider } from "../DbProvider.js";
 
 @(fluentProvide(DB_PROVIDER)
@@ -61,7 +61,7 @@ export class MongoDbClient implements DbProvider {
     );
   }
 
-  async putUserConfig(userId: string, dbConfig: DbConfig): Promise<void> {
+  async putUserConfig(userId: string, config: Config): Promise<void> {
     const collection = await this.getUserCollection();
 
     await collection.updateOne(
@@ -70,7 +70,7 @@ export class MongoDbClient implements DbProvider {
       },
       {
         $set: {
-          dbConfig,
+          config,
         },
       },
     );

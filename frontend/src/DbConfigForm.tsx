@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import type {
   DOMAIN,
-  DomainToDbConfig,
+  DomainToConfig,
   GBookDbConfig,
   GoCardlessDbConfig,
   NotionDatabase,
@@ -23,7 +23,7 @@ import { GoCardlessBanks } from "./Form/GoCardlessBanks";
 function computeDefaultState<T extends DOMAIN>(
   dbId: string,
   domain: T,
-): DomainToDbConfig<T> {
+): DomainToConfig<T> {
   if (domain === "GBook") {
     return {
       id: dbId,
@@ -33,7 +33,7 @@ function computeDefaultState<T extends DOMAIN>(
       author: "",
       genre: "",
       releaseDate: "",
-    } as GBookDbConfig as DomainToDbConfig<T>;
+    } as GBookDbConfig as DomainToConfig<T>;
   }
 
   if (domain == "GoCardless") {
@@ -51,7 +51,7 @@ function computeDefaultState<T extends DOMAIN>(
       classification: "",
       account: "",
       classificationRules: [],
-    } as GoCardlessDbConfig as DomainToDbConfig<T>;
+    } as GoCardlessDbConfig as DomainToConfig<T>;
   }
 
   return {
@@ -63,7 +63,7 @@ function computeDefaultState<T extends DOMAIN>(
     rating: "",
     releaseDate: "",
     title: "",
-  } as TmdbDbConfig as DomainToDbConfig<T>;
+  } as TmdbDbConfig as DomainToConfig<T>;
 }
 
 function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
@@ -200,11 +200,11 @@ export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
   onConfigChange,
 }: {
   notionDatabases: NotionDatabase[];
-  initialConfig?: DomainToDbConfig<T>;
-  onConfigChange: (dbConfig: DomainToDbConfig<T>) => any;
+  initialConfig?: DomainToConfig<T>;
+  onConfigChange: (dbConfig: DomainToConfig<T>) => any;
 }) {
-  const domain = useContext<T>(DomainContext as any);
-  const [config, setConfig] = useState<DomainToDbConfig<T>>({
+  const { domain }: { domain: T } = useContext(DomainContext as any);
+  const [config, setConfig] = useState<DomainToConfig<T>>({
     ...computeDefaultState(notionDatabases[0].id, domain),
     ...initialConfig,
   });

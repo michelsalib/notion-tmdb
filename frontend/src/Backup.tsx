@@ -44,7 +44,9 @@ export function Backup() {
         <Stack direction="column">
           <Typography variant="caption">Last backup made on</Typography>
           <Typography>
-            {new Date(config.backupDate!).toLocaleString()}
+            {config.backupDate
+              ? new Date(config.backupDate).toLocaleString()
+              : "Never"}
           </Typography>
         </Stack>
       </Stack>

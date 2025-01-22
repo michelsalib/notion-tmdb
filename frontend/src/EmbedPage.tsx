@@ -62,7 +62,7 @@ export function EmbedPage() {
       )}
 
       <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-        {domain != "GoCardless" ? (
+        {domain.domain != "GoCardless" ? (
           <Stack direction="row" spacing={2}>
             <Search onChange={(m) => setValue(m)} />
             <Button

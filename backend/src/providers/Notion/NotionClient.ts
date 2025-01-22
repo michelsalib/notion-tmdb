@@ -9,14 +9,14 @@ import {
 import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
 import { USER } from "../../fx/keys.js";
-import type { DbConfig, UserData } from "../../types.js";
+import type { Config, NotionUserData } from "../../types.js";
 import { retriable } from "../../utils/retriable.js";
 
 @provide(NotionClient)
 export class NotionClient {
   private readonly client: Client;
 
-  constructor(@inject(USER) private readonly user: UserData<any>) {
+  constructor(@inject(USER) private readonly user: NotionUserData<any>) {
     this.client = new Client({
       auth: this.user.notionWorkspace.accessToken,
     });
@@ -76,7 +76,7 @@ export class NotionClient {
     return results as any;
   }
 
-  async listDatabaseEntries(dbConfig: DbConfig): Promise<PageObjectResponse[]> {
+  async listDatabaseEntries(dbConfig: Config): Promise<PageObjectResponse[]> {
     const { results } = await this.client.databases.query({
       database_id: dbConfig.id,
       filter: {
@@ -100,10 +100,7 @@ export class NotionClient {
     return results as PageObjectResponse[];
   }
 
-  async listExistingItems(
-    dbConfig: DbConfig,
-    ids: string[],
-  ): Promise<string[]> {
+  async listExistingItems(dbConfig: Config, ids: string[]): Promise<string[]> {
     const existingItems: PageObjectResponse[] = [];
 
     for (let page = 0; page * 100 < ids.length; page++) {

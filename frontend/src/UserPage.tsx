@@ -8,7 +8,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import type { DbConfig } from "backend/src/types";
+import type { Config } from "backend/src/types";
 import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
@@ -23,13 +23,11 @@ import { EmbedPage } from "./EmbedPage";
 import { Navigation } from "./Navigation";
 
 export function UserPage() {
-  const domain = useContext(DomainContext);
+  const { domain } = useContext(DomainContext);
   const auth = useContext(AuthContext);
   const { t } = useTranslation();
   const userConfig = useContext(ConfigContext);
-  const [newDbConfig, setNewDbConfig] = useState<DbConfig | undefined>(
-    undefined,
-  );
+  const [newConfig, setNewConfig] = useState<Config | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const { setSnackbar } = useContext(SnackbarContext);
 
@@ -51,7 +49,7 @@ export function UserPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          dbConfig: newDbConfig,
+          config: newConfig,
         }),
       });
 
@@ -86,7 +84,9 @@ export function UserPage() {
       <Navigation />
 
       <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-        {domain == "backup" || userConfig.dbConfig ? (
+        {domain == "backup" ||
+        domain == "BitwardenBackup" ||
+        userConfig.config ? (
           <Fragment>
             <Alert variant="outlined" severity="info">
               Your plugin is ready to be embeded in notion
@@ -102,7 +102,13 @@ export function UserPage() {
                 sx={{ width: "100%" }}
               />
             </Alert>
-            <Paper>{domain == "backup" ? <Backup /> : <EmbedPage />}</Paper>
+            <Paper>
+              {domain == "backup" || domain == "BitwardenBackup" ? (
+                <Backup />
+              ) : (
+                <EmbedPage />
+              )}
+            </Paper>
           </Fragment>
         ) : (
           <Alert variant="outlined" severity="warning">
@@ -111,12 +117,12 @@ export function UserPage() {
           </Alert>
         )}
 
-        {domain != "backup" ? (
+        {domain != "backup" && domain != "BitwardenBackup" ? (
           <Fragment>
             <DbConfigForm
-              notionDatabases={userConfig.notionDatabases}
-              initialConfig={userConfig.dbConfig as any}
-              onConfigChange={(newConfig) => setNewDbConfig(newConfig as any)}
+              notionDatabases={userConfig.notionDatabases as any}
+              initialConfig={userConfig.config as any}
+              onConfigChange={(newConfig) => setNewConfig(newConfig as any)}
             />
 
             <Button

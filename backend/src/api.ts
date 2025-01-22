@@ -15,15 +15,21 @@ import { DataProvider } from "./providers/DataProvider.js";
 import { DbProvider } from "./providers/DbProvider.js";
 import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
-import { Backup } from "./services/Backup.js";
-import type { DbConfig, DOMAIN, UserData } from "./types.js";
+import { NotionBackup } from "./providers/NotionBackup/NotionBackup.js";
+import type { Config, DOMAIN, UserData } from "./types.js";
 import { generatorSerializer } from "./utils/generator.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
   async getUser(container: Container) {
-    const user = container.get<UserData<any>>(USER);
-    user.notionWorkspace.accessToken = "***"; // hide sensitive data
+    const user: any = container.get(USER);
+
+    if (user?.notionWorkspace?.accessToken) {
+      user.notionWorkspace.accessToken = "***"; // hide sensitive data
+    }
+    if (user?.bitwardenVault?.clientSecret) {
+      user.bitwardenVault.clientSecret = "***"; // hide sensitive data
+    }
 
     return { user };
   }
@@ -45,13 +51,13 @@ export class Api {
     const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
     reply.header("content-type", "multipart/text");
 
-    if (domain == "backup") {
-      const backup = container.get<Backup>(DATA_PROVIDER);
+    if (domain == "backup" || domain == "BitwardenBackup") {
+      const backup = container.get<NotionBackup>(DATA_PROVIDER);
 
       return Readable.from(generatorSerializer(backup.sync()));
     }
 
-    if (!user.dbConfig) {
+    if (!user.config) {
       return {
         status: 400,
         body: "Notion db needs to be configured first",
@@ -62,7 +68,7 @@ export class Api {
     const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
     return Readable.from(
-      generatorSerializer(dataProvider.sync(notionClient, user.dbConfig)),
+      generatorSerializer(dataProvider.sync(notionClient, user.config)),
     );
   }
 
@@ -71,7 +77,7 @@ export class Api {
     const user = container.get<UserData<"GBook" | "TMDB">>(USER);
     const request = container.get<FastifyRequest>(REQUEST);
 
-    if (!user.dbConfig) {
+    if (!user.config) {
       const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
 
       reply.status(400);
@@ -85,14 +91,14 @@ export class Api {
     // get from tmdb
     const { notionItem, title } = await client.loadNotionEntry(
       (request.query as any)["id"],
-      user.dbConfig,
+      user.config,
     );
 
     // put into notion
     await notionClient.createPage({
       ...notionItem,
       parent: {
-        database_id: user.dbConfig.id,
+        database_id: user.config.id,
       },
     });
 
@@ -104,12 +110,12 @@ export class Api {
     const user = container.get<UserData<any>>(USER);
     const domain = container.get<DOMAIN>(DOMAIN_KEY);
 
-    if (domain == "backup") {
-      const backup = container.get<Backup>(DATA_PROVIDER);
+    if (domain == "backup" || domain == "BitwardenBackup") {
+      const backup = container.get<NotionBackup>(DATA_PROVIDER);
 
       return {
         backupDate: await backup.getBackupDate(),
-        dbConfig: user.dbConfig,
+        config: user.config,
       };
     }
 
@@ -117,25 +123,25 @@ export class Api {
 
     return {
       notionDatabases,
-      dbConfig: user.dbConfig,
+      config: user.config,
     };
   }
 
   @route({ path: "/api/config", method: "POST", authenticate: true })
   async postConfig(container: Container) {
     const request = container.get<FastifyRequest>(REQUEST);
-    const dbConfig: DbConfig = (request.body as any).dbConfig;
+    const config: Config = (request.body as any).config;
     const cosmos = container.get<DbProvider>(DB_PROVIDER);
     const userId = container.get<string>(USER_ID);
 
-    await cosmos.putUserConfig(userId, dbConfig);
+    await cosmos.putUserConfig(userId, config);
 
     return "Config saved";
   }
 
   @route({ path: "/api/backup", method: "GET", authenticate: true })
   async getBackup(container: Container) {
-    const backup = container.get<Backup>(DATA_PROVIDER);
+    const backup = container.get<NotionBackup>(DATA_PROVIDER);
 
     return {
       link: await backup.getLink(),
@@ -169,11 +175,11 @@ export class Api {
     const request = container.get<FastifyRequest>(REQUEST);
     const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
     const userId = container.get<string>(USER_ID);
-    const { dbConfig } = container.get<UserData<"GoCardless">>(USER);
+    const { config } = container.get<UserData<"GoCardless">>(USER);
     const cosmos = container.get<DbProvider>(DB_PROVIDER);
     const goCardless = container.get<GoCardlessClient>(DATA_PROVIDER);
 
-    if (!dbConfig) {
+    if (!config) {
       const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
 
       reply.status(400);
@@ -184,9 +190,9 @@ export class Api {
     const account = await goCardless.retrieveAccount(
       (request.query as any)["ref"],
     );
-    dbConfig.goCardlessAccounts.push(account);
+    config.goCardlessAccounts.push(account);
 
-    await cosmos.putUserConfig(userId, dbConfig);
+    await cosmos.putUserConfig(userId, config);
 
     reply.status(302);
     reply.header("location", "/");

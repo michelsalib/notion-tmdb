@@ -12,7 +12,7 @@ i18n
   .init({
     fallbackLng: "en",
     supportedLngs: ["en"],
-    defaultNS: domainState(),
+    defaultNS: domainState().domain,
     fallbackNS: "translation",
     interpolation: {
       escapeValue: false,

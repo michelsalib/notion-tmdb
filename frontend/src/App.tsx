@@ -27,7 +27,7 @@ import { UserPage } from "./UserPage";
 
 export function App() {
   const loggedIn = useContext(AuthContext);
-  const domain = useContext(DomainContext);
+  const { domain, pre, post } = useContext(DomainContext);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     color: "success",
@@ -51,9 +51,11 @@ export function App() {
     [prefersDarkMode],
   );
   useEffect(() => {
-    fetch("/api/config")
-      .then((r) => r.json())
-      .then((r) => setConfig(r as any));
+    if (loggedIn.status != "none") {
+      fetch("/api/config")
+        .then((r) => r.json())
+        .then((r) => setConfig(r as any));
+    }
   }, []);
 
   return (
@@ -61,7 +63,9 @@ export function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Helmet>
-          <title>{t("TITLE")}</title>
+          <title>
+            {pre} - {post}
+          </title>
           <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
         </Helmet>
         <SnackbarContext.Provider value={{ snackbar, setSnackbar }}>

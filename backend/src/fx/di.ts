@@ -43,7 +43,8 @@ import "../providers/Notion/NotionClient.js";
 import "../providers/Storage/AzureStorageClient.js";
 import "../providers/Storage/FilesystemClient.js";
 import "../providers/Tmdb/TmdbClient.js";
-import "../services/Backup.js";
+import "../providers/NotionBackup/NotionBackup.js";
+import "../providers/BitwardenBackup/BitwardenBackup.js";
 
 // setup container
 export const rootContainer = new Container();
@@ -206,17 +207,21 @@ function getUserId(request: FastifyRequest): string {
 }
 
 function computeDomain(request: FastifyRequest): DOMAIN {
-  const unlinted = /notion-(\w+)/.exec(request.hostname)?.[1];
+  const [, pre, post] = /(\w+)-(\w+)/.exec(request.hostname)!;
 
-  if (unlinted == "gbook") {
+  if (pre == "bitwarden") {
+    return "BitwardenBackup";
+  }
+
+  if (post == "gbook") {
     return "GBook";
   }
 
-  if (unlinted == "backup") {
+  if (post == "backup") {
     return "backup";
   }
 
-  if (unlinted == "gocardless") {
+  if (post == "gocardless") {
     return "GoCardless";
   }
 

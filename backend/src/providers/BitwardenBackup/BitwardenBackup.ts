@@ -5,6 +5,7 @@ import { fluentProvide } from "inversify-binding-decorators";
 import {
   DATA_PROVIDER,
   DOMAIN as DOMAIN_KEY,
+  LOGGER,
   STORAGE_PROVIDER,
   USER,
 } from "../../fx/keys.js";
@@ -12,6 +13,7 @@ import { BitwardenUserData, DOMAIN, Suggestion } from "../../types.js";
 import { BackupDataProvider } from "../BackupDataProvider.js";
 import { StorageProvider } from "../Storage/StorageProvider.js";
 import archiver from "archiver";
+import { Logger } from "../../fx/logger/Logger.js";
 
 @(fluentProvide(DATA_PROVIDER)
   .when(
@@ -23,6 +25,7 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
   constructor(
     @inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
     @inject(USER) private readonly user: BitwardenUserData,
+    @inject(LOGGER) private readonly logger: Logger,
   ) {}
 
   private async createClient(): Promise<AxiosInstance> {
@@ -30,8 +33,7 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
       baseURL: "https://vault.bitwarden.com",
     });
 
-    client.interceptors.request.use(requestLogger, errorLogger);
-    client.interceptors.response.use(responseLogger, errorLogger);
+    this.logger.bindAxios(client);
 
     const token = await client.post(
       "/identity/connect/token",

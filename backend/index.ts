@@ -34,6 +34,7 @@ if (
     ...process.env,
     DB_ENGINE: "COSMOS",
     STORAGE_ENGINE: "AZURE",
+    LOGGER_ENGINE: "AZURE_CONTEXT",
   });
 
   azure.app.setup({
@@ -116,6 +117,7 @@ if (
     ...settings.default.Values,
     DB_ENGINE: "MONGO",
     STORAGE_ENGINE: "FILESYSTEM",
+    LOGGER_ENGINE: "CONSOLE",
   });
 
   fastApp.listen({

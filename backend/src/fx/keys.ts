@@ -37,3 +37,6 @@ export const STORAGE_PROVIDER = Symbol.for("STORAGE_PROVIDER");
 export const DB_PROVIDER = Symbol.for("DB_PROVIDER");
 export const GOCARDLESS_ID = Symbol.for("GOCARDLESS_ID");
 export const GOCARDLESS_SECRET = Symbol.for("GOCARDLESS_SECRET");
+export const AZURE_CONTEXT = Symbol.for("AZURE_CONTEXT");
+export const LOGGER_ENGINE = Symbol.for("LOGGER_ENGINE");
+export const LOGGER = Symbol.for("LOGGER");

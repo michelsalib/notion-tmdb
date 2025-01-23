@@ -31,6 +31,8 @@ import {
   TMDB_API_KEY,
   USER,
   USER_ID,
+  LOGGER_ENGINE,
+  AZURE_CONTEXT,
 } from "./keys.js";
 
 // load services
@@ -45,6 +47,9 @@ import "../providers/Storage/FilesystemClient.js";
 import "../providers/Tmdb/TmdbClient.js";
 import "../providers/NotionBackup/NotionBackup.js";
 import "../providers/BitwardenBackup/BitwardenBackup.js";
+import "../fx/logger/AzureContextLogger.js";
+import "../fx/logger/ConsoleLogger.js";
+import type { InvocationContext } from "@azure/functions";
 
 // setup container
 export const rootContainer = new Container();
@@ -104,6 +109,7 @@ export function loadEnvironmentConfig(env: {
     .toConstantValue(env["Storage:Container"]);
   rootContainer.bind(DB_ENGINE).toConstantValue(env["DB_ENGINE"]);
   rootContainer.bind(STORAGE_ENGINE).toConstantValue(env["STORAGE_ENGINE"]);
+  rootContainer.bind(LOGGER_ENGINE).toConstantValue(env["LOGGER_ENGINE"]);
 
   rootContainer
     .bind(NOTION_CLIENT_ID)
@@ -162,6 +168,7 @@ export async function scopeContainer(
   request: FastifyRequest,
   reply: FastifyReply,
   authenticate: boolean,
+  azureContext?: InvocationContext,
 ): Promise<Container> {
   const container = rootContainer.createChild({
     // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
@@ -174,6 +181,10 @@ export async function scopeContainer(
   container.bind(REQUEST).toConstantValue(request);
   container.bind(USER_ID).toConstantValue(userId);
   container.bind(DOMAIN_KEY).toConstantValue(domain);
+
+  if (azureContext) {
+    container.bind(AZURE_CONTEXT).toConstantValue(azureContext);
+  }
 
   if (authenticate) {
     if (!userId) {

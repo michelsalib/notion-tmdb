@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { Container, injectable, METADATA_KEY } from "inversify";
 import { rootContainer, scopeContainer } from "./di.js";
+import type { InvocationContext } from "@azure/functions";
 
 type RouteTarget = (container: Container) => Promise<any>;
 
@@ -70,6 +71,7 @@ export class Router {
     method: "GET" | "POST",
     path: string,
     request: FastifyRequest,
+    azureContext?: InvocationContext,
   ): Promise<any> {
     const { methodName, routeConfig, serviceName } = Router.invocations.find(
       (i) => i.routeConfig.method == method && i.routeConfig.path == path,
@@ -81,6 +83,7 @@ export class Router {
         header: () => {},
       } as any,
       routeConfig.authenticate,
+      azureContext,
     );
     const routingService = container.get<any>(serviceName);
 

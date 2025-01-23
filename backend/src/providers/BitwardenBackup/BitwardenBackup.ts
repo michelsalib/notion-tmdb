@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from "axios";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
 import {

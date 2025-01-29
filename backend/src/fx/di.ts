@@ -3,6 +3,7 @@ import { Container } from "inversify";
 import { buildProviderModule } from "inversify-binding-decorators";
 import { DbProvider } from "../providers/DbProvider.js";
 import type { DOMAIN } from "../types.js";
+import type { InvocationContext } from "@azure/functions";
 import {
   COSMOS_DB_ACCOUNT,
   COSMOS_DB_DATABASE,
@@ -49,7 +50,7 @@ import "../providers/NotionBackup/NotionBackup.js";
 import "../providers/BitwardenBackup/BitwardenBackup.js";
 import "../fx/logger/AzureContextLogger.js";
 import "../fx/logger/ConsoleLogger.js";
-import type { InvocationContext } from "@azure/functions";
+import "../fx/scheduler/JobOrchestrator.js";
 
 // setup container
 export const rootContainer = new Container();
@@ -164,6 +165,45 @@ export function loadEnvironmentConfig(env: {
     );
 }
 
+export async function unScopedContainer(
+  domain: DOMAIN,
+  azureContext?: InvocationContext,
+): Promise<Container> {
+  const container = rootContainer.createChild({
+    // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
+    defaultScope: "Singleton",
+  });
+
+  container.bind(DOMAIN_KEY).toConstantValue(domain);
+  if (azureContext) {
+    container.bind(AZURE_CONTEXT).toConstantValue(azureContext);
+  }
+
+  return container;
+}
+
+export async function userIdContainer(
+  userId: string,
+  domain: DOMAIN,
+  azureContext?: InvocationContext,
+): Promise<Container> {
+  const container = rootContainer.createChild({
+    // this is to force services be instantiated once per container lifecycle (ie. HTTP request)
+    defaultScope: "Singleton",
+  });
+
+  container.bind(USER_ID).toConstantValue(userId);
+  container.bind(DOMAIN_KEY).toConstantValue(domain);
+
+  if (azureContext) {
+    container.bind(AZURE_CONTEXT).toConstantValue(azureContext);
+  }
+
+  await loadUser(container);
+
+  return container;
+}
+
 export async function scopeContainer(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -191,18 +231,21 @@ export async function scopeContainer(
       throw "User must be authenticated";
     }
 
-    const userInfo = await container
-      .get<DbProvider>(DB_PROVIDER)
-      .getLoggedUser();
-
-    if (!userInfo) {
-      throw "Unknown user";
-    }
-
-    container.bind(USER).toConstantValue(userInfo);
+    loadUser(container);
   }
 
   return container;
+}
+
+async function loadUser(container: Container): Promise<void> {
+  const userId = container.get<string>(USER_ID);
+  const userInfo = await container.get<DbProvider>(DB_PROVIDER).getUser(userId);
+
+  if (!userInfo) {
+    throw "Unknown user";
+  }
+
+  container.bind(USER).toConstantValue(userInfo);
 }
 
 function getUserId(request: FastifyRequest): string {

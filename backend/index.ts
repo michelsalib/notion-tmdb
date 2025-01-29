@@ -8,9 +8,10 @@ import { fileURLToPath, URL } from "node:url";
 import "reflect-metadata";
 import "./src/api.js";
 import "./src/auth.js";
-import { loadEnvironmentConfig } from "./src/fx/di.js";
+import { loadEnvironmentConfig, unScopedContainer } from "./src/fx/di.js";
 import { Router } from "./src/fx/router.js";
 import "./src/static.js";
+import { JobOrchestrator } from "./src/fx/scheduler/JobOrchestrator.js";
 
 dotenv.config();
 
@@ -54,26 +55,34 @@ if (
       "PUT",
       "TRACE",
     ],
-    handler: async (request: azure.HttpRequest) => {
+    handler: async (
+      request: azure.HttpRequest,
+      context: azure.InvocationContext,
+    ) => {
       // special handling of streamed responses
       if (request.method == "POST" && request.url.endsWith("/api/sync")) {
-        const stream = await Router.execute("POST", "/api/sync", {
-          hostname: new URL(request.url).hostname,
-          cookies: (request.headers.get("cookie") || "").split(";").reduce(
-            (res, cur) => {
-              const [key, value] = cur.split("=");
+        const stream = await Router.execute(
+          "POST",
+          "/api/sync",
+          {
+            hostname: new URL(request.url).hostname,
+            cookies: (request.headers.get("cookie") || "").split(";").reduce(
+              (res, cur) => {
+                const [key, value] = cur.split("=");
 
-              res[key] = value.trim();
+                res[key] = value.trim();
 
-              return res;
+                return res;
+              },
+              {} as Record<string, string>,
+            ),
+            headers: {
+              referer: request.headers.get("referer"),
+              ["user-agent"]: request.headers.get("user-agent"),
             },
-            {} as Record<string, string>,
-          ),
-          headers: {
-            referer: request.headers.get("referer"),
-            ["user-agent"]: request.headers.get("user-agent"),
-          },
-        } as any);
+          } as any,
+          context,
+        );
 
         return {
           body: stream,
@@ -104,6 +113,18 @@ if (
         headers: fastResponse.headers,
       } as azure.HttpResponseInit;
     },
+  });
+
+  azure.app.timer("scheduledBackup", {
+    schedule: "0 0 0 * * sun", // every sunday at midnight
+    handler: async (_, context: azure.InvocationContext) => {
+      const container = await unScopedContainer("BitwardenBackup", context);
+
+      const jobOrchestrator = container.get<JobOrchestrator>(JobOrchestrator);
+
+      await jobOrchestrator.start();
+    },
+    runOnStartup: true,
   });
 } else {
   const settings = await import(join(__dirname, "../local.settings.json"), {

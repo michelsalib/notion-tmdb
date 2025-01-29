@@ -8,7 +8,6 @@ import {
   DB_ENGINE,
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
-  USER_ID,
 } from "../../fx/keys.js";
 import type { Config, DOMAIN, UserData } from "../../types.js";
 import { DbProvider } from "../DbProvider.js";
@@ -23,7 +22,6 @@ export class CosmosClient implements DbProvider {
     @inject(COSMOS_DB_ACCOUNT) cosmosAccount: string,
     @inject(COSMOS_DB_KEY) cosmosKey: string,
     @inject(COSMOS_DB_DATABASE) database: string,
-    @inject(USER_ID) private readonly userId: string,
     @inject(DOMAIN_KEY) private readonly domain: DOMAIN,
   ) {
     this.client = new Cosmos({
@@ -38,14 +36,20 @@ export class CosmosClient implements DbProvider {
       );
   }
 
+  async *listConfiguredUsers(): AsyncGenerator<UserData<any>> {
+    const items = this.client.items.query("SELECT * FROM c").getAsyncIterator();
+
+    for await (const batch of items) {
+      for (const item of batch.resources) {
+        yield item;
+      }
+    }
+  }
+
   async getUser(userId: string): Promise<UserData<any>> {
     const item = await this.client.item(userId, userId).read();
 
     return item.resource;
-  }
-
-  async getLoggedUser(): Promise<UserData<any>> {
-    return await this.getUser(this.userId);
   }
 
   async putUser(userData: UserData<any>): Promise<void> {

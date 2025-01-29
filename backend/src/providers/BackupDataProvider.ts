@@ -5,4 +5,6 @@ export interface BackupDataProvider<T extends "BitwardenBackup" | "backup">
   getBackupDate(): Promise<Date | undefined>;
 
   getLink(): Promise<string>;
+
+  sync(): AsyncGenerator<string>;
 }

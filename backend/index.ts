@@ -124,7 +124,7 @@ if (
 
       await jobOrchestrator.start();
     },
-    runOnStartup: true,
+    // runOnStartup: true,
   });
 } else {
   const settings = await import(join(__dirname, "../local.settings.json"), {

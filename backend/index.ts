@@ -116,8 +116,7 @@ if (
   });
 
   azure.app.timer("scheduledBackup", {
-    // schedule: "0 0 0 * * sun", // every sunday at midnight
-    schedule: "0 * * * * *", // every minutes
+    schedule: "0 0 0 * * sun", // every sunday at midnight
     handler: async (_, context: azure.InvocationContext) => {
       const container = await unScopedContainer("BitwardenBackup", context);
 

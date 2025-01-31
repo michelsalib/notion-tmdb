@@ -231,7 +231,7 @@ export async function scopeContainer(
       throw "User must be authenticated";
     }
 
-    loadUser(container);
+    await loadUser(container);
   }
 
   return container;

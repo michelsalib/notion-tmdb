@@ -15,7 +15,7 @@ export function NotionLogin() {
       redirectUrl = redirectUrl.replace(/notion-\w+\./, "");
     }
 
-    window.location.href = `https://api.notion.com/v1/oauth/authorize?client_id=${t("AUTH_KEY")}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUrl)}&state=${domain}`;
+    window.location.href = `https://api.notion.com/v1/oauth/authorize?client_id=${t("AUTH_KEY")}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUrl)}&state=${domain.domain}`;
   }, []);
 
   return (

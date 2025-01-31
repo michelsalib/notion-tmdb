@@ -228,7 +228,7 @@ export async function scopeContainer(
 
   if (authenticate) {
     if (!userId) {
-      throw "User must be authenticated";
+      throw new Error("User must be authenticated");
     }
 
     await loadUser(container);
@@ -242,7 +242,7 @@ async function loadUser(container: Container): Promise<void> {
   const userInfo = await container.get<DbProvider>(DB_PROVIDER).getUser(userId);
 
   if (!userInfo) {
-    throw "Unknown user";
+    throw new Error("Unknown user");
   }
 
   container.bind(USER).toConstantValue(userInfo);

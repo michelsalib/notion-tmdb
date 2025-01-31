@@ -124,7 +124,7 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
       }
     }
 
-    archive.finalize();
+    await archive.finalize();
     yield `Done generating archive.`;
 
     // store in blob storage

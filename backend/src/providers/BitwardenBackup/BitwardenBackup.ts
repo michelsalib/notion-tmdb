@@ -74,7 +74,7 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
     archive.append(JSON.stringify(vault.data), {
       name: "vault_data.json",
     });
-    archive.finalize();
+    await archive.finalize();
 
     await this.storage.putBackup(archive);
 

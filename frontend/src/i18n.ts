@@ -5,7 +5,7 @@ import { initReactI18next } from "react-i18next";
 import { parse } from "yaml";
 import { domainState } from "./Context";
 
-i18n
+void i18n
   .use(Backend)
   .use(LanguageDetector)
   .use(initReactI18next)

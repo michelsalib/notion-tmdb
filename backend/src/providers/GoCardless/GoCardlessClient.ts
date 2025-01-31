@@ -202,11 +202,11 @@ export class GoCardlessClient implements DataProvider<"GoCardless"> {
   }
 
   async search(): Promise<Suggestion[]> {
-    throw "Not supported";
+    throw new Error("Not supported");
   }
 
   loadNotionEntry(): Promise<any> {
-    throw "Method not implemented.";
+    throw new Error("Method not implemented.");
   }
 
   private transactionToEntry(

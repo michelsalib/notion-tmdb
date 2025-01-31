@@ -52,9 +52,9 @@ export function App() {
   );
   useEffect(() => {
     if (loggedIn.status != "none") {
-      fetch("/api/config")
+      void fetch("/api/config")
         .then((r) => r.json())
-        .then((r) => setConfig(r as any));
+        .then((r) => setConfig(r));
     }
   }, []);
 

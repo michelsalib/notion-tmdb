@@ -131,7 +131,7 @@ export class NotionClient {
       } while (cursor);
     }
 
-    return (existingItems as PageObjectResponse[]).map(
+    return existingItems.map(
       (i) =>
         (Object.values(i.properties).find((p) => p.id == dbConfig.url) as any)
           .rich_text[0].text.content,

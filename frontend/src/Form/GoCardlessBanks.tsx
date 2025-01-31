@@ -16,7 +16,7 @@ export function GoCardlessBanks({ value }: { value: GoCardlessAccount[] }) {
   const [banks, setBanks] = useState<Bank[]>([]);
 
   useEffect(() => {
-    fetch("/api/banks")
+    void fetch("/api/banks")
       .then((r) => r.json())
       .then((data) => setBanks(data.banks));
   }, []);

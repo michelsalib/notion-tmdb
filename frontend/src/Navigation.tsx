@@ -8,7 +8,7 @@ export function Navigation() {
   const [user, setUser] = useState<UserData<any> | undefined>(undefined);
 
   useEffect(() => {
-    fetch("/api/user")
+    void fetch("/api/user")
       .then((r) => r.json())
       .then((data) => setUser(data.user));
   }, []);

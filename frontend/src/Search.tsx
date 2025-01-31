@@ -24,7 +24,7 @@ export function Search({
     () =>
       debounce(
         (inputValue, done: (result: { results: Suggestion[] }) => void) => {
-          fetch("/api/search?query=" + encodeURIComponent(inputValue))
+          void fetch("/api/search?query=" + encodeURIComponent(inputValue))
             .then((res) => res.json())
             .then(done);
         },

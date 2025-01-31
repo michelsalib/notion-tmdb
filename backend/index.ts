@@ -141,7 +141,7 @@ if (
     LOGGER_ENGINE: "CONSOLE",
   });
 
-  fastApp.listen({
+  void fastApp.listen({
     port: 7071, // matchin azure func default port
   });
 }

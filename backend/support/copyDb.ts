@@ -48,5 +48,5 @@ for (const domain of domains) {
     console.log(`Inserted ${items.resources.length} items`);
   }
 
-  mongoDbClient.close();
+  await mongoDbClient.close();
 }

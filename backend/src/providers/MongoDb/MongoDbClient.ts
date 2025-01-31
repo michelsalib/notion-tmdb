@@ -43,7 +43,7 @@ export class MongoDbClient implements DbProvider {
     });
 
     if (!user) {
-      throw "user not found";
+      throw new Error("user not found");
     }
 
     return user;

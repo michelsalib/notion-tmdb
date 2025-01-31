@@ -70,6 +70,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: '${storageAccount.properties.primaryEndpoints.blob}${storageContainer.name}'
         }
         {
+          name: 'AzureWebJobsStorage'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+        }
+        {
           name: 'AzureWebJobsSecretStorageType'
           value: 'files'
         }

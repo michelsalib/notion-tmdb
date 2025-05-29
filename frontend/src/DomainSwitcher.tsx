@@ -59,6 +59,12 @@ export function DomainSwitcher({ variant }: { variant: "h2" | "h6" }) {
           TMDB
         </MenuItem>
         <MenuItem
+          value="IGDB"
+          sx={{ fontSize: "large", fontWeight: font.fontWeight }}
+        >
+          IGDB
+        </MenuItem>
+        <MenuItem
           value="GBook"
           sx={{ fontSize: "large", fontWeight: font.fontWeight }}
           disabled={pre == "Bitwarden"}

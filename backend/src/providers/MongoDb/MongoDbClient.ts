@@ -35,16 +35,12 @@ export class MongoDbClient implements DbProvider {
     return db.collection(`notion-${this.domain.toLowerCase()}`);
   }
 
-  async getUser(userId: string): Promise<UserData<any>> {
+  async getUser(userId: string): Promise<UserData<any> | null> {
     const collection = await this.getUserCollection();
 
     const user = await collection.findOne({
       id: userId,
     });
-
-    if (!user) {
-      throw new Error("user not found");
-    }
 
     return user;
   }

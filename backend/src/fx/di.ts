@@ -1,19 +1,22 @@
+import type { InvocationContext } from "@azure/functions";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
 import { buildProviderModule } from "inversify-binding-decorators";
 import { DbProvider } from "../providers/DbProvider.js";
 import type { DOMAIN } from "../types.js";
-import type { InvocationContext } from "@azure/functions";
 import {
+  AZURE_CONTEXT,
   COSMOS_DB_ACCOUNT,
   COSMOS_DB_DATABASE,
   COSMOS_DB_KEY,
   DB_ENGINE,
-  STORAGE_ENGINE,
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   GOCARDLESS_ID,
   GOCARDLESS_SECRET,
+  IGDB_CLIENT_ID,
+  IGDB_CLIENT_SECRET,
+  LOGGER_ENGINE,
   NOTION_BACKUP_CLIENT_ID,
   NOTION_BACKUP_CLIENT_SECRET,
   NOTION_CLIENT_ID,
@@ -22,35 +25,37 @@ import {
   NOTION_GBOOK_CLIENT_SECRET,
   NOTION_GOCARDLESS_CLIENT_ID,
   NOTION_GOCARDLESS_CLIENT_SECRET,
+  NOTION_IGDB_CLIENT_ID,
+  NOTION_IGDB_CLIENT_SECRET,
   NOTION_TMDB_CLIENT_ID,
   NOTION_TMDB_CLIENT_SECRET,
   REPLY,
   REQUEST,
   STORAGE_ACCOUNT,
   STORAGE_CONTAINER,
+  STORAGE_ENGINE,
   STORAGE_KEY,
   TMDB_API_KEY,
   USER,
   USER_ID,
-  LOGGER_ENGINE,
-  AZURE_CONTEXT,
 } from "./keys.js";
 
 // load services
-import "../providers/Cosmos/CosmosClient.js";
-import "../providers/GBook/GBookClient.js";
-import "../providers/GoCardless/GoCardlessClient.js";
-import "../providers/MongoDb/MongoDbClient.js";
-import "../providers/Notion/AnonymousNotionClient.js";
-import "../providers/Notion/NotionClient.js";
-import "../providers/Storage/AzureStorageClient.js";
-import "../providers/Storage/FilesystemClient.js";
-import "../providers/Tmdb/TmdbClient.js";
-import "../providers/NotionBackup/NotionBackup.js";
-import "../providers/BitwardenBackup/BitwardenBackup.js";
 import "../fx/logger/AzureContextLogger.js";
 import "../fx/logger/ConsoleLogger.js";
 import "../fx/scheduler/JobOrchestrator.js";
+import "../providers/BitwardenBackup/BitwardenBackup.js";
+import "../providers/Cosmos/CosmosClient.js";
+import "../providers/GBook/GBookClient.js";
+import "../providers/GoCardless/GoCardlessClient.js";
+import "../providers/Igdb/IgdbClient.js";
+import "../providers/MongoDb/MongoDbClient.js";
+import "../providers/Notion/AnonymousNotionClient.js";
+import "../providers/Notion/NotionClient.js";
+import "../providers/NotionBackup/NotionBackup.js";
+import "../providers/Storage/AzureStorageClient.js";
+import "../providers/Storage/FilesystemClient.js";
+import "../providers/Tmdb/TmdbClient.js";
 
 // setup container
 export const rootContainer = new Container();
@@ -66,6 +71,13 @@ export function loadEnvironmentConfig(env: {
   rootContainer
     .bind(NOTION_TMDB_CLIENT_SECRET)
     .toConstantValue(env["NOTION_TMDB_CLIENT_SECRET"]);
+  // notion igdb
+  rootContainer
+    .bind(NOTION_IGDB_CLIENT_ID)
+    .toConstantValue(env["NOTION_IGDB_CLIENT_ID"]);
+  rootContainer
+    .bind(NOTION_IGDB_CLIENT_SECRET)
+    .toConstantValue(env["NOTION_IGDB_CLIENT_SECRET"]);
   // notion backup
   rootContainer
     .bind(NOTION_BACKUP_CLIENT_ID)
@@ -94,6 +106,9 @@ export function loadEnvironmentConfig(env: {
     .toConstantValue(env["GOCARDLESS_SECRET"]);
   // tmdb api
   rootContainer.bind(TMDB_API_KEY).toConstantValue(env["TMDB_API_KEY"]);
+  // igdb api
+  rootContainer.bind(IGDB_CLIENT_ID).toConstantValue(env["IGDB_CLIENT_ID"]);
+  rootContainer.bind(IGDB_CLIENT_SECRET).toConstantValue(env["IGDB_CLIENT_SECRET"]);
   // db
   rootContainer
     .bind(COSMOS_DB_ACCOUNT)
@@ -120,6 +135,12 @@ export function loadEnvironmentConfig(env: {
     );
   rootContainer
     .bind(NOTION_CLIENT_ID)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_IGDB_CLIENT_ID))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "IGDB",
+    );
+  rootContainer
+    .bind(NOTION_CLIENT_ID)
     .toDynamicValue((ctx) => ctx.container.get(NOTION_TMDB_CLIENT_ID))
     .when(
       (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB",
@@ -143,6 +164,12 @@ export function loadEnvironmentConfig(env: {
     .toDynamicValue((ctx) => ctx.container.get(NOTION_GBOOK_CLIENT_SECRET))
     .when(
       (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook",
+    );
+  rootContainer
+    .bind(NOTION_CLIENT_SECRET)
+    .toDynamicValue((ctx) => ctx.container.get(NOTION_IGDB_CLIENT_SECRET))
+    .when(
+      (ctx) => ctx.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "IGDB",
     );
   rootContainer
     .bind(NOTION_CLIENT_SECRET)
@@ -261,7 +288,11 @@ function getUserId(request: FastifyRequest): string {
 }
 
 function computeDomain(request: FastifyRequest): DOMAIN {
-  const [, pre, post] = /(\w+)-(\w+)/.exec(request.hostname)!;
+  let pre: string = "";
+  let post: string = (request.query as any)["state"]?.toLowerCase();
+  if (!post) {
+    [, pre, post] = /(\w+)-(\w+)/.exec(request.hostname)!;
+  }
 
   if (pre == "bitwarden") {
     return "BitwardenBackup";
@@ -277,6 +308,10 @@ function computeDomain(request: FastifyRequest): DOMAIN {
 
   if (post == "gocardless") {
     return "GoCardless";
+  }
+
+  if (post == "igdb") {
+    return "IGDB";
   }
 
   return "TMDB";

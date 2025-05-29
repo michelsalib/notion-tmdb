@@ -16,7 +16,7 @@ const settings = await import(join(__dirname, "../local.settings.json"), {
   },
 });
 
-const domains: DOMAIN[] = ["GBook", "TMDB", "backup", "GoCardless"];
+const domains: DOMAIN[] = ["GBook", "TMDB", "backup", "GoCardless", "IGDB"];
 
 for (const domain of domains) {
   console.log(`Copying db ${domain}`);

@@ -4,7 +4,7 @@ param appName string = resourceGroup().name
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
-var distros = ['notion-tmdb', 'notion-gbook', 'notion-backup', 'notion-gocardless', 'bitwarden-backup']
+var distros = ['notion-tmdb', 'notion-gbook', 'notion-backup', 'notion-gocardless', 'bitwarden-backup', 'notion-igdb']
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: appName

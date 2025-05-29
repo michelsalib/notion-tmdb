@@ -73,7 +73,7 @@ export class Auth {
         workspaceIcon: tokenResponse.workspace_icon as string,
         accessToken: tokenResponse.access_token,
       },
-      config: existingUser?.config,
+      config: existingUser?.config || {},
     };
 
     await db.putUser(userData);

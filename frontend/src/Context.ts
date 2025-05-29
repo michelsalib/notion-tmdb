@@ -48,7 +48,7 @@ function loginState(): {
 }
 
 export type PreDomain = "Bitwarden" | "Notion";
-export type PostDomain = "backup" | "GBook" | "GoCardless" | "TMDB";
+export type PostDomain = "backup" | "GBook" | "GoCardless" | "TMDB" | "IGDB";
 
 export function domainState(): {
   domain: DOMAIN;
@@ -57,7 +57,7 @@ export function domainState(): {
 } {
   try {
     const [, pre, post]: any =
-      /(bitwarden|notion)-(backup|gbook|gocardless|tmdb)/.exec(
+      /(bitwarden|notion)-(backup|gbook|gocardless|tmdb|igdb)/.exec(
         window.location.origin,
       )!;
 
@@ -71,6 +71,10 @@ export function domainState(): {
 
     if (post == "gbook") {
       return { domain: "GBook", pre: "Notion", post: "GBook" };
+    }
+
+    if (post == "igdb") {
+      return { domain: "IGDB", pre: "Notion", post: "IGDB" };
     }
 
     if (post == "backup") {

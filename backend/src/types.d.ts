@@ -39,6 +39,14 @@ export interface GBookDbConfig extends DbConfigBase {
   author: string;
 }
 
+export interface IgdbConfig extends DbConfigBase {
+  title: string;
+  releaseDate: string;
+  genre: string;
+  companies: string;
+  rating: string;
+}
+
 export interface ClassificationRule {
   category: string;
   matchers: string[];
@@ -73,9 +81,11 @@ export type DomainToConfig<T extends DOMAIN> = T extends "GBook"
     ? TmdbDbConfig
     : T extends "GoCardless"
       ? GoCardlessDbConfig
-      : T extends "Backup"
-        ? BackupDbConfig
-        : { [key: string]: never };
+      : T extends "IGDB"
+        ? IgdbConfig
+        : T extends "Backup"
+          ? BackupDbConfig
+          : { [key: string]: never };
 
 export interface UserData<T extends DOMAIN> {
   id: string;
@@ -119,4 +129,5 @@ export type DOMAIN =
   | "TMDB"
   | "backup"
   | "GoCardless"
-  | "BitwardenBackup";
+  | "BitwardenBackup"
+  | "IGDB";

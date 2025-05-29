@@ -12,6 +12,7 @@ import type {
   DomainToConfig,
   GBookDbConfig,
   GoCardlessDbConfig,
+  IgdbConfig,
   NotionDatabase,
   TmdbDbConfig,
 } from "backend/src/types";
@@ -54,6 +55,19 @@ function computeDefaultState<T extends DOMAIN>(
     } as GoCardlessDbConfig as DomainToConfig<T>;
   }
 
+  if (domain == "IGDB") {
+    return {
+      id: dbId,
+      url: "",
+      status: "",
+      releaseDate: "",
+      genre: "",
+      companies: "",
+      rating: "",
+      title: "",
+    } as IgdbConfig as DomainToConfig<T>;
+  }
+
   return {
     id: dbId,
     url: "",
@@ -66,7 +80,7 @@ function computeDefaultState<T extends DOMAIN>(
   } as TmdbDbConfig as DomainToConfig<T>;
 }
 
-function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
+function getdbFields<T extends "GBook" | "TMDB" | "GoCardless" | "IGDB">(
   domain: T,
 ): DbField<T>[] {
   if (domain == "GoCardless") {
@@ -176,6 +190,19 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
       dbConfigField: "author",
       required: false,
     } as DbField<"GBook"> as DbField<T>);
+  } else if (domain == "IGDB") {
+    result.push({
+      label: "Companies",
+      columnType: "rich_text",
+      dbConfigField: "companies",
+      required: false,
+    } as DbField<"IGDB"> as DbField<T>);
+    result.push({
+      label: "Rating",
+      columnType: "number",
+      dbConfigField: "rating",
+      required: false,
+    } as DbField<"IGDB"> as DbField<T>);
   } else {
     result.push({
       label: "Director",
@@ -194,7 +221,9 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless">(
   return result;
 }
 
-export function DbConfigForm<T extends "GBook" | "TMDB" | "GoCardless">({
+export function DbConfigForm<
+  T extends "GBook" | "TMDB" | "GoCardless" | "IGDB",
+>({
   notionDatabases,
   initialConfig,
   onConfigChange,

@@ -46,7 +46,7 @@ export class CosmosClient implements DbProvider {
     }
   }
 
-  async getUser(userId: string): Promise<UserData<any>> {
+  async getUser(userId: string): Promise<UserData<any> | null> {
     const item = await this.client.item(userId, userId).read();
 
     return item.resource;

@@ -3,10 +3,10 @@ import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
 import {
-    DATA_PROVIDER,
-    DOMAIN as DOMAIN_KEY,
-    IGDB_CLIENT_ID,
-    IGDB_CLIENT_SECRET,
+  DATA_PROVIDER,
+  DOMAIN as DOMAIN_KEY,
+  IGDB_CLIENT_ID,
+  IGDB_CLIENT_SECRET,
 } from "../../fx/keys.js";
 import { DOMAIN, IgdbConfig, NotionItem, Suggestion } from "../../types";
 import { DataProvider } from "../DataProvider";
@@ -156,7 +156,9 @@ export class IgdbClient implements DataProvider<"IGDB"> {
         rich_text: [
           {
             text: {
-              content: data.involved_companies.map((c: any) => c.company.name).join(', '),
+              content: data.involved_companies
+                .map((c: any) => c.company.name)
+                .join(", "),
               link: {
                 url: data.url,
               },

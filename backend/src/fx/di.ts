@@ -108,7 +108,9 @@ export function loadEnvironmentConfig(env: {
   rootContainer.bind(TMDB_API_KEY).toConstantValue(env["TMDB_API_KEY"]);
   // igdb api
   rootContainer.bind(IGDB_CLIENT_ID).toConstantValue(env["IGDB_CLIENT_ID"]);
-  rootContainer.bind(IGDB_CLIENT_SECRET).toConstantValue(env["IGDB_CLIENT_SECRET"]);
+  rootContainer
+    .bind(IGDB_CLIENT_SECRET)
+    .toConstantValue(env["IGDB_CLIENT_SECRET"]);
   // db
   rootContainer
     .bind(COSMOS_DB_ACCOUNT)

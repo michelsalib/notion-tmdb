@@ -151,7 +151,7 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       };
     }
 
-    if (dbConfig.companies) {
+    if (dbConfig.companies && data.involved_companies) {
       gameItem.properties[dbConfig.companies] = {
         rich_text: [
           {

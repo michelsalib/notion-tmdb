@@ -96,7 +96,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
   ): Promise<{ notionItem: NotionItem; title: string }> {
     const { data } = await this.client.get(`/movie/${tmdbId}`, {
       params: {
-        append_to_response: "credits",
+        append_to_response: "credits,release_dates",
         language: "fr-FR",
       },
     });
@@ -140,7 +140,11 @@ export class TmdbClient implements DataProvider<"TMDB"> {
     if (dbConfig.releaseDate) {
       movieItem.properties[dbConfig.releaseDate] = {
         date: {
-          start: data.release_date,
+          start:
+            data.release_dates.results
+              .find((i: any) => i.iso_3166_1 == "FR")
+              ?.release_dates?.find((i: any) => i.type == 3)?.release_date ||
+            data.release_date,
         },
       };
     }

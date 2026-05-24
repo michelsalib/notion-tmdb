@@ -6,6 +6,9 @@ export function asWebByteStream(
   const encoder = new TextEncoder();
   const iter = generatorSerializer(generator)[Symbol.asyncIterator]();
   return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(": ready\n\n"));
+    },
     async pull(controller) {
       try {
         const { done, value } = await iter.next();

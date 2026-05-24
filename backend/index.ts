@@ -84,8 +84,32 @@ if (
           context,
         );
 
+        const encoder = new TextEncoder();
+        const iter = stream[Symbol.asyncIterator]();
+        const webStream = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            try {
+              const { done, value } = await iter.next();
+              if (done) {
+                controller.close();
+              } else {
+                controller.enqueue(
+                  typeof value === "string"
+                    ? encoder.encode(value)
+                    : new Uint8Array(value),
+                );
+              }
+            } catch (err) {
+              controller.error(err);
+            }
+          },
+          async cancel() {
+            await iter.return?.(undefined);
+          },
+        });
+
         return {
-          body: stream,
+          body: webStream,
           headers: {
             "content-type": "text/event-stream",
             "cache-control": "no-cache",

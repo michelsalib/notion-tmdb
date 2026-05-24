@@ -1,5 +1,29 @@
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
+export function asWebByteStream(
+  generator: AsyncGenerator<any>,
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const iter = generatorSerializer(generator)[Symbol.asyncIterator]();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { done, value } = await iter.next();
+        if (done) {
+          controller.close();
+        } else {
+          controller.enqueue(encoder.encode(value));
+        }
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+    async cancel() {
+      await iter.return?.(undefined);
+    },
+  });
+}
+
 export async function* generatorSerializer(
   generator: AsyncGenerator<any>,
 ): AsyncGenerator<string> {

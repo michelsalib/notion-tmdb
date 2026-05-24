@@ -1,4 +1,3 @@
-import { Readable } from "node:stream";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
 import {
@@ -17,7 +16,7 @@ import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import { NotionBackup } from "./providers/NotionBackup/NotionBackup.js";
 import type { Config, DOMAIN, UserData } from "./types.js";
-import { generatorSerializer } from "./utils/generator.js";
+import { asWebByteStream } from "./utils/generator.js";
 
 export class Api {
   @route({ path: "/api/user", method: "GET", authenticate: true })
@@ -57,7 +56,7 @@ export class Api {
     if (domain == "backup" || domain == "BitwardenBackup") {
       const backup = container.get<NotionBackup>(DATA_PROVIDER);
 
-      return Readable.from(generatorSerializer(backup.sync()));
+      return asWebByteStream(backup.sync());
     }
 
     if (!user.config) {
@@ -70,9 +69,7 @@ export class Api {
     const notionClient = container.get(NotionClient);
     const dataProvider = container.get<DataProvider>(DATA_PROVIDER);
 
-    return Readable.from(
-      generatorSerializer(dataProvider.sync(notionClient, user.config)),
-    );
+    return asWebByteStream(dataProvider.sync(notionClient, user.config));
   }
 
   @route({ path: "/api/add", method: "POST", authenticate: true })

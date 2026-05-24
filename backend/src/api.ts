@@ -43,7 +43,7 @@ export class Api {
     return { results };
   }
 
-  @route({ path: "/api/sync", method: "POST", authenticate: true })
+  @route({ path: "/api/sync", method: "GET", authenticate: true })
   async sync(container: Container) {
     const user = container.get<UserData<any>>(USER);
     const domain = container.get<DOMAIN>(DOMAIN_KEY);

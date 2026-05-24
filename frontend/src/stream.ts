@@ -5,7 +5,7 @@ export interface StreamMessage {
 
 export async function* streaming(path: string): AsyncGenerator<StreamMessage> {
   const response = await fetch(path, {
-    method: "POST",
+    method: "GET",
     headers: { accept: "text/event-stream" },
   });
 

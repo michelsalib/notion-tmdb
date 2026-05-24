@@ -3,6 +3,8 @@ const HEARTBEAT_INTERVAL_MS = 25_000;
 export async function* generatorSerializer(
   generator: AsyncGenerator<any>,
 ): AsyncGenerator<string> {
+  yield `: starting\n\n`;
+
   const iter = generator[Symbol.asyncIterator]();
   let nextPromise = iter.next();
 

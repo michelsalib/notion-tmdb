@@ -5,33 +5,20 @@ export function asWebByteStream(
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   const iter = generatorSerializer(generator)[Symbol.asyncIterator]();
-  let pullCount = 0;
   return new ReadableStream<Uint8Array>({
-    start(controller) {
-      console.error("[asWebByteStream] start: eager-enqueue : ready");
-      controller.enqueue(encoder.encode(": ready\n\n"));
-    },
     async pull(controller) {
-      pullCount += 1;
-      const myCount = pullCount;
-      console.error(`[asWebByteStream] pull #${myCount} begin`);
       try {
         const { done, value } = await iter.next();
-        console.error(
-          `[asWebByteStream] pull #${myCount} resolved done=${done} valueLen=${value?.length ?? 0}`,
-        );
         if (done) {
           controller.close();
         } else {
           controller.enqueue(encoder.encode(value));
         }
       } catch (err) {
-        console.error(`[asWebByteStream] pull #${myCount} threw: ${err}`);
         controller.error(err);
       }
     },
     async cancel() {
-      console.error("[asWebByteStream] cancel called");
       await iter.return?.(undefined);
     },
   });

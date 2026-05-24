@@ -42,7 +42,7 @@ Monorepo using npm workspaces:
 - TypeScript is compiled with **`tsgo`** (the native-preview compiler from
   `@typescript/native-preview`), not `tsc`. Use `tsgo --noEmit` for type
   checks; the syntax matches `tsc` flags.
-- Node 24 (`actions/setup-node@v4` with `node-version: 24`). Don't introduce
+- Node 22 (`actions/setup-node@v4` with `node-version: 22`). Don't introduce
   syntax that requires a newer runtime.
 - ESM everywhere (`"type": "module"` at the root).
 

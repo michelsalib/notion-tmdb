@@ -90,7 +90,7 @@ if (
           body: stream,
           headers: {
             "content-type": "text/event-stream",
-            "cache-control": "no-cache",
+            "cache-control": "no-cache, no-transform",
             connection: "keep-alive",
             "x-accel-buffering": "no",
           },

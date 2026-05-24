@@ -49,7 +49,7 @@ export class Api {
     const domain = container.get<DOMAIN>(DOMAIN_KEY);
     const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
     reply.header("content-type", "text/event-stream");
-    reply.header("cache-control", "no-cache");
+    reply.header("cache-control", "no-cache, no-transform");
     reply.header("connection", "keep-alive");
     reply.header("x-accel-buffering", "no");
 

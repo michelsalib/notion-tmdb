@@ -42,36 +42,6 @@ if (
     enableHttpStream: true,
   });
 
-  azure.app.http("streamTest", {
-    route: "stream-test",
-    methods: ["GET"],
-    authLevel: "anonymous",
-    handler: async () => {
-      const encoder = new TextEncoder();
-      let count = 0;
-      const body = new ReadableStream<Uint8Array>({
-        async pull(controller) {
-          if (count >= 10) {
-            controller.close();
-            return;
-          }
-          await new Promise((r) => setTimeout(r, 1000));
-          count += 1;
-          controller.enqueue(encoder.encode(`: tick ${count}\n\n`));
-        },
-      });
-      return {
-        body,
-        headers: {
-          "content-type": "text/event-stream",
-          "cache-control": "no-cache",
-          connection: "keep-alive",
-          "x-accel-buffering": "no",
-        },
-      };
-    },
-  });
-
   azure.app.http("azureFunctionToFastify", {
     route: "{*path}",
     methods: [
@@ -89,6 +59,32 @@ if (
       request: azure.HttpRequest,
       context: azure.InvocationContext,
     ) => {
+      // diagnostic: tick-emitting stream
+      if (request.method == "GET" && request.url.endsWith("/stream-test")) {
+        const encoder = new TextEncoder();
+        let count = 0;
+        const body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            if (count >= 10) {
+              controller.close();
+              return;
+            }
+            await new Promise((r) => setTimeout(r, 1000));
+            count += 1;
+            controller.enqueue(encoder.encode(`: tick ${count}\n\n`));
+          },
+        });
+        return {
+          body,
+          headers: {
+            "content-type": "text/event-stream",
+            "cache-control": "no-cache",
+            connection: "keep-alive",
+            "x-accel-buffering": "no",
+          },
+        };
+      }
+
       // special handling of streamed responses
       if (request.method == "POST" && request.url.endsWith("/api/sync")) {
         const stream = await Router.execute(

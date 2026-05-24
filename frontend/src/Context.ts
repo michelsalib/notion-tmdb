@@ -14,6 +14,7 @@ export interface SnackbarState {
   open: boolean;
   message: string;
   color: AlertColor;
+  url?: string;
 }
 
 type LOGIN_STATE = "sso" | "embed" | "none";

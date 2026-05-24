@@ -35,10 +35,13 @@ export function EmbedPage() {
         return;
       }
 
+      const { url } = (await response.json()) as { url?: string };
+
       setSnackbar({
         open: true,
         message: t("ADD_SUCCESS"),
         color: "success",
+        url,
       });
     } catch {
       setSnackbar({

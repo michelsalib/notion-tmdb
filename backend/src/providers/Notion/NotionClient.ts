@@ -142,7 +142,9 @@ export class NotionClient {
     await this.client.pages.update(page);
   }
 
-  async createPage(page: CreatePageParameters): Promise<void> {
-    await this.client.pages.create(page);
+  async createPage(page: CreatePageParameters): Promise<string | undefined> {
+    const response = await this.client.pages.create(page);
+
+    return "url" in response ? response.url : undefined;
   }
 }

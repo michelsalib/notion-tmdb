@@ -1,5 +1,6 @@
 import {
   Alert,
+  Button,
   CssBaseline,
   createTheme,
   Snackbar,
@@ -91,6 +92,19 @@ export function App() {
               variant="filled"
               severity={snackbar.color}
               onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
+              action={
+                snackbar.url ? (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    href={snackbar.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t("OPEN")}
+                  </Button>
+                ) : undefined
+              }
             >
               {snackbar.message}
             </Alert>

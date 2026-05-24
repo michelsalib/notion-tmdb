@@ -98,14 +98,14 @@ export class Api {
     );
 
     // put into notion
-    await notionClient.createPage({
+    const url = await notionClient.createPage({
       ...notionItem,
       parent: {
         database_id: user.config.id,
       },
     });
 
-    return `Sucess loading ${title}`;
+    return { message: `Sucess loading ${title}`, url };
   }
 
   @route({ path: "/api/config", method: "GET", authenticate: true })

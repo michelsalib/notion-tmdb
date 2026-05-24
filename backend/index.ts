@@ -61,12 +61,13 @@ if (
     ) => {
       // special handling of streamed responses
       if (request.method == "POST" && request.url.endsWith("/api/sync")) {
-        context.log("[sync] handler entered");
+        const url = new URL(request.url);
         const stream = await Router.execute(
           "POST",
           "/api/sync",
           {
-            hostname: new URL(request.url).hostname,
+            hostname: url.hostname,
+            query: Object.fromEntries(url.searchParams),
             cookies: (request.headers.get("cookie") || "").split(";").reduce(
               (res, cur) => {
                 const [key, value] = cur.split("=");
@@ -83,9 +84,6 @@ if (
             },
           } as any,
           context,
-        );
-        context.log(
-          `[sync] router resolved, stream typeof=${typeof stream}, isReadableStream=${stream instanceof ReadableStream}`,
         );
 
         return {

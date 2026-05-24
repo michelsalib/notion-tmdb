@@ -42,6 +42,36 @@ if (
     enableHttpStream: true,
   });
 
+  azure.app.http("streamTest", {
+    route: "stream-test",
+    methods: ["GET"],
+    authLevel: "anonymous",
+    handler: async () => {
+      const encoder = new TextEncoder();
+      let count = 0;
+      const body = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          if (count >= 10) {
+            controller.close();
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 1000));
+          count += 1;
+          controller.enqueue(encoder.encode(`: tick ${count}\n\n`));
+        },
+      });
+      return {
+        body,
+        headers: {
+          "content-type": "text/event-stream",
+          "cache-control": "no-cache",
+          connection: "keep-alive",
+          "x-accel-buffering": "no",
+        },
+      };
+    },
+  });
+
   azure.app.http("azureFunctionToFastify", {
     route: "{*path}",
     methods: [
@@ -139,36 +169,6 @@ if (
           : undefined,
         headers: fastResponse.headers,
       } as azure.HttpResponseInit;
-    },
-  });
-
-  azure.app.http("streamTest", {
-    route: "stream-test",
-    methods: ["GET"],
-    authLevel: "anonymous",
-    handler: async () => {
-      const encoder = new TextEncoder();
-      let count = 0;
-      const body = new ReadableStream<Uint8Array>({
-        async pull(controller) {
-          if (count >= 10) {
-            controller.close();
-            return;
-          }
-          await new Promise((r) => setTimeout(r, 1000));
-          count += 1;
-          controller.enqueue(encoder.encode(`: tick ${count}\n\n`));
-        },
-      });
-      return {
-        body,
-        headers: {
-          "content-type": "text/event-stream",
-          "cache-control": "no-cache",
-          connection: "keep-alive",
-          "x-accel-buffering": "no",
-        },
-      };
     },
   });
 

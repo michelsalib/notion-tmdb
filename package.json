@@ -5,8 +5,10 @@
   "type": "module",
   "main": "backend/dist/index.js",
   "scripts": {
-    "lint": "eslint",
-    "format": "prettier --write .",
+    "check": "biome check",
+    "format": "biome format --write .",
+    "lint": "biome lint",
+    "fix": "biome check --write .",
     "build": "npm run build --workspaces && rm -rf dist && node --loader ts-node/esm support/build.ts",
     "code:deploy": "cd dist && npm prune --workspace backend --omit dev && zip -r out.zip . && az functionapp deployment source config-zip -g notion-tmdb-fr -n notion-tmdb-fr --src out.zip",
     "infra:deploy": "az deployment group create --mode complete -g notion-tmdb-fr -f azure/template.bicep"
@@ -18,20 +20,13 @@
     "frontend"
   ],
   "dependencies": {
-    "copy-file": "^11.0.0",
-    "globby": "^14.0.2"
+    "copy-file": "^11.1.0",
+    "globby": "^16.2.0"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.2.6",
-    "@eslint/js": "^9.19.0",
-    "@typescript-eslint/eslint-plugin": "^8.22.0",
-    "@typescript-eslint/parser": "^8.22.0",
-    "eslint": "^9.19.0",
-    "eslint-plugin-react": "^7.37.4",
-    "globals": "^15.14.0",
-    "prettier": "^3.4.2",
+    "@biomejs/biome": "^2.4.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260524.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.22.0"
+    "typescript": "^5.9.3"
   }
 }

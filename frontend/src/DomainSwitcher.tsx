@@ -1,5 +1,5 @@
-import { MenuItem, Select, Typography, useTheme } from "@mui/material";
 import SyncAlt from "@mui/icons-material/SyncAlt";
+import { MenuItem, Select, Typography, useTheme } from "@mui/material";
 import { useCallback, useContext } from "react";
 import { DomainContext, PostDomain, PreDomain } from "./Context";
 

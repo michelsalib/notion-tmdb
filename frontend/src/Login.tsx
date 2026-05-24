@@ -10,7 +10,7 @@ export function Login() {
 
   return (
     <Container maxWidth="sm" sx={{ padding: 2 }}>
-      <Stack alignItems={"center"} spacing={3}>
+      <Stack spacing={3} sx={{ alignItems: "center" }}>
         <DomainSwitcher variant="h2" />
         {pre == "Notion" && <NotionLogin />}
         {pre == "Bitwarden" && <BitwardenLogin />}

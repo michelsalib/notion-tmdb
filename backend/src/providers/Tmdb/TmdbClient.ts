@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from "axios";
+import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
 import {
@@ -14,11 +15,12 @@ import type {
 } from "../../types.js";
 import { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 
-@(fluentProvide(DATA_PROVIDER)
-  .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
-  .done())
+@(
+  fluentProvide(DATA_PROVIDER)
+    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
+    .done()
+)
 export class TmdbClient implements DataProvider<"TMDB"> {
   private readonly client: AxiosInstance;
 

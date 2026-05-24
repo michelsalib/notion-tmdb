@@ -1,8 +1,8 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { CosmosClient } from "@azure/cosmos";
 import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import "reflect-metadata";
 import type { DOMAIN, UserData } from "../src/types.js";
 

@@ -2,14 +2,14 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
 import {
   DB_PROVIDER,
+  DOMAIN as DOMAIN_KEY,
   REPLY,
   REQUEST,
-  DOMAIN as DOMAIN_KEY,
 } from "./fx/keys.js";
 import { route } from "./fx/router.js";
+import { DbProvider } from "./providers/DbProvider.js";
 import { AnonymousNotionClient } from "./providers/Notion/AnonymousNotionClient.js";
 import type { BitwardenUserData, DOMAIN, NotionUserData } from "./types.js";
-import { DbProvider } from "./providers/DbProvider.js";
 
 export class Auth {
   @route({ path: "/logout", method: "GET", authenticate: false })

@@ -12,9 +12,11 @@ import {
 import type { Config, DOMAIN, UserData } from "../../types.js";
 import { DbProvider } from "../DbProvider.js";
 
-@(fluentProvide(DB_PROVIDER)
-  .when((r) => r.parentContext.container.get(DB_ENGINE) == "COSMOS")
-  .done())
+@(
+  fluentProvide(DB_PROVIDER)
+    .when((r) => r.parentContext.container.get(DB_ENGINE) == "COSMOS")
+    .done()
+)
 export class CosmosClient implements DbProvider {
   private readonly client: Container;
 

@@ -33,7 +33,7 @@ export function UserPage() {
 
   if (!userConfig) {
     return (
-      <Stack alignItems={"center"} sx={{ margin: 5 }}>
+      <Stack sx={{ alignItems: "center", margin: 5 }}>
         <CircularProgress />
       </Stack>
     );

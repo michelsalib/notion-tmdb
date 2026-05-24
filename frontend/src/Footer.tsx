@@ -4,8 +4,8 @@ import {
   Link,
   Paper,
   Stack,
-  styled,
   SvgIcon,
+  styled,
   useTheme,
 } from "@mui/material";
 
@@ -34,8 +34,7 @@ export function Footer() {
         <Stack
           direction="row"
           spacing={3}
-          justifyContent="space-evenly"
-          sx={{ flexWrap: "wrap" }}
+          sx={{ justifyContent: "space-evenly", flexWrap: "wrap" }}
         >
           <Item>
             <Link href="https://github.com/michelsalib/notion-tmdb">

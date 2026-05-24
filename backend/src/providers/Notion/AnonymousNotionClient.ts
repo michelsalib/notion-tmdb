@@ -1,13 +1,13 @@
 import { Client } from "@notionhq/client";
+import { OauthTokenResponse } from "@notionhq/client/build/src/api-endpoints.js";
+import { FastifyRequest } from "fastify";
+import { inject } from "inversify";
 import { provide } from "inversify-binding-decorators";
 import {
   NOTION_CLIENT_ID,
   NOTION_CLIENT_SECRET,
   REQUEST,
 } from "../../fx/keys.js";
-import { inject } from "inversify";
-import { FastifyRequest } from "fastify";
-import { OauthTokenResponse } from "@notionhq/client/build/src/api-endpoints.js";
 
 @provide(AnonymousNotionClient)
 export class AnonymousNotionClient {

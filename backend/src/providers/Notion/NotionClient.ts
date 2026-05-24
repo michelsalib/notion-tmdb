@@ -105,7 +105,7 @@ export class NotionClient {
 
     for (let page = 0; page * 100 < ids.length; page++) {
       const existingItemsToSearch = ids.slice(page * 100, (page + 1) * 100);
-      let cursor = undefined;
+      let cursor: string | undefined;
 
       do {
         const { results, next_cursor } = await retriable(
@@ -127,7 +127,7 @@ export class NotionClient {
         });
 
         existingItems.push(...(results as PageObjectResponse[]));
-        cursor = next_cursor;
+        cursor = next_cursor ?? undefined;
       } while (cursor);
     }
 

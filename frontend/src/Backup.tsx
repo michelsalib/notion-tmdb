@@ -1,6 +1,6 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { UserConfig } from "backend/src/types";
-import { Fragment, useContext } from "react";
+import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfigContext, SnackbarContext } from "./Context";
 import { StreamButton } from "./StreamButton";
@@ -35,21 +35,19 @@ export function Backup() {
   }
 
   return (
-    <Fragment>
-      <Stack direction="row" spacing={2} sx={{ padding: 2 }}>
-        <StreamButton>Create</StreamButton>
-        <Button variant="contained" size="large" onClick={download}>
-          Download
-        </Button>
-        <Stack direction="column">
-          <Typography variant="caption">Last backup made on</Typography>
-          <Typography>
-            {config.backupDate
-              ? new Date(config.backupDate).toLocaleString()
-              : "Never"}
-          </Typography>
-        </Stack>
+    <Stack direction="row" spacing={2} sx={{ padding: 2 }}>
+      <StreamButton>Create</StreamButton>
+      <Button variant="contained" size="large" onClick={download}>
+        Download
+      </Button>
+      <Stack direction="column">
+        <Typography variant="caption">Last backup made on</Typography>
+        <Typography>
+          {config.backupDate
+            ? new Date(config.backupDate).toLocaleString()
+            : "Never"}
+        </Typography>
       </Stack>
-    </Fragment>
+    </Stack>
   );
 }

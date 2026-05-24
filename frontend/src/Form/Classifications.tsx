@@ -26,7 +26,7 @@ export function Classifications({
         <Typography variant="subtitle2">Categories</Typography>
         {value.map((c, index) => (
           <Stack direction="column" key={index} spacing={2}>
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
               <FormControl required sx={{ flexGrow: 1 }}>
                 <TextField
                   required

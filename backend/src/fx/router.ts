@@ -1,7 +1,7 @@
+import type { InvocationContext } from "@azure/functions";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { Container, injectable, METADATA_KEY } from "inversify";
 import { rootContainer, scopeContainer } from "./di.js";
-import type { InvocationContext } from "@azure/functions";
 
 type RouteTarget = (container: Container) => Promise<any>;
 

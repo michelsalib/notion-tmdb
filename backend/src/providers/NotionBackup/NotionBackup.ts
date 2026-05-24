@@ -6,6 +6,7 @@ import {
 import archiver, { Archiver } from "archiver";
 import { Axios } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
+import { FastifyRequest } from "fastify";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
 import {
@@ -14,16 +15,17 @@ import {
   REQUEST,
   STORAGE_PROVIDER,
 } from "../../fx/keys.js";
-import { NotionClient } from "../Notion/NotionClient.js";
-import { StorageProvider } from "../Storage/StorageProvider.js";
 import { DOMAIN, Suggestion } from "../../types.js";
-import { FastifyRequest } from "fastify";
 import { retriable } from "../../utils/retriable.js";
 import { BackupDataProvider } from "../BackupDataProvider.js";
+import { NotionClient } from "../Notion/NotionClient.js";
+import { StorageProvider } from "../Storage/StorageProvider.js";
 
-@(fluentProvide(DATA_PROVIDER)
-  .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup")
-  .done())
+@(
+  fluentProvide(DATA_PROVIDER)
+    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup")
+    .done()
+)
 export class NotionBackup implements BackupDataProvider<"backup"> {
   private readonly client: Axios;
 

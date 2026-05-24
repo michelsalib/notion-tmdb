@@ -1,6 +1,6 @@
+import { Readable } from "node:stream";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Container } from "inversify";
-import { Readable } from "node:stream";
 import {
   DATA_PROVIDER,
   DB_PROVIDER,

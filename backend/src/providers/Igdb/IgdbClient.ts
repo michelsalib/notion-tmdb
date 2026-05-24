@@ -12,9 +12,11 @@ import { DOMAIN, IgdbConfig, NotionItem, Suggestion } from "../../types";
 import { DataProvider } from "../DataProvider";
 import { NotionClient } from "../Notion/NotionClient";
 
-@(fluentProvide(DATA_PROVIDER)
-  .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "IGDB")
-  .done())
+@(
+  fluentProvide(DATA_PROVIDER)
+    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "IGDB")
+    .done()
+)
 export class IgdbClient implements DataProvider<"IGDB"> {
   constructor(
     @inject(IGDB_CLIENT_ID) private clientId: string,

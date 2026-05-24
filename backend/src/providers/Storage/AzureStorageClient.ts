@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import {
   BlobSASPermissions,
   BlockBlobClient,
@@ -8,7 +9,6 @@ import {
 import { addHours } from "date-fns";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
-import { Readable } from "node:stream";
 import {
   STORAGE_ACCOUNT,
   STORAGE_CONTAINER,
@@ -19,9 +19,11 @@ import {
 } from "../../fx/keys.js";
 import { StorageProvider } from "./StorageProvider.js";
 
-@(fluentProvide(STORAGE_PROVIDER)
-  .when((r) => r.parentContext.container.get(STORAGE_ENGINE) == "AZURE")
-  .done())
+@(
+  fluentProvide(STORAGE_PROVIDER)
+    .when((r) => r.parentContext.container.get(STORAGE_ENGINE) == "AZURE")
+    .done()
+)
 export class AzureStorageClient implements StorageProvider {
   private readonly client: ContainerClient;
 

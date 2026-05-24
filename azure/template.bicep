@@ -43,7 +43,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~22'
+          value: '~24'
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'

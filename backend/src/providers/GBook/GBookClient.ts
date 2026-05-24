@@ -23,9 +23,11 @@ interface VolumeInfo {
   subtitle?: string;
 }
 
-@(fluentProvide(DATA_PROVIDER)
-  .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook")
-  .done())
+@(
+  fluentProvide(DATA_PROVIDER)
+    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook")
+    .done()
+)
 export class GBookClient implements DataProvider<"GBook"> {
   private readonly client: AxiosInstance;
 

@@ -5,9 +5,11 @@ import { DB_ENGINE, DB_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 import type { Config, DOMAIN, UserData } from "../../types.js";
 import { DbProvider } from "../DbProvider.js";
 
-@(fluentProvide(DB_PROVIDER)
-  .when((r) => r.parentContext.container.get(DB_ENGINE) == "MONGO")
-  .done())
+@(
+  fluentProvide(DB_PROVIDER)
+    .when((r) => r.parentContext.container.get(DB_ENGINE) == "MONGO")
+    .done()
+)
 export class MongoDbClient implements DbProvider {
   constructor(@inject(DOMAIN_KEY) private readonly domain: DOMAIN) {}
   async *listConfiguredUsers(): AsyncGenerator<UserData<any>> {

@@ -1,3 +1,4 @@
+import SecurityIcon from "@mui/icons-material/Security";
 import {
   Button,
   FormControl,
@@ -6,7 +7,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import SecurityIcon from "@mui/icons-material/Security";
 import { useCallback, useState } from "react";
 
 export function BitwardenForm() {

@@ -1,10 +1,10 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath, URL } from "node:url";
 import type azure from "@azure/functions";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import dotenv from "dotenv";
 import fastify from "fastify";
-import { dirname, join } from "node:path";
-import { fileURLToPath, URL } from "node:url";
 import "reflect-metadata";
 import "./src/api.js";
 import "./src/auth.js";

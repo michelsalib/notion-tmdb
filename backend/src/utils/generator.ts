@@ -10,7 +10,7 @@ export async function* generatorSerializer(
       });
       yield "\x03";
     }
-  } catch (err: Error | any) {
+  } catch (err: any) {
     yield "\x02";
     if (err instanceof Error) {
       yield JSON.stringify({

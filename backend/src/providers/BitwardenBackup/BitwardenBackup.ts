@@ -1,3 +1,4 @@
+import archiver from "archiver";
 import axios, { AxiosInstance } from "axios";
 import { inject } from "inversify";
 import { fluentProvide } from "inversify-binding-decorators";
@@ -8,18 +9,19 @@ import {
   STORAGE_PROVIDER,
   USER,
 } from "../../fx/keys.js";
+import { Logger } from "../../fx/logger/Logger.js";
 import { BitwardenUserData, DOMAIN, Suggestion } from "../../types.js";
 import { BackupDataProvider } from "../BackupDataProvider.js";
 import { StorageProvider } from "../Storage/StorageProvider.js";
-import archiver from "archiver";
-import { Logger } from "../../fx/logger/Logger.js";
 
-@(fluentProvide(DATA_PROVIDER)
-  .when(
-    (r) =>
-      r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "BitwardenBackup",
-  )
-  .done())
+@(
+  fluentProvide(DATA_PROVIDER)
+    .when(
+      (r) =>
+        r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "BitwardenBackup",
+    )
+    .done()
+)
 export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
   constructor(
     @inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,

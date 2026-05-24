@@ -1,5 +1,5 @@
 import { dirname, join } from "node:path";
-import { fileURLToPath, URL } from "node:url";
+import { fileURLToPath } from "node:url";
 import type azure from "@azure/functions";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
@@ -61,33 +61,22 @@ if (
     ) => {
       // special handling of streamed responses
       if (request.method == "POST" && request.url.endsWith("/api/sync")) {
-        const url = new URL(request.url);
-        const stream = await Router.execute(
-          "POST",
-          "/api/sync",
-          {
-            hostname: url.hostname,
-            query: Object.fromEntries(url.searchParams),
-            cookies: (request.headers.get("cookie") || "").split(";").reduce(
-              (res, cur) => {
-                const [key, value] = cur.split("=");
-
-                res[key] = value.trim();
-
-                return res;
-              },
-              {} as Record<string, string>,
-            ),
-            headers: {
-              referer: request.headers.get("referer"),
-              ["user-agent"]: request.headers.get("user-agent"),
-            },
-          } as any,
-          context,
-        );
-
+        // DIAGNOSTIC: inline tick stream, no Router.execute, no asWebByteStream
+        const encoder = new TextEncoder();
+        let count = 0;
+        const body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            if (count >= 5) {
+              controller.close();
+              return;
+            }
+            await new Promise((r) => setTimeout(r, 1000));
+            count += 1;
+            controller.enqueue(encoder.encode(`: sync-tick ${count}\n\n`));
+          },
+        });
         return {
-          body: stream,
+          body,
           headers: {
             "content-type": "text/event-stream",
             "cache-control": "no-cache",

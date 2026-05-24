@@ -91,6 +91,7 @@ if (
           headers: {
             "content-type": "text/event-stream",
             "cache-control": "no-cache, no-transform",
+            "content-encoding": "identity",
             connection: "keep-alive",
             "x-accel-buffering": "no",
           },

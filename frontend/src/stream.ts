@@ -6,39 +6,51 @@ export interface StreamMessage {
 export async function* streaming(path: string): AsyncGenerator<StreamMessage> {
   const response = await fetch(path, {
     method: "POST",
+    headers: { accept: "text/event-stream" },
   });
 
-  // Attach Reader
-  const reader = response.body!.getReader();
-  let message = "";
+  if (!response.ok || !response.body) {
+    yield {
+      type: "error",
+      data: `Stream request failed: ${response.status}`,
+    };
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
 
   while (true) {
-    // wait for next encoded chunk
     const { done, value } = await reader.read();
+    if (done) break;
 
-    // check if stream is done
-    if (done) {
-      if (message != "\x04") {
-        console.error(`Stream wrongly ended with: ${message}`);
+    buffer += decoder.decode(value, { stream: true });
+
+    let sep: number;
+    while ((sep = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+
+      let event = "message";
+      const dataLines: string[] = [];
+      for (const line of frame.split("\n")) {
+        if (line.startsWith(":")) continue;
+        if (line.startsWith("event:")) {
+          event = line.slice(6).trim();
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice(5).replace(/^ /, ""));
+        }
       }
 
-      break;
-    }
+      if (event === "done") return;
+      if (dataLines.length === 0) continue;
 
-    // Decodes data chunk and yields it
-    message += new TextDecoder().decode(value);
-
-    // split messaged encloded between \x02 and \x03
-    let endOfCurrentMessage = message.indexOf("\x03");
-    while (endOfCurrentMessage != -1) {
-      // start at 1 to skip \x02
-      yield JSON.parse(message.substring(1, endOfCurrentMessage));
-
-      // +1 to skip \x03
-      message = message.substring(endOfCurrentMessage + 1);
-
-      // update chunker
-      endOfCurrentMessage = message.indexOf("\x03");
+      try {
+        yield JSON.parse(dataLines.join("\n"));
+      } catch {
+        yield { type: "error", data: "Malformed SSE message" };
+      }
     }
   }
 }

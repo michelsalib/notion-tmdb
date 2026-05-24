@@ -49,7 +49,10 @@ export class Api {
     const user = container.get<UserData<any>>(USER);
     const domain = container.get<DOMAIN>(DOMAIN_KEY);
     const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
-    reply.header("content-type", "multipart/text");
+    reply.header("content-type", "text/event-stream");
+    reply.header("cache-control", "no-cache");
+    reply.header("connection", "keep-alive");
+    reply.header("x-accel-buffering", "no");
 
     if (domain == "backup" || domain == "BitwardenBackup") {
       const backup = container.get<NotionBackup>(DATA_PROVIDER);

@@ -87,7 +87,10 @@ if (
         return {
           body: stream,
           headers: {
-            "content-type": "multipart/text",
+            "content-type": "text/event-stream",
+            "cache-control": "no-cache",
+            connection: "keep-alive",
+            "x-accel-buffering": "no",
           },
         };
       }

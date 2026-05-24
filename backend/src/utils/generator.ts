@@ -3,28 +3,12 @@ export async function* generatorSerializer(
 ): AsyncGenerator<string> {
   try {
     for await (const data of generator) {
-      yield "\x02";
-      yield JSON.stringify({
-        type: "message",
-        data,
-      });
-      yield "\x03";
+      yield `data: ${JSON.stringify({ type: "message", data })}\n\n`;
     }
   } catch (err: any) {
-    yield "\x02";
-    if (err instanceof Error) {
-      yield JSON.stringify({
-        type: "error",
-        data: err.message,
-      });
-    } else {
-      yield JSON.stringify({
-        type: "error",
-        data: JSON.stringify(err),
-      });
-    }
-    yield "\x03";
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    yield `data: ${JSON.stringify({ type: "error", data: message })}\n\n`;
   } finally {
-    yield "\x04";
+    yield `event: done\ndata:\n\n`;
   }
 }

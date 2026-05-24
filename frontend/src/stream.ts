@@ -27,8 +27,8 @@ export async function* streaming(path: string): AsyncGenerator<StreamMessage> {
 
     buffer += decoder.decode(value, { stream: true });
 
-    let sep: number;
-    while ((sep = buffer.indexOf("\n\n")) !== -1) {
+    let sep = buffer.indexOf("\n\n");
+    while (sep !== -1) {
       const frame = buffer.slice(0, sep);
       buffer = buffer.slice(sep + 2);
 
@@ -51,6 +51,8 @@ export async function* streaming(path: string): AsyncGenerator<StreamMessage> {
       } catch {
         yield { type: "error", data: "Malformed SSE message" };
       }
+
+      sep = buffer.indexOf("\n\n");
     }
   }
 }

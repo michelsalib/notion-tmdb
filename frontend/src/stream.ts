@@ -4,55 +4,52 @@ export interface StreamMessage {
 }
 
 export async function* streaming(path: string): AsyncGenerator<StreamMessage> {
-  const response = await fetch(path, {
-    method: "GET",
-    headers: { accept: "text/event-stream" },
+  const es = new EventSource(path);
+  const queue: Array<StreamMessage | null> = [];
+  let waker: (() => void) | null = null;
+
+  const enqueue = (item: StreamMessage | null) => {
+    queue.push(item);
+    const w = waker;
+    waker = null;
+    w?.();
+  };
+
+  es.onmessage = (e) => {
+    try {
+      enqueue(JSON.parse(e.data));
+    } catch {
+      enqueue({ type: "error", data: "Malformed SSE message" });
+    }
+  };
+
+  es.addEventListener("done", () => {
+    es.close();
+    enqueue(null);
   });
 
-  if (!response.ok || !response.body) {
-    yield {
-      type: "error",
-      data: `Stream request failed: ${response.status}`,
-    };
-    return;
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    let sep = buffer.indexOf("\n\n");
-    while (sep !== -1) {
-      const frame = buffer.slice(0, sep);
-      buffer = buffer.slice(sep + 2);
-
-      let event = "message";
-      const dataLines: string[] = [];
-      for (const line of frame.split("\n")) {
-        if (line.startsWith(":")) continue;
-        if (line.startsWith("event:")) {
-          event = line.slice(6).trim();
-        } else if (line.startsWith("data:")) {
-          dataLines.push(line.slice(5).replace(/^ /, ""));
-        }
-      }
-
-      if (event === "done") return;
-      if (dataLines.length === 0) continue;
-
-      try {
-        yield JSON.parse(dataLines.join("\n"));
-      } catch {
-        yield { type: "error", data: "Malformed SSE message" };
-      }
-
-      sep = buffer.indexOf("\n\n");
+  es.onerror = () => {
+    if (es.readyState === EventSource.CLOSED) {
+      enqueue(null);
+    } else {
+      es.close();
+      enqueue({ type: "error", data: "Connection error" });
+      enqueue(null);
     }
+  };
+
+  try {
+    while (true) {
+      while (queue.length === 0) {
+        await new Promise<void>((r) => {
+          waker = r;
+        });
+      }
+      const item = queue.shift()!;
+      if (item === null) return;
+      yield item;
+    }
+  } finally {
+    es.close();
   }
 }

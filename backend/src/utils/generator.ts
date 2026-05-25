@@ -27,8 +27,6 @@ export function asWebByteStream(
 export async function* generatorSerializer(
   generator: AsyncGenerator<any>,
 ): AsyncGenerator<string> {
-  yield `: starting\n\n`;
-
   const iter = generator[Symbol.asyncIterator]();
   let nextPromise = iter.next();
 

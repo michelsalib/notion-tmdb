@@ -32,6 +32,10 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
   private async createClient(): Promise<AxiosInstance> {
     const client = axios.create({
       baseURL: "https://vault.bitwarden.com",
+      headers: {
+        "Bitwarden-Client-Name": "cli",
+        "Bitwarden-Client-Version": "2024.12.0",
+      },
     });
 
     this.logger.bindAxios(client);

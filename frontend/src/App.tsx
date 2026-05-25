@@ -97,7 +97,7 @@ export function App() {
                   <Button
                     color="inherit"
                     size="small"
-                    href={snackbar.url}
+                    href={snackbar.url.replace(/^https:\/\//, "notion://")}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

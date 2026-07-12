@@ -88,8 +88,21 @@ export function Search({
       }}
       // Keep the dropdown compact: a Notion embed is a fixed-height iframe that
       // can't grow to fit content, so tall rows force an oversized embed. Cap
-      // the list and keep each row small so several fit in a short embed.
-      slotProps={{ listbox: { sx: { maxHeight: 300 } } }}
+      // the list and keep each row small so several fit in a short embed. The
+      // viewport clause stops the list from being clipped by the iframe's
+      // bottom edge on a short embed: the widget sits ~52px from the top (Stack
+      // padding + input), so leave ~80px of headroom and let the list scroll
+      // within whatever height remains; 300px stays the cap on taller embeds.
+      slotProps={{
+        listbox: { sx: { maxHeight: "min(300px, calc(100vh - 80px))" } },
+        // Position the popup relative to the viewport, not the document. The
+        // popup is portalled to <body> and, with Popper's default absolute
+        // strategy, its height extends the short embed iframe's scroll area —
+        // adding a second (page) scrollbar next to the listbox's own. Fixed
+        // positioning keeps it out of the document flow, so only the listbox
+        // scrolls.
+        popper: { popperOptions: { strategy: "fixed" } },
+      }}
       renderInput={(params) => (
         <TextField
           {...params}

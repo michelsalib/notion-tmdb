@@ -1,16 +1,11 @@
 import { stat, writeFile } from "fs/promises";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
 import { resolve } from "path";
 import { Readable } from "stream";
-import { STORAGE_ENGINE, STORAGE_PROVIDER, USER_ID } from "../../fx/keys.js";
-import { StorageProvider } from "./StorageProvider.js";
+import { inject, injectable } from "tsyringe";
+import { USER_ID } from "../../fx/keys.js";
+import type { StorageProvider } from "./StorageProvider.js";
 
-@(
-  fluentProvide(STORAGE_PROVIDER)
-    .when((r) => r.parentContext.container.get(STORAGE_ENGINE) == "FILESYSTEM")
-    .done()
-)
+@injectable()
 export class FilesystemStorage implements StorageProvider {
   constructor(@inject(USER_ID) private readonly userId: string) {}
 

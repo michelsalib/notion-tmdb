@@ -1,24 +1,38 @@
-import { FastifyReply } from "fastify";
-import { Container } from "inversify";
-import { parse } from "path";
-import { REPLY, STORAGE_PROVIDER } from "./fx/keys.js";
-import { route } from "./fx/router.js";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { DependencyContainer, injectable } from "tsyringe";
+import { STORAGE_PROVIDER } from "./fx/keys.js";
+import { Router } from "./fx/router.js";
 import { FilesystemStorage } from "./providers/Storage/FilesystemClient.js";
 
-export class Static {
-  @route({ path: "/legal", method: "GET", authenticate: false })
-  async legal(container: Container) {
-    const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FRONTEND_DIST = join(__dirname, "../../frontend/dist");
 
-    reply.sendFile("legal.md");
+@injectable()
+export class Static {
+  async legal() {
+    return Bun.file(join(FRONTEND_DIST, "legal.md"));
   }
 
-  @route({ path: "/backup", method: "GET", authenticate: false })
-  async backup(container: Container) {
-    const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
-    const filesystem = container.get<FilesystemStorage>(STORAGE_PROVIDER);
-    const { base, dir } = parse(filesystem.getBackupFilename());
-
-    await reply.sendFile(base, dir);
+  // /backup only makes sense for FilesystemStorage (local dev). With any
+  // cloud storage backend, getBackupLink() returns a real signed URL and
+  // nothing routes through here.
+  async backup(container: DependencyContainer) {
+    const storage = container.resolve(STORAGE_PROVIDER);
+    if (!(storage instanceof FilesystemStorage)) {
+      return new Response("Not found", { status: 404 });
+    }
+    return Bun.file(storage.getBackupFilename());
   }
 }
+
+Router.register(Static, "legal", {
+  path: "/legal",
+  method: "GET",
+  authenticate: false,
+});
+Router.register(Static, "backup", {
+  path: "/backup",
+  method: "GET",
+  authenticate: false,
+});

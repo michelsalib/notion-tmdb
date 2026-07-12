@@ -1,14 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { fluentProvide } from "inversify-binding-decorators";
-import { DATA_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
-import type {
-  DOMAIN,
-  GBookDbConfig,
-  NotionItem,
-  Suggestion,
-} from "../../types.js";
-import { DataProvider } from "../DataProvider.js";
+import { injectable } from "tsyringe";
+import type { GBookDbConfig, NotionItem, Suggestion } from "../../types.js";
+import type { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 interface VolumeInfo {
@@ -23,11 +17,7 @@ interface VolumeInfo {
   subtitle?: string;
 }
 
-@(
-  fluentProvide(DATA_PROVIDER)
-    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GBook")
-    .done()
-)
+@injectable()
 export class GBookClient implements DataProvider<"GBook"> {
   private readonly client: AxiosInstance;
 

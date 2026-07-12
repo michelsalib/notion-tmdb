@@ -6,3 +6,6 @@ local.settings.json
 dist
 backend/support/*.zip
 backend/support/*.json
+infra/.terraform/
+infra/terraform.tfstate*
+infra/terraform.tfvars

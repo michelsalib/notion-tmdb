@@ -7,23 +7,16 @@ import {
   StorageSharedKeyCredential,
 } from "@azure/storage-blob";
 import { addHours } from "date-fns";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
+import { inject, injectable } from "tsyringe";
 import {
   STORAGE_ACCOUNT,
   STORAGE_CONTAINER,
-  STORAGE_ENGINE,
   STORAGE_KEY,
-  STORAGE_PROVIDER,
   USER_ID,
 } from "../../fx/keys.js";
-import { StorageProvider } from "./StorageProvider.js";
+import type { StorageProvider } from "./StorageProvider.js";
 
-@(
-  fluentProvide(STORAGE_PROVIDER)
-    .when((r) => r.parentContext.container.get(STORAGE_ENGINE) == "AZURE")
-    .done()
-)
+@injectable()
 export class AzureStorageClient implements StorageProvider {
   private readonly client: ContainerClient;
 

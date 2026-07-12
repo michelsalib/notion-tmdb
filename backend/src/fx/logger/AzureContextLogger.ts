@@ -1,20 +1,11 @@
 import type { InvocationContext } from "@azure/functions";
-import { AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
-import { AZURE_CONTEXT, LOGGER, LOGGER_ENGINE } from "../keys.js";
-import { Logger } from "./Logger.js";
+import { inject, injectable } from "tsyringe";
+import { AZURE_CONTEXT } from "../keys.js";
+import type { Logger } from "./Logger.js";
 
-@(
-  fluentProvide(LOGGER)
-    .when(
-      (r) =>
-        r.parentContext.container.get(LOGGER_ENGINE) == "AZURE_CONTEXT" &&
-        r.parentContext.container.isBound(AZURE_CONTEXT),
-    )
-    .done()
-)
+@injectable()
 export class AzureContextLogger implements Logger {
   constructor(
     @inject(AZURE_CONTEXT) private readonly context: InvocationContext,

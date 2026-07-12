@@ -1,31 +1,29 @@
-import { FastifyReply, FastifyRequest } from "fastify";
-import { Container } from "inversify";
+import { DependencyContainer, injectable } from "tsyringe";
 import {
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   REPLY,
   REQUEST,
 } from "./fx/keys.js";
-import { route } from "./fx/router.js";
-import { DbProvider } from "./providers/DbProvider.js";
+import { Router, type ScopedReply, type ScopedRequest } from "./fx/router.js";
+import type { DbProvider } from "./providers/DbProvider.js";
 import { AnonymousNotionClient } from "./providers/Notion/AnonymousNotionClient.js";
 import type { BitwardenUserData, DOMAIN, NotionUserData } from "./types.js";
 
+@injectable()
 export class Auth {
-  @route({ path: "/logout", method: "GET", authenticate: false })
-  async logout(container: Container) {
-    const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+  async logout(container: DependencyContainer) {
+    const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
 
     reply.status(302);
     reply.header("location", "/");
     reply.clearCookie("userId");
   }
 
-  @route({ path: "/login", method: "GET", authenticate: false })
-  async login(container: Container) {
-    const request = container.get<FastifyRequest>(REQUEST);
-    const domain = container.get<DOMAIN>(DOMAIN_KEY);
-    const { reply } = container.get<{ reply: FastifyReply }>(REPLY);
+  async login(container: DependencyContainer) {
+    const request = container.resolve<ScopedRequest>(REQUEST);
+    const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
+    const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
 
     if (request.hostname == "localhost") {
       const domain = `notion-${(request.query as any)["state"]!.toLowerCase()}.localhost`;
@@ -37,7 +35,7 @@ export class Auth {
       return;
     }
 
-    const db = container.get<DbProvider>(DB_PROVIDER);
+    const db = container.resolve<DbProvider>(DB_PROVIDER);
 
     if (domain == "BitwardenBackup") {
       const userData: BitwardenUserData = {
@@ -61,7 +59,7 @@ export class Auth {
     }
 
     const tokenResponse = await container
-      .get(AnonymousNotionClient)
+      .resolve(AnonymousNotionClient)
       .generateUserToken();
     const existingUser = await db.getUser(tokenResponse.workspace_id);
 
@@ -85,3 +83,14 @@ export class Auth {
     });
   }
 }
+
+Router.register(Auth, "logout", {
+  path: "/logout",
+  method: "GET",
+  authenticate: false,
+});
+Router.register(Auth, "login", {
+  path: "/login",
+  method: "GET",
+  authenticate: false,
+});

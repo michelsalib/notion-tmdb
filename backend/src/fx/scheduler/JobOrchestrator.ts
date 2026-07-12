@@ -1,7 +1,6 @@
-import { inject } from "inversify";
-import { provide } from "inversify-binding-decorators";
-import { BackupDataProvider } from "../../providers/BackupDataProvider.js";
-import { DbProvider } from "../../providers/DbProvider.js";
+import { inject, injectable } from "tsyringe";
+import type { BackupDataProvider } from "../../providers/BackupDataProvider.js";
+import type { DbProvider } from "../../providers/DbProvider.js";
 import type { DOMAIN } from "../../types.js";
 import { userIdContainer } from "../di.js";
 import {
@@ -10,9 +9,9 @@ import {
   DOMAIN as DOMAIN_KEY,
   LOGGER,
 } from "../keys.js";
-import { Logger } from "../logger/Logger.js";
+import type { Logger } from "../logger/Logger.js";
 
-@provide(JobOrchestrator)
+@injectable()
 export class JobOrchestrator {
   constructor(
     @inject(DB_PROVIDER) private readonly db: DbProvider,
@@ -25,7 +24,8 @@ export class JobOrchestrator {
 
     for await (const user of users) {
       const userContainer = await userIdContainer(user.id, this.domain);
-      const backup = userContainer.get<BackupDataProvider<any>>(DATA_PROVIDER);
+      const backup =
+        userContainer.resolve<BackupDataProvider<any>>(DATA_PROVIDER);
 
       for await (const message of backup.sync()) {
         this.logger.log(message);

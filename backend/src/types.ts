@@ -73,7 +73,12 @@ export interface GoCardlessAccount {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BackupDbConfig extends DbConfigBase {}
 
-export type Config = TmdbConfig | GBookConfig | BackupConfig | GoCardlessConfig;
+export type Config =
+  | TmdbDbConfig
+  | GBookDbConfig
+  | BackupDbConfig
+  | GoCardlessDbConfig
+  | IgdbConfig;
 
 export type DomainToConfig<T extends DOMAIN> = T extends "GBook"
   ? GBookDbConfig
@@ -103,7 +108,7 @@ export interface BitwardenUserData extends UserData<"BitwardenBackup"> {
 export type NotionDatabase = DatabaseObjectResponse;
 
 export interface UserConfig<T extends DOMAIN> {
-  notionDatabases?: NotionDatabases[];
+  notionDatabases?: NotionDatabase[];
   config?: DomainToConfig<T>;
   backupDate?: Date;
 }

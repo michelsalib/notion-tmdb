@@ -1,0 +1,10 @@
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Full image URI with tag. Use the artifact_registry_repository output value
+# as the prefix; tag is typically the git SHA from CI.
+image = "us-central1-docker.pkg.dev/your-gcp-project-id/notion-tmdb/app:latest"
+
+# Apex domain, verified in Search Console under the same Google account that
+# owns this GCP project. Subdomain mappings inherit verification.
+domain_apex = "micheldev.com"

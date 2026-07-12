@@ -46,3 +46,7 @@ export const GOCARDLESS_SECRET = Symbol.for("GOCARDLESS_SECRET");
 export const AZURE_CONTEXT = Symbol.for("AZURE_CONTEXT");
 export const LOGGER_ENGINE = Symbol.for("LOGGER_ENGINE");
 export const LOGGER = Symbol.for("LOGGER");
+export const MONGO_URL = Symbol.for("MONGO_URL");
+export const STORAGE_BUCKET = Symbol.for("STORAGE_BUCKET");
+export const STORAGE_ENDPOINT = Symbol.for("STORAGE_ENDPOINT");
+export const GCP_PROJECT_ID = Symbol.for("GCP_PROJECT_ID");

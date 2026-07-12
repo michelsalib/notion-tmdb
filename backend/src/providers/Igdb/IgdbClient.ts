@@ -1,22 +1,12 @@
 import axios, { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
-import {
-  DATA_PROVIDER,
-  DOMAIN as DOMAIN_KEY,
-  IGDB_CLIENT_ID,
-  IGDB_CLIENT_SECRET,
-} from "../../fx/keys.js";
-import { DOMAIN, IgdbConfig, NotionItem, Suggestion } from "../../types";
-import { DataProvider } from "../DataProvider";
-import { NotionClient } from "../Notion/NotionClient";
+import { inject, injectable } from "tsyringe";
+import { IGDB_CLIENT_ID, IGDB_CLIENT_SECRET } from "../../fx/keys.js";
+import type { IgdbConfig, NotionItem, Suggestion } from "../../types.js";
+import type { DataProvider } from "../DataProvider.js";
+import { NotionClient } from "../Notion/NotionClient.js";
 
-@(
-  fluentProvide(DATA_PROVIDER)
-    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "IGDB")
-    .done()
-)
+@injectable()
 export class IgdbClient implements DataProvider<"IGDB"> {
   constructor(
     @inject(IGDB_CLIENT_ID) private clientId: string,

@@ -1,19 +1,18 @@
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
 import { Collection, MongoClient } from "mongodb";
-import { DB_ENGINE, DB_PROVIDER, DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
+import { inject, injectable } from "tsyringe";
+import { DOMAIN as DOMAIN_KEY } from "../../fx/keys.js";
 import type { Config, DOMAIN, UserData } from "../../types.js";
-import { DbProvider } from "../DbProvider.js";
+import type { DbProvider } from "../DbProvider.js";
 
-@(
-  fluentProvide(DB_PROVIDER)
-    .when((r) => r.parentContext.container.get(DB_ENGINE) == "MONGO")
-    .done()
-)
+@injectable()
 export class MongoDbClient implements DbProvider {
-  constructor(@inject(DOMAIN_KEY) private readonly domain: DOMAIN) {}
+  constructor(
+    @inject(DOMAIN_KEY) private readonly domain: DOMAIN,
+    @inject(MongoClient) private readonly client: MongoClient,
+  ) {}
+
   async *listConfiguredUsers(): AsyncGenerator<UserData<any>> {
-    const collection = await this.getUserCollection();
+    const collection = this.getUserCollection();
     const cursor = collection.find({
       config: {
         $exists: true,
@@ -29,52 +28,32 @@ export class MongoDbClient implements DbProvider {
     } while (await cursor.hasNext());
   }
 
-  private async getUserCollection(): Promise<Collection<UserData<any>>> {
-    const client = await MongoClient.connect("mongodb://127.0.0.1:27017/");
-
-    const db = client.db(`notion-plugins`);
-
-    return db.collection(`notion-${this.domain.toLowerCase()}`);
+  private getUserCollection(): Collection<UserData<any>> {
+    // BitwardenBackup uses the literal `bitwarden-backup` collection name to
+    // match the historical Cosmos collection (see Cosmos copyDb + migrateDb).
+    const name =
+      this.domain === "BitwardenBackup"
+        ? "bitwarden-backup"
+        : `notion-${this.domain.toLowerCase()}`;
+    return this.client.db("notion-plugins").collection(name);
   }
 
   async getUser(userId: string): Promise<UserData<any> | null> {
-    const collection = await this.getUserCollection();
-
-    const user = await collection.findOne({
-      id: userId,
-    });
-
-    return user;
+    return this.getUserCollection().findOne({ id: userId });
   }
 
   async putUser(userData: UserData<any>): Promise<void> {
-    const collection = await this.getUserCollection();
-
-    await collection.updateOne(
-      {
-        id: userData.id,
-      },
-      {
-        $set: userData,
-      },
-      {
-        upsert: true,
-      },
+    await this.getUserCollection().updateOne(
+      { id: userData.id },
+      { $set: userData },
+      { upsert: true },
     );
   }
 
   async putUserConfig(userId: string, config: Config): Promise<void> {
-    const collection = await this.getUserCollection();
-
-    await collection.updateOne(
-      {
-        id: userId,
-      },
-      {
-        $set: {
-          config,
-        },
-      },
+    await this.getUserCollection().updateOne(
+      { id: userId },
+      { $set: { config } },
     );
   }
 }

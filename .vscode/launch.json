@@ -2,21 +2,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach to Node Azure Functions",
-      "type": "node",
+      "type": "bun",
       "request": "attach",
-      "restart": true,
-      "port": 9229,
-      "preLaunchTask": "func: host start"
+      "name": "Attach to Bun",
+      "url": "ws://localhost:6499/"
     },
     {
-      "name": "Attach to Node Fastify",
-      "type": "node",
+      "type": "bun",
       "request": "launch",
-      "program": "${workspaceFolder}/backend/dist/index.js",
-      "cwd": "${workspaceFolder}/backend",
-      "args": [],
-      "preLaunchTask": "node: host start"
+      "name": "Launch backend",
+      "program": "${workspaceFolder}/backend/index.ts",
+      "cwd": "${workspaceFolder}",
+      "watch": true
     }
   ]
 }

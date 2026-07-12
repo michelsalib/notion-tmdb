@@ -1,26 +1,12 @@
 import axios, { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
-import {
-  DATA_PROVIDER,
-  DOMAIN as DOMAIN_KEY,
-  TMDB_API_KEY,
-} from "../../fx/keys.js";
-import type {
-  DOMAIN,
-  NotionItem,
-  Suggestion,
-  TmdbDbConfig,
-} from "../../types.js";
-import { DataProvider } from "../DataProvider.js";
+import { inject, injectable } from "tsyringe";
+import { TMDB_API_KEY } from "../../fx/keys.js";
+import type { NotionItem, Suggestion, TmdbDbConfig } from "../../types.js";
+import type { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
-@(
-  fluentProvide(DATA_PROVIDER)
-    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "TMDB")
-    .done()
-)
+@injectable()
 export class TmdbClient implements DataProvider<"TMDB"> {
   private readonly client: AxiosInstance;
 

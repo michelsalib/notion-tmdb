@@ -9,7 +9,7 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": ["ES2023"],
-    "types": ["reflect-metadata"],
+    "types": ["reflect-metadata", "bun"],
     "sourceMap": true,
     "outDir": "dist",
     "emitDecoratorMetadata": true,

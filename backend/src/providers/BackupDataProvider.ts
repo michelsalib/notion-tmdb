@@ -1,4 +1,4 @@
-import { DataProvider } from "./DataProvider";
+import type { DataProvider } from "./DataProvider";
 
 export interface BackupDataProvider<T extends "BitwardenBackup" | "backup">
   extends DataProvider<T> {

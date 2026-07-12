@@ -53,5 +53,6 @@ echo "    read -srp \"\$s: \" v; echo"
 echo "    printf '%s' \"\$v\" | gcloud secrets versions add \"\$s\" --data-file=-"
 echo "  done"
 echo
-echo "Verify the apex (${PROJECT_ID%-*}.com) in Search Console *before* the"
-echo "first 'terraform apply' — domain mappings fail otherwise."
+echo "Verify the apex domain (see 'domain_apex' in terraform.tfvars) in"
+echo "Search Console *before* the first 'terraform apply' — domain mappings"
+echo "fail otherwise."

@@ -66,6 +66,7 @@ jobs:
           TF_VAR_atlas_org_id: ${{ secrets.ATLAS_ORG_ID }}
           TF_VAR_atlas_public_key: ${{ secrets.ATLAS_PUBLIC_KEY }}
           TF_VAR_atlas_private_key: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          TF_VAR_billing_account: ${{ vars.BILLING_ACCOUNT }}
         run: terraform apply -auto-approve
 
       - name: Deployed

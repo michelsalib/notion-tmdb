@@ -48,3 +48,9 @@ variable "github_repo" {
   type        = string
   default     = "michelsalib/notion-tmdb"
 }
+
+variable "billing_account" {
+  description = "GCP billing account ID (format XXXXXX-XXXXXX-XXXXXX) that owns the budget alerts"
+  type        = string
+  default     = "014E12-560A8A-2C0588"
+}

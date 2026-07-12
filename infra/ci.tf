@@ -72,6 +72,14 @@ resource "google_storage_bucket_iam_member" "ci_backup_bucket_admin" {
   member = "serviceAccount:${google_service_account.ci.email}"
 }
 
+# Billing budget lives at the billing-account scope, not the project. CI needs
+# costsManager to read + reconcile the budget resource on every apply.
+resource "google_billing_account_iam_member" "ci_billing_costs_manager" {
+  billing_account_id = var.billing_account
+  role               = "roles/billing.costsManager"
+  member             = "serviceAccount:${google_service_account.ci.email}"
+}
+
 # WIF pool — the trust boundary for external OIDC issuers.
 resource "google_iam_workload_identity_pool" "github" {
   workload_identity_pool_id = "github-actions"

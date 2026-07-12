@@ -26,6 +26,12 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.region
+
+  # Route API calls that don't attach to a project (billing budgets, org
+  # policies) through this project's quota so they don't fail with
+  # SERVICE_DISABLED against Google's default shared project.
+  billing_project       = var.project_id
+  user_project_override = true
 }
 
 # ── APIs ──────────────────────────────────────────────────────────────────
@@ -38,6 +44,7 @@ resource "google_project_service" "apis" {
     "cloudscheduler.googleapis.com",
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
+    "cloudbilling.googleapis.com",
   ])
   service                    = each.key
   disable_dependent_services = false
@@ -100,6 +107,13 @@ resource "google_cloud_run_v2_service" "app" {
   name                = "notion-tmdb"
   location            = var.region
   deletion_protection = false
+
+  # Cloud Run auto-populates a service-level `scaling` block (distinct from
+  # `template.scaling`) with all-zero manual-instance-count values on every
+  # revision. We don't manage it — ignore it so plan/apply stops flapping.
+  lifecycle {
+    ignore_changes = [scaling]
+  }
 
   template {
     service_account       = google_service_account.runtime.email

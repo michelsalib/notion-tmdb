@@ -6,6 +6,14 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+    mongodbatlas = {
+      source  = "mongodb/mongodbatlas"
+      version = "~> 1.20"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # State lives in a GCS bucket that's created out-of-band before `terraform
@@ -89,8 +97,9 @@ resource "google_storage_bucket_iam_member" "runtime_can_write" {
 
 # ── Cloud Run Service (HTTP) ──────────────────────────────────────────────
 resource "google_cloud_run_v2_service" "app" {
-  name     = "notion-tmdb"
-  location = var.region
+  name                = "notion-tmdb"
+  location            = var.region
+  deletion_protection = false
 
   template {
     service_account       = google_service_account.runtime.email
@@ -103,9 +112,10 @@ resource "google_cloud_run_v2_service" "app" {
     }
 
     containers {
-      image   = var.image
-      command = ["bun"]
-      args    = ["backend/index.ts"]
+      # No `command`/`args` — defers to the container image's CMD
+      # (Dockerfile sets `["bun", "backend/index.ts"]`). Also means the
+      # placeholder hello image works out of the box for bootstrap.
+      image = var.image
 
       resources {
         cpu_idle = true
@@ -137,6 +147,14 @@ resource "google_cloud_run_v2_service" "app" {
       }
       # STORAGE_ENDPOINT intentionally unset in prod (SDK uses the default
       # https://storage.googleapis.com endpoint).
+
+      # Version-tracking env var: changes when MONGO_URL secret gets a new
+      # version, which forces a new Cloud Run revision so `versions/latest`
+      # is re-resolved.
+      env {
+        name  = "_MONGO_URL_VERSION"
+        value = google_secret_manager_secret_version.mongo_url.name
+      }
 
       # Secret-backed env values.
       dynamic "env" {
@@ -170,8 +188,9 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
 
 # ── Cloud Run Job (weekly Bitwarden backup) ───────────────────────────────
 resource "google_cloud_run_v2_job" "backup" {
-  name     = "notion-bitwarden-backup"
-  location = var.region
+  name                = "notion-bitwarden-backup"
+  location            = var.region
+  deletion_protection = false
 
   template {
     template {
@@ -278,7 +297,7 @@ locals {
 }
 
 resource "google_cloud_run_domain_mapping" "subdomain" {
-  for_each = toset(local.subdomains)
+  for_each = var.enable_domain_mappings ? toset(local.subdomains) : toset([])
 
   location = var.region
   name     = "${each.value}.${var.domain_apex}"

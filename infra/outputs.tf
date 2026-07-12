@@ -27,3 +27,13 @@ output "domain_mappings" {
   description = "Configured subdomains (each needs DNS records returned by `gcloud run domain-mappings describe`)"
   value       = [for s in local.subdomains : "${s}.${var.domain_apex}"]
 }
+
+output "workload_identity_provider" {
+  description = "Full resource name of the GitHub Actions WIF provider. Put in GitHub as vars.WORKLOAD_IDENTITY_PROVIDER."
+  value       = google_iam_workload_identity_pool_provider.github.name
+}
+
+output "ci_service_account_email" {
+  description = "CI service account email. Put in GitHub as vars.CI_SERVICE_ACCOUNT."
+  value       = google_service_account.ci.email
+}

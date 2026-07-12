@@ -19,3 +19,32 @@ variable "domain_apex" {
   type        = string
   default     = "micheldev.com"
 }
+
+variable "enable_domain_mappings" {
+  description = "Create the 6 Cloud Run domain mappings. Requires `domain_apex` verified in Search Console — set to false for the first apply, flip to true after verification."
+  type        = bool
+  default     = false
+}
+
+variable "atlas_org_id" {
+  description = "MongoDB Atlas organization ID (24-char hex, from Atlas UI Organization Settings)"
+  type        = string
+}
+
+variable "atlas_public_key" {
+  description = "MongoDB Atlas API public key"
+  type        = string
+  sensitive   = true
+}
+
+variable "atlas_private_key" {
+  description = "MongoDB Atlas API private key"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_repo" {
+  description = "owner/repo of the GitHub repository allowed to authenticate via WIF"
+  type        = string
+  default     = "michelsalib/notion-tmdb"
+}

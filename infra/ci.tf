@@ -44,6 +44,14 @@ resource "google_project_iam_member" "ci_project_iam_admin" {
   role    = "roles/resourcemanager.projectIamAdmin"
   member  = "serviceAccount:${google_service_account.ci.email}"
 }
+# Needed because the google provider is configured with
+# `user_project_override = true` — every API call now bills the project's
+# quota, which requires this permission on the calling identity.
+resource "google_project_iam_member" "ci_service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.ci.email}"
+}
 
 # Deploying a new Cloud Run revision requires actAs on the runtime SA (which
 # the Service runs as). Same for the scheduler SA on the Job.

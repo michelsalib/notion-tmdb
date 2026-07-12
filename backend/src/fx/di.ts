@@ -5,22 +5,17 @@ import {
   instanceCachingFactory,
 } from "tsyringe";
 import { BitwardenBackup } from "../providers/BitwardenBackup/BitwardenBackup.js";
-import { CosmosClient } from "../providers/Cosmos/CosmosClient.js";
 import type { DbProvider } from "../providers/DbProvider.js";
 import { GBookClient } from "../providers/GBook/GBookClient.js";
 import { GoCardlessClient } from "../providers/GoCardless/GoCardlessClient.js";
 import { IgdbClient } from "../providers/Igdb/IgdbClient.js";
 import { MongoDbClient } from "../providers/MongoDb/MongoDbClient.js";
 import { NotionBackup } from "../providers/NotionBackup/NotionBackup.js";
-import { AzureStorageClient } from "../providers/Storage/AzureStorageClient.js";
 import { FilesystemStorage } from "../providers/Storage/FilesystemClient.js";
 import { GcsStorageClient } from "../providers/Storage/GcsStorageClient.js";
 import { TmdbClient } from "../providers/Tmdb/TmdbClient.js";
 import type { DOMAIN } from "../types.js";
 import {
-  COSMOS_DB_ACCOUNT,
-  COSMOS_DB_DATABASE,
-  COSMOS_DB_KEY,
   DATA_PROVIDER,
   DB_ENGINE,
   DB_PROVIDER,
@@ -47,18 +42,14 @@ import {
   NOTION_TMDB_CLIENT_SECRET,
   REPLY,
   REQUEST,
-  STORAGE_ACCOUNT,
   STORAGE_BUCKET,
-  STORAGE_CONTAINER,
   STORAGE_ENDPOINT,
   STORAGE_ENGINE,
-  STORAGE_KEY,
   STORAGE_PROVIDER,
   TMDB_API_KEY,
   USER,
   USER_ID,
 } from "./keys.js";
-import { AzureContextLogger } from "./logger/AzureContextLogger.js";
 import { ConsoleLogger } from "./logger/ConsoleLogger.js";
 import { GcpLogger } from "./logger/GcpLogger.js";
 import type { ScopedReply, ScopedRequest } from "./router.js";
@@ -95,14 +86,6 @@ export function loadEnvironmentConfig(env: {
   bind(IGDB_CLIENT_ID, env["IGDB_CLIENT_ID"]);
   bind(IGDB_CLIENT_SECRET, env["IGDB_CLIENT_SECRET"]);
 
-  // legacy Azure/Cosmos config (kept registered for now; consumers go away in Phase 10)
-  bind(COSMOS_DB_ACCOUNT, env["CosmosDb:Account"]);
-  bind(COSMOS_DB_KEY, env["CosmosDb:Key"]);
-  bind(COSMOS_DB_DATABASE, env["CosmosDb:Database"]);
-  bind(STORAGE_ACCOUNT, env["Storage:Account"]);
-  bind(STORAGE_KEY, env["Storage:Key"]);
-  bind(STORAGE_CONTAINER, env["Storage:Container"]);
-
   // GCS config
   bind(STORAGE_BUCKET, env["STORAGE_BUCKET"]);
   bind(GCP_PROJECT_ID, env["GCP_PROJECT_ID"]);
@@ -127,9 +110,6 @@ export function loadEnvironmentConfig(env: {
     case "MONGO":
       rootContainer.register(DB_PROVIDER, { useClass: MongoDbClient });
       break;
-    case "COSMOS":
-      rootContainer.register(DB_PROVIDER, { useClass: CosmosClient });
-      break;
     default:
       throw new Error(`Unknown DB_ENGINE: ${env["DB_ENGINE"]}`);
   }
@@ -137,11 +117,6 @@ export function loadEnvironmentConfig(env: {
   switch (env["STORAGE_ENGINE"]) {
     case "FILESYSTEM":
       rootContainer.register(STORAGE_PROVIDER, { useClass: FilesystemStorage });
-      break;
-    case "AZURE":
-      rootContainer.register(STORAGE_PROVIDER, {
-        useClass: AzureStorageClient,
-      });
       break;
     case "GCS":
       rootContainer.register(STORAGE_PROVIDER, { useClass: GcsStorageClient });
@@ -156,9 +131,6 @@ export function loadEnvironmentConfig(env: {
       break;
     case "GCP":
       rootContainer.register(LOGGER, { useClass: GcpLogger });
-      break;
-    case "AZURE_CONTEXT":
-      rootContainer.register(LOGGER, { useClass: AzureContextLogger });
       break;
     default:
       throw new Error(`Unknown LOGGER_ENGINE: ${env["LOGGER_ENGINE"]}`);

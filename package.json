@@ -17,13 +17,9 @@
     "backend",
     "frontend"
   ],
-  "dependencies": {
-    "copy-file": "^11.1.0",
-    "globby": "^16.2.0"
-  },
   "devDependencies": {
+    "@azure/cosmos": "^4.9.3",
     "@biomejs/biome": "^2.4.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260524.1",
-    "typescript": "^5.9.3"
+    "@typescript/native-preview": "^7.0.0-dev.20260524.1"
   }
 }

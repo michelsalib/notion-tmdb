@@ -1,153 +1,34 @@
 import { dirname, join } from "node:path";
-import { fileURLToPath, URL } from "node:url";
-import type azure from "@azure/functions";
-import fastifyCookie from "@fastify/cookie";
-import fastifyStatic from "@fastify/static";
-import dotenv from "dotenv";
-import fastify from "fastify";
+import { fileURLToPath } from "node:url";
+import { staticPlugin } from "@elysiajs/static";
+import { Elysia } from "elysia";
 import "reflect-metadata";
 import "./src/api.js";
 import "./src/auth.js";
-import { loadEnvironmentConfig, unScopedContainer } from "./src/fx/di.js";
-import { Router } from "./src/fx/router.js";
 import "./src/static.js";
-import { JobOrchestrator } from "./src/fx/scheduler/JobOrchestrator.js";
+import { loadEnvironmentConfig } from "./src/fx/di.js";
+import { Router } from "./src/fx/router.js";
 
-dotenv.config();
+loadEnvironmentConfig(process.env);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const fastApp = fastify();
-fastApp.register(fastifyStatic, {
-  root: join(__dirname, "../../frontend/dist/"),
-  maxAge: 86_400_000, // 1 day
+const app = new Elysia();
+
+app.use(
+  await staticPlugin({
+    assets: join(__dirname, "../frontend/dist"),
+    prefix: "/",
+    indexHTML: true,
+    maxAge: 86_400,
+  }),
+);
+
+Router.load(app);
+
+app.listen({
+  port: Number(process.env["PORT"] ?? 7071),
+  hostname: "0.0.0.0",
 });
-fastApp.register(fastifyCookie, {});
-Router.load(fastApp);
 
-if (
-  process.env["AZURE_FUNCTIONS_ENVIRONMENT"] ||
-  process.env["WEBSITE_RUN_FROM_PACKAGE"]
-) {
-  const azure = await import("@azure/functions");
-
-  loadEnvironmentConfig({
-    ...process.env,
-    DB_ENGINE: "COSMOS",
-    STORAGE_ENGINE: "AZURE",
-    LOGGER_ENGINE: "AZURE_CONTEXT",
-  });
-
-  azure.app.setup({
-    enableHttpStream: true,
-  });
-
-  azure.app.http("azureFunctionToFastify", {
-    route: "{*path}",
-    methods: [
-      "CONNECT",
-      "DELETE",
-      "GET",
-      "HEAD",
-      "OPTIONS",
-      "PATCH",
-      "POST",
-      "PUT",
-      "TRACE",
-    ],
-    handler: async (
-      request: azure.HttpRequest,
-      context: azure.InvocationContext,
-    ) => {
-      // special handling of streamed responses
-      if (request.method == "GET" && request.url.endsWith("/api/sync")) {
-        const url = new URL(request.url);
-        const stream = await Router.execute(
-          "GET",
-          "/api/sync",
-          {
-            hostname: url.hostname,
-            query: Object.fromEntries(url.searchParams),
-            cookies: (request.headers.get("cookie") || "").split(";").reduce(
-              (res, cur) => {
-                const [key, value] = cur.split("=");
-
-                res[key] = value.trim();
-
-                return res;
-              },
-              {} as Record<string, string>,
-            ),
-            headers: {
-              referer: request.headers.get("referer"),
-              ["user-agent"]: request.headers.get("user-agent"),
-            },
-          } as any,
-          context,
-        );
-
-        return {
-          body: stream,
-          headers: {
-            "content-type": "text/event-stream",
-            "cache-control": "no-cache, no-transform",
-            "content-encoding": "identity",
-            connection: "keep-alive",
-            "x-accel-buffering": "no",
-          },
-        };
-      }
-
-      // standard request/response goes through fastify inject
-      const payload = await request.text();
-      const fastResponse = await fastApp.inject({
-        method: request.method as any,
-        url: request.url,
-        query: request.query.toString(),
-        payload: payload,
-        headers: {
-          ...Object.fromEntries(request.headers),
-          "content-length": Buffer.byteLength(payload), // recompute content lenght because of http decompression
-        },
-      });
-
-      return {
-        status: fastResponse.statusCode,
-        body: fastResponse.rawPayload.length
-          ? fastResponse.rawPayload
-          : undefined,
-        headers: fastResponse.headers,
-      } as azure.HttpResponseInit;
-    },
-  });
-
-  azure.app.timer("scheduledBackup", {
-    schedule: "0 0 0 * * sun", // every sunday at midnight
-    handler: async (_, context: azure.InvocationContext) => {
-      const container = await unScopedContainer("BitwardenBackup", context);
-
-      const jobOrchestrator = container.get<JobOrchestrator>(JobOrchestrator);
-
-      await jobOrchestrator.start();
-    },
-    // runOnStartup: true,
-  });
-} else {
-  const settings = await import(join(__dirname, "../local.settings.json"), {
-    with: {
-      type: "json",
-    },
-  });
-
-  loadEnvironmentConfig({
-    ...process.env,
-    ...settings.default.Values,
-    DB_ENGINE: "MONGO",
-    STORAGE_ENGINE: "FILESYSTEM",
-    LOGGER_ENGINE: "CONSOLE",
-  });
-
-  void fastApp.listen({
-    port: 7071, // matchin azure func default port
-  });
-}
+console.log(`Listening on :${process.env["PORT"] ?? 7071}`);

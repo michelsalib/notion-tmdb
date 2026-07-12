@@ -1,24 +1,22 @@
 import { Client } from "@notionhq/client";
-import { OauthTokenResponse } from "@notionhq/client/build/src/api-endpoints.js";
-import { FastifyRequest } from "fastify";
-import { inject } from "inversify";
-import { provide } from "inversify-binding-decorators";
+import type { OauthTokenResponse } from "@notionhq/client/build/src/api-endpoints.js";
+import { inject, injectable } from "tsyringe";
 import {
   NOTION_CLIENT_ID,
   NOTION_CLIENT_SECRET,
   REQUEST,
 } from "../../fx/keys.js";
+import type { ScopedRequest } from "../../fx/router.js";
 
-@provide(AnonymousNotionClient)
+@injectable()
 export class AnonymousNotionClient {
   private readonly client: Client;
 
-  @inject(NOTION_CLIENT_ID)
-  private readonly clientId!: string;
-  @inject(NOTION_CLIENT_SECRET)
-  private readonly clientSecret!: string;
-
-  constructor(@inject(REQUEST) private readonly request: FastifyRequest) {
+  constructor(
+    @inject(REQUEST) private readonly request: ScopedRequest,
+    @inject(NOTION_CLIENT_ID) private readonly clientId: string,
+    @inject(NOTION_CLIENT_SECRET) private readonly clientSecret: string,
+  ) {
     this.client = new Client();
   }
 

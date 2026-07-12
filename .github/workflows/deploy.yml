@@ -1,0 +1,74 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Serialize deploys — never let two applies race on the same state bucket.
+  group: deploy-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC → GCP Workload Identity Federation
+
+env:
+  PROJECT_ID: micheldev-notion-tmdb
+  REGION: us-central1
+  IMAGE_URI: us-central1-docker.pkg.dev/micheldev-notion-tmdb/notion-tmdb/app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CI_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build image
+        run: docker build -t "${IMAGE_URI}:${GITHUB_SHA}" -t "${IMAGE_URI}:latest" .
+
+      - name: Push image
+        run: |
+          docker push "${IMAGE_URI}:${GITHUB_SHA}"
+          docker push "${IMAGE_URI}:latest"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.8
+
+      - name: Terraform init
+        working-directory: infra
+        run: terraform init -backend-config="bucket=${PROJECT_ID}-tf-state"
+
+      - name: Terraform apply
+        working-directory: infra
+        env:
+          TF_VAR_project_id: ${{ env.PROJECT_ID }}
+          TF_VAR_region: ${{ env.REGION }}
+          TF_VAR_image: ${{ env.IMAGE_URI }}:${{ github.sha }}
+          TF_VAR_domain_apex: micheldev.com
+          TF_VAR_enable_domain_mappings: "true"
+          TF_VAR_github_repo: ${{ github.repository }}
+          TF_VAR_atlas_org_id: ${{ secrets.ATLAS_ORG_ID }}
+          TF_VAR_atlas_public_key: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          TF_VAR_atlas_private_key: ${{ secrets.ATLAS_PRIVATE_KEY }}
+        run: terraform apply -auto-approve
+
+      - name: Deployed
+        run: |
+          echo "Deployed image tag: ${GITHUB_SHA}"
+          echo "Service URL: $(cd infra && terraform output -raw service_url)"

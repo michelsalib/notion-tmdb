@@ -6,13 +6,12 @@ import {
   PageObjectResponse,
   UpdatePageParameters,
 } from "@notionhq/client/build/src/api-endpoints.js";
-import { inject } from "inversify";
-import { provide } from "inversify-binding-decorators";
+import { inject, injectable } from "tsyringe";
 import { USER } from "../../fx/keys.js";
 import type { Config, NotionUserData } from "../../types.js";
 import { retriable } from "../../utils/retriable.js";
 
-@provide(NotionClient)
+@injectable()
 export class NotionClient {
   private readonly client: Client;
 

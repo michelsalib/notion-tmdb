@@ -1,24 +1,17 @@
 import axios, { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { readFile, writeFile } from "fs/promises";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
 import { isMatch } from "matcher";
-import {
-  DATA_PROVIDER,
-  DOMAIN as DOMAIN_KEY,
-  GOCARDLESS_ID,
-  GOCARDLESS_SECRET,
-} from "../../fx/keys.js";
+import { inject, injectable } from "tsyringe";
+import { GOCARDLESS_ID, GOCARDLESS_SECRET } from "../../fx/keys.js";
 import type {
   Bank,
-  DOMAIN,
   GoCardlessAccount,
   GoCardlessDbConfig,
   NotionItem,
   Suggestion,
 } from "../../types.js";
-import { DataProvider } from "../DataProvider.js";
+import type { DataProvider } from "../DataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 interface Transaction {
@@ -36,13 +29,7 @@ interface Transaction {
   remittanceInformationUnstructured?: string;
 }
 
-@(
-  fluentProvide(DATA_PROVIDER)
-    .when(
-      (r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "GoCardless",
-    )
-    .done()
-)
+@injectable()
 export class GoCardlessClient implements DataProvider<"GoCardless"> {
   constructor(
     @inject(GOCARDLESS_ID) private readonly clientId: string,

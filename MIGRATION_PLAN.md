@@ -23,6 +23,7 @@ The repo is a personal Notion ↔ third-party (TMDB / IGDB / GBook / GoCardless 
 | IaC | **Terraform** | Replaces Bicep. State in GCS bucket. |
 | Runtime | **Bun 1.x** | Pinned via `oven/bun:1` image. Drop `dotenv` (Bun auto-loads `.env`), drop `ts-node` (Bun runs TS natively). Keep `tsgo --noEmit` for CI type checks only. |
 | HTTP framework | **Elysia** (Bun-native) | Replaces Fastify. Drops `@fastify/cookie`, `@fastify/static`. ~2-3 days of careful refactor across Router + every route handler. |
+| DI library | **tsyringe** (was Inversify) | Forced by Bun. Empirical test (Bun 1.3.14) showed Bun's `experimentalDecorators` does not call ctor-param decorators nor emit `design:paramtypes` metadata — inversify's binding pipeline silently produces `undefined` deps. tsyringe captures tokens in its own decorator metadata and works under Bun. Swap absorbed into Phase 2. |
 | Frontend bundler | **Bun.build** | Drops Vite + `@vitejs/plugin-react`. Use `bun build --target=browser` for prod, `bun --hot` for dev. HMR slightly less polished than Vite for MUI; accept trade-off. |
 | Local dev | **Hybrid: app on host, services in Docker** | docker-compose runs only `mongo` + `fsouza/fake-gcs-server`. App runs directly on WSL via `bun --watch --inspect backend/index.ts`. VSCode attaches via `oven.bun-vscode` extension. |
 | DB | **MongoDB Atlas M0 (GCP us-central1)** | Free 512MB. Verify M0 availability in us-central1 before locking the cluster. Fallback: AWS `us-east-1` (well-supported by M0). |
@@ -165,7 +166,20 @@ NOTION_TMDB_CLIENT_SECRET=…
 
 ---
 
-## Phase 2 — Strip Azure adapter + DI fixes
+## Phase 2 — DI swap (Inversify → tsyringe) + Strip Azure adapter + DI fixes
+
+### Phase 2a — Inversify → tsyringe (do first; without it, app cannot boot under Bun)
+
+- [ ] Drop `inversify`, `inversify-binding-decorators` from [backend/package.json](backend/package.json); add `tsyringe`.
+- [ ] Across `backend/src/`: replace `import { inject, injectable } from "inversify"` with the tsyringe equivalents.
+- [ ] Replace remaining `@provide(SelfClass)` with `@injectable()` + explicit `container.registerSingleton(SelfClass, SelfClass)` in di.ts.
+- [ ] Replace `@fluentProvide(KEY).when(predicate).done()` with `@injectable()` on the class + an env-driven `switch` at boot in `loadEnvironmentConfig` that calls `container.register(KEY, { useClass: ChosenImpl })`. Predicates are all DB_ENGINE / STORAGE_ENGINE / LOGGER_ENGINE driven, so the switch reads those env keys.
+- [ ] Replace inversify's `rootContainer.bind(TOKEN).toDynamicValue(ctx => ...)` (Notion OAuth per-distro secret picking, see [di.ts:132-194](backend/src/fx/di.ts#L132-L194)) with tsyringe `container.register(TOKEN, { useFactory: c => ... })`. The factory reads `c.resolve(DOMAIN)` to dispatch.
+- [ ] Move property-level `@inject` in [AnonymousNotionClient.ts](backend/src/providers/Notion/AnonymousNotionClient.ts) to constructor params (Bun stage-3 semantics break property decorators).
+- [ ] `rootContainer.createChild()` → `container.createChildContainer()`.
+- [ ] Smoke-test: `bun backend/index.ts` boots, hits `fastApp.listen` on port 7071.
+
+### Phase 2b — Strip Azure adapter + supporting changes
 
 - [ ] **[backend/index.ts](backend/index.ts)** — delete the entire `if (AZURE_FUNCTIONS_ENVIRONMENT) { ... } else { ... }` block (lines 28-153). Replace with a clean Elysia bootstrap that:
   - Loads env via `process.env` (Bun auto-loaded `.env` already)

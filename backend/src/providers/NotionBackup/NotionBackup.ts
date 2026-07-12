@@ -1,38 +1,29 @@
-import {
+import type {
   BlockObjectResponse,
   DatabaseObjectResponse,
   PageObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints.js";
-import archiver, { Archiver } from "archiver";
+import type { Archiver } from "archiver";
+import archiver from "archiver";
 import { Axios } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { FastifyRequest } from "fastify";
-import { inject } from "inversify";
-import { fluentProvide } from "inversify-binding-decorators";
-import {
-  DATA_PROVIDER,
-  DOMAIN as DOMAIN_KEY,
-  REQUEST,
-  STORAGE_PROVIDER,
-} from "../../fx/keys.js";
-import { DOMAIN, Suggestion } from "../../types.js";
+import { inject, injectable } from "tsyringe";
+import { REQUEST, STORAGE_PROVIDER } from "../../fx/keys.js";
+import type { ScopedRequest } from "../../fx/router.js";
+import type { Suggestion } from "../../types.js";
 import { retriable } from "../../utils/retriable.js";
-import { BackupDataProvider } from "../BackupDataProvider.js";
+import type { BackupDataProvider } from "../BackupDataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
-import { StorageProvider } from "../Storage/StorageProvider.js";
+import type { StorageProvider } from "../Storage/StorageProvider.js";
 
-@(
-  fluentProvide(DATA_PROVIDER)
-    .when((r) => r.parentContext.container.get<DOMAIN>(DOMAIN_KEY) == "backup")
-    .done()
-)
+@injectable()
 export class NotionBackup implements BackupDataProvider<"backup"> {
   private readonly client: Axios;
 
   constructor(
     @inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
     @inject(NotionClient) private readonly notion: NotionClient,
-    @inject(REQUEST) readonly request: FastifyRequest,
+    @inject(REQUEST) readonly request: ScopedRequest,
   ) {
     this.client = new Axios({
       headers: {

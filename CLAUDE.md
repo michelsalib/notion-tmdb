@@ -11,15 +11,13 @@ claiming a change is complete — TypeScript can compile cleanly while Biome
 still fails (and vice versa):
 
 ```sh
-npm run check                          # Biome lint + format
-npx --workspace frontend tsgo --noEmit # frontend typecheck
-npx --workspace backend  tsgo --noEmit # backend typecheck
+bun run check                      # Biome lint + format
+bun run typecheck                  # both workspaces via tsgo --noEmit
 ```
 
-If Biome flags something, `npm run fix` applies safe fixes and formatting.
-Anything left after `fix` is a real lint error and must be resolved in code,
-not by disabling the rule — Biome uses `recommended: true` with only a small
-allow-list of overrides in `biome.json`.
+If Biome flags something, `bun run fix` applies safe fixes and formatting. Anything left after that is a real lint error and must be
+resolved in code, not by disabling the rule — Biome uses `recommended: true`
+with only a small allow-list of overrides in `biome.json`.
 
 Common gotchas the recommended ruleset enforces:
 
@@ -29,25 +27,44 @@ Common gotchas the recommended ruleset enforces:
 
 ## Layout
 
-Monorepo using npm workspaces:
+Monorepo using npm workspaces (installed by Bun):
 
-- `backend/` — Azure Functions app (Fastify, Inversify DI, Notion + TMDB +
-  IGDB + GBook + GoCardless + Bitwarden clients, Mongo/Cosmos).
-- `frontend/` — React 19 + MUI, built with Vite.
-- `azure/` — Bicep infra templates.
-- `support/` — `build.ts` assembles `dist/` for deploy.
+- `backend/` — Elysia HTTP app + Cloud Run Job entrypoint. tsyringe DI,
+  Notion + TMDB + IGDB + GBook + GoCardless + Bitwarden clients, MongoDB
+  Atlas.
+- `frontend/` — React 19 + MUI, bundled with Bun's built-in bundler.
+- `infra/` — Terraform (Cloud Run, Cloud Scheduler, Artifact Registry,
+  Secret Manager, GCS backup bucket, MongoDB Atlas M0, WIF for CI, budget
+  alerts).
+- `support/` — one-off scripts (currently `migrateDb.ts`, the Cosmos→Atlas
+  migration; kept for reference).
 
 ## Toolchain notes
 
-- TypeScript is compiled with **`tsgo`** (the native-preview compiler from
+- **Runtime**: Bun 1.3 in prod (Cloud Run) and locally (`bun run dev`).
+  Don't introduce Node-only APIs or CommonJS syntax.
+- **TypeScript**: compiled with **`tsgo`** (the native-preview compiler from
   `@typescript/native-preview`), not `tsc`. Use `tsgo --noEmit` for type
-  checks; the syntax matches `tsc` flags.
-- Node 22 (`actions/setup-node@v4` with `node-version: 22`). Don't introduce
-  syntax that requires a newer runtime.
+  checks; the flag syntax matches `tsc`.
+- **Bun decorators quirk**: Bun's `experimentalDecorators` is broken for
+  property + parameter decorators (why we're on tsyringe, not Inversify).
 - ESM everywhere (`"type": "module"` at the root).
+
+## Infra & deploys
+
+- Prod is GCP project `micheldev-notion-tmdb` in `us-central1`.
+- Deploys are automatic on push to `main` via
+  `.github/workflows/deploy.yml` — WIF → GCP, Docker build/push to Artifact
+  Registry, then `terraform apply`.
+- Terraform state lives in `gs://micheldev-notion-tmdb-tf-state`.
+- Secrets are in Secret Manager; the runtime SA has `secretAccessor`.
+- The MongoDB Atlas M0 cluster is provisioned via the `mongodbatlas`
+  Terraform provider. Credentials for the DB user are randomly generated
+  and baked into `MONGO_URL` in Secret Manager (see `infra/atlas.tf`).
 
 ## Don't
 
 - Don't add `tsc` invocations — the project uses `tsgo`.
 - Don't loosen Biome rules to make a change pass; fix the code.
 - Don't commit without running the three CI commands above.
+- Don't introduce Fastify/Inversify/Cosmos code — those were removed.

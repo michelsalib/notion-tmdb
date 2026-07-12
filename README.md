@@ -19,48 +19,59 @@ Hosted and free to use on https://notion-tmdb.micheldev.com.
 
 ## Tech stack
 
-- **Runtime**: Node.js 24, deployed as an Azure Functions app.
-- **Backend**: TypeScript, Fastify, Inversify (DI), Notion / TMDB / IGDB /
-  GBook / GoCardless / Bitwarden clients, MongoDB and Cosmos DB.
-- **Frontend**: React 19 + MUI 9, built with Vite 8.
+- **Runtime**: Bun 1.3, deployed as a Cloud Run v2 Service (HTTP) plus a
+  Cloud Run Job for the weekly Bitwarden backup.
+- **Backend**: TypeScript, Elysia, tsyringe (DI), Notion / TMDB / IGDB /
+  GBook / GoCardless / Bitwarden clients, MongoDB Atlas.
+- **Frontend**: React 19 + MUI, bundled with Bun's built-in bundler.
 - **Tooling**: Biome (lint + format), TypeScript via
   [`tsgo`](https://github.com/microsoft/typescript-go) (native preview
   compiler), npm workspaces.
-- **Infra**: Bicep templates under `azure/`.
+- **Infra**: Terraform under `infra/` (Cloud Run, Cloud Scheduler, Artifact
+  Registry, Secret Manager, GCS backup bucket, MongoDB Atlas M0, WIF for CI,
+  budget alerts).
+- **CI/CD**: GitHub Actions → Workload Identity Federation → Cloud Run
+  (`.github/workflows/deploy.yml`).
 
 ## Workspaces
 
 ```
-backend/   Azure Functions app (API, auth, background jobs)
-frontend/  React SPA served by the function app
-azure/     Bicep infrastructure templates
+backend/   Elysia app (API, auth, background job entrypoint)
+frontend/  React SPA served by the backend
+infra/     Terraform (GCP + MongoDB Atlas)
+support/   One-off scripts (e.g. Cosmos → Atlas data migration)
 ```
 
 ## Development
 
-Prerequisites: Node.js 24, npm 10+, and the
-[Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
-for running the backend locally.
+Prerequisites: [Bun](https://bun.sh) 1.3+, npm 10+ (for `bun install`
+compatibility with the workspaces layout).
 
 ```sh
-npm install              # install all workspaces
-
-npm run check            # biome lint + format check
-npm run fix              # biome --write (apply safe fixes + format)
-
-npm --workspace backend run watch    # tsgo --watch
-npm --workspace backend run start    # func start
-
-npm --workspace frontend run start   # vite dev server
+bun install                       # install all workspaces
+bun run dev                       # backend + hot reload (PORT=7071)
+cd frontend && bun start          # frontend dev server (:5173)
 ```
 
-The Vite dev server proxies `/api/*`, `/login`, `/logout` to the local
-function host on `127.0.0.1:7071`.
+Open **http://localhost:7071** — the backend serves the built SPA in prod
+and, when there's no `frontend/dist`, transparently proxies all non-API
+requests to the frontend dev server on `:5173` so a single URL covers dev
+too.
 
 ## Build & deploy
 
+Deploys happen automatically on push to `main` via
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): it builds the
+Docker image, pushes to Artifact Registry, and runs `terraform apply` to
+roll the new revision to Cloud Run.
+
+Manual local apply (only if CI is blocked):
+
 ```sh
-npm run build            # build all workspaces + assemble dist/
-npm run code:deploy      # zip dist/ and push to Azure
-npm run infra:deploy     # apply azure/template.bicep
+cd infra/
+terraform init -backend-config="bucket=micheldev-notion-tmdb-tf-state"
+terraform apply
 ```
+
+First-time infra bootstrap for a fresh GCP project is documented in
+[`infra/bootstrap.sh`](infra/bootstrap.sh).

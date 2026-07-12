@@ -2,50 +2,30 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "node: host start",
-      "dependsOn": ["npm watch (backend)", "npm watch (frontend)"]
-    },
-    {
-      "type": "func",
-      "label": "func: host start",
-      "command": "host start",
-      "problemMatcher": "$func-node-watch",
+      "type": "shell",
+      "label": "dev: frontend",
+      "command": "bun start",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
       "isBackground": true,
-      "dependsOn": ["npm watch (backend)", "npm watch (frontend)"],
-      "options": {
-        "cwd": "${workspaceFolder}/backend"
-      }
-    },
-    {
-      "type": "shell",
-      "label": "npm watch (backend)",
-      "command": "npm run watch --workspace backend",
-      "problemMatcher": "$tsc-watch",
-      "group": {
-        "kind": "build"
-      },
-      "isBackground": true
-    },
-    {
-      "type": "shell",
-      "label": "npm watch (frontend)",
-      "command": "npm run watch --workspace frontend",
-      "options": {
-        "env": {
-          "NODE_ENV": "development"
-        }
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
       },
       "problemMatcher": {
-        "base": "$tsc-watch",
+        "pattern": [
+          {
+            "regexp": "^$",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ],
         "background": {
-          "beginsPattern": "build started...",
-          "endsPattern": "built in "
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Frontend dev server on"
         }
-      },
-      "group": {
-        "kind": "build"
-      },
-      "isBackground": true
+      }
     }
   ]
 }

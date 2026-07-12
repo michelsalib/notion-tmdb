@@ -3,17 +3,11 @@
   "configurations": [
     {
       "type": "bun",
-      "request": "attach",
-      "name": "Attach to Bun",
-      "url": "ws://localhost:6499/"
-    },
-    {
-      "type": "bun",
       "request": "launch",
-      "name": "Launch backend",
+      "name": "Launch",
       "program": "${workspaceFolder}/backend/index.ts",
-      "cwd": "${workspaceFolder}",
-      "watch": true
+      "cwd": "${workspaceFolder}/backend",
+      "preLaunchTask": "dev: frontend"
     }
   ]
 }

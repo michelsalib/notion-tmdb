@@ -17,7 +17,7 @@
     "yaml": "^2.9.0"
   },
   "scripts": {
-    "build": "rm -rf dist && bun build index.html --outdir dist --target browser --minify --sourcemap --define process.env.NODE_ENV='\"production\"' && cp -r static/. dist/",
+    "build": "rm -rf dist && bun build index.html --outdir dist --target browser --production --sourcemap && cp -r static/. dist/",
     "start": "bun --hot serve.ts"
   }
 }

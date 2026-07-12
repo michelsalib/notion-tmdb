@@ -9,6 +9,9 @@
     "format": "biome format --write .",
     "lint": "biome lint",
     "fix": "biome check --write .",
+    "typecheck": "bun run typecheck:backend && bun run typecheck:frontend",
+    "typecheck:backend": "bun x tsgo -p backend --noEmit",
+    "typecheck:frontend": "bun x tsgo -p frontend --noEmit",
     "dev": "bun --env-file=backend/.env --watch --inspect backend/index.ts"
   },
   "author": "michelsalib@gmail.com",

@@ -58,10 +58,12 @@ resource "google_service_account_iam_member" "ci_can_act_as_scheduler" {
   member             = "serviceAccount:${google_service_account.ci.email}"
 }
 
-# Terraform state lives here — CI needs read/write.
+# Terraform state lives here — CI needs read/write for state objects AND
+# storage.buckets.getIamPolicy to reconcile this very binding on subsequent
+# applies (objectAdmin isn't enough — it lacks bucket-IAM permissions).
 resource "google_storage_bucket_iam_member" "ci_tf_state_writer" {
   bucket = "${var.project_id}-tf-state"
-  role   = "roles/storage.objectAdmin"
+  role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.ci.email}"
 }
 resource "google_storage_bucket_iam_member" "ci_backup_bucket_admin" {

@@ -12,14 +12,9 @@
         "panel": "dedicated"
       },
       "problemMatcher": {
-        "pattern": [
-          {
-            "regexp": "^$",
-            "file": 1,
-            "location": 2,
-            "message": 3
-          }
-        ],
+        "pattern": {
+          "regexp": "^$"
+        },
         "background": {
           "activeOnStart": true,
           "beginsPattern": ".",

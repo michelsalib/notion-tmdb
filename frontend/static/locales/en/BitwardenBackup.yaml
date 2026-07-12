@@ -1,2 +1,4 @@
+SYNC_SUCESS: Backup created.
+SYNC_FAILURE: Backup failed.
 PRIMARY_COLOR: blue
 LOGO_PATH: /BitwardenBackup.png

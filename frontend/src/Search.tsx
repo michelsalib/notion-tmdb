@@ -56,6 +56,8 @@ export function Search({
   return (
     <Autocomplete<Suggestion>
       sx={{ width: "100%" }}
+      size="small"
+      autoHighlight
       getOptionLabel={(option) => option.title}
       getOptionKey={(x) => x.id}
       options={options}
@@ -70,34 +72,63 @@ export function Search({
       onInputChange={(event, newInputValue) => {
         setInputValue(newInputValue);
       }}
+      // Keep the dropdown compact: a Notion embed is a fixed-height iframe that
+      // can't grow to fit content, so tall rows force an oversized embed. Cap
+      // the list and keep each row small so several fit in a short embed.
+      slotProps={{ listbox: { sx: { maxHeight: 300 } } }}
       renderInput={(params) => (
-        <TextField {...params} label={t("SEARCH_PLACEHOLDER")} fullWidth />
+        <TextField
+          {...params}
+          size="small"
+          label={t("SEARCH_PLACEHOLDER")}
+          fullWidth
+        />
       )}
       renderOption={(props, option) => {
         const { key, ...optionProps } = props;
 
         return (
-          <li key={key} {...optionProps}>
-            <Stack direction="row" spacing={1}>
+          <Box
+            component="li"
+            key={key}
+            {...optionProps}
+            sx={{ gap: 1, py: 0.5, alignItems: "center" }}
+          >
+            {option.posterPath ? (
               <Box
                 component="img"
-                sx={{
-                  width: 40,
-                  height: 60,
-                  objectFit: "cover",
-                }}
+                loading="lazy"
                 src={option.posterPath}
+                sx={{
+                  width: 28,
+                  height: 42,
+                  objectFit: "cover",
+                  borderRadius: 0.5,
+                  flexShrink: 0,
+                }}
               />
-              <Stack direction="column">
-                <Typography variant="subtitle2">{option.title}</Typography>
-                <Typography variant="caption">
-                  {[option.releaseDate.split("-")[0], option.subtitle]
-                    .filter(Boolean)
-                    .join(" - ")}
-                </Typography>
-              </Stack>
+            ) : (
+              <Box
+                sx={{
+                  width: 28,
+                  height: 42,
+                  borderRadius: 0.5,
+                  flexShrink: 0,
+                  bgcolor: "action.hover",
+                }}
+              />
+            )}
+            <Stack direction="column" sx={{ minWidth: 0 }}>
+              <Typography variant="body2" noWrap>
+                {option.title}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {[option.releaseDate.split("-")[0], option.subtitle]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Typography>
             </Stack>
-          </li>
+          </Box>
         );
       }}
     />

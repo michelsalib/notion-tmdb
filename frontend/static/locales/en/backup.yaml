@@ -1,3 +1,5 @@
+SYNC_SUCESS: Backup created.
+SYNC_FAILURE: Backup failed.
 PRIMARY_COLOR: teal
 LOGO_PATH: /backup.jpeg
 AUTH_KEY: 11bd872b-594c-805e-9a8e-0037587bf62d

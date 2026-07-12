@@ -64,13 +64,12 @@ export function EmbedPage() {
         ""
       )}
 
-      <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
+      <Stack direction="column" spacing={1.5} sx={{ padding: 1.5 }}>
         {domain.domain != "GoCardless" ? (
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={1.5}>
             <Search onChange={(m) => setValue(m)} />
             <Button
               variant="contained"
-              size="large"
               onClick={submit}
               disabled={loading || !value}
             >

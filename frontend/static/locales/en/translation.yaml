@@ -1,3 +1,4 @@
 SETTINGS_SUCESS: Saved preferences.
 SETTINGS_FAILURE: Failed saving preferences.
 OPEN: Open
+BACKUP_RETRIEVAL_FAILURE: Failed to retrieve backup.

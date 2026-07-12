@@ -1,23 +1,25 @@
-# Notion connector
+# Notion connectors
 
-This is a suite of Notion plugins that I built for myself, and anyone else
-wanting to use them.
+A little suite of Notion plugins I built for myself — and I'm happy to share
+them with anyone who finds them useful. Each one turns a plain Notion database
+into a self-updating tracker: type in a title, and the connector fills in the
+rest.
 
-- **Notion TMDB**: syncs a Notion DB with TMDB to help build movie watchlists.
-- **Notion GBook**: syncs a Notion DB with Google Books to help build book
-  readlists.
-- **Notion IGDB**: syncs a Notion DB with IGDB to help build game backlogs.
-- **Notion BilletReduc**: syncs a Notion DB with billetreduc.com to help build
-  a theatre watchlist.
-- **Notion GoCardless**: imports bank transactions into a Notion DB via
-  GoCardless.
-- **Notion Backup**: periodic backups of a Notion workspace.
-- **Bitwarden Backup**: periodic backups of a Bitwarden vault.
+- **Notion TMDB** — build movie watchlists, synced from TMDB.
+- **Notion GBook** — build reading lists, synced from Google Books.
+- **Notion IGDB** — build game backlogs, synced from IGDB.
+- **Notion BilletReduc** — build a theatre watchlist, synced from
+  billetreduc.com.
+- **Notion GoCardless** — import your bank transactions via GoCardless.
+- **Notion Backup** — periodic backups of a Notion workspace.
+- **Bitwarden Backup** — periodic backups of a Bitwarden vault.
 
-My dev roadmap is on
+**Try it now** — it's hosted and free at
+**[notion-tmdb.micheldev.com](https://notion-tmdb.micheldev.com)**, no install
+required.
+
+Curious what's coming next? The roadmap lives on
 [Notion](https://michelsalib.notion.site/ca1917bcf6174025a8533ed51450a073?v=101bb1cb1e0980c8870b000c95acaf85).
-
-Hosted and free to use on https://notion-tmdb.micheldev.com.
 
 ## Tech stack
 
@@ -46,8 +48,8 @@ support/   One-off scripts (e.g. Cosmos → Atlas data migration)
 
 ## Development
 
-Prerequisites: [Bun](https://bun.sh) 1.3+, npm 10+ (for `bun install`
-compatibility with the workspaces layout).
+Want to hack on it? You'll need [Bun](https://bun.sh) 1.3+ and npm 10+ (for
+`bun install` compatibility with the workspaces layout). Then:
 
 ```sh
 bun install                       # install all workspaces
@@ -55,10 +57,10 @@ bun run dev                       # backend + hot reload (PORT=7071)
 cd frontend && bun start          # frontend dev server (:5173)
 ```
 
-Open **http://localhost:7071** — the backend serves the built SPA in prod
-and, when there's no `frontend/dist`, transparently proxies all non-API
-requests to the frontend dev server on `:5173` so a single URL covers dev
-too.
+Open **http://localhost:7071** and you're running — the backend serves the
+built SPA in prod and, when there's no `frontend/dist`, transparently proxies
+all non-API requests to the frontend dev server on `:5173`, so a single URL
+covers dev too.
 
 ## Build & deploy
 
@@ -77,3 +79,9 @@ terraform apply
 
 First-time infra bootstrap for a fresh GCP project is documented in
 [`infra/bootstrap.sh`](infra/bootstrap.sh).
+
+## Contributing
+
+Issues, ideas, and pull requests are all welcome — whether it's a bug you hit,
+a connector you'd love to see, or a rough edge worth smoothing. Feel free to
+open an issue to say hello or start a discussion.

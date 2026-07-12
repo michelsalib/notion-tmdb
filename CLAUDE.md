@@ -61,6 +61,17 @@ Monorepo using npm workspaces (installed by Bun):
 - The MongoDB Atlas M0 cluster is provisioned via the `mongodbatlas`
   Terraform provider. Credentials for the DB user are randomly generated
   and baked into `MONGO_URL` in Secret Manager (see `infra/atlas.tf`).
+- **Domain mappings & ownership:** the `google_cloud_run_domain_mapping`
+  resources (`local.subdomains` in `infra/main.tf`) can only be *created* by an
+  identity that is a verified owner of `micheldev.com` in Google Search
+  Console. The CI service account (`notion-tmdb-ci@…`) is **not** an owner by
+  default, so a CI deploy that adds a **new** subdomain fails with
+  `PermissionDenied` ("Caller is not authorized to administer the domain …").
+  Existing mappings apply fine (they already exist). Fix: add the CI SA as an
+  Owner of the domain in Search Console → Users and permissions. Interim
+  unblock: `gcloud beta run domain-mappings create …` from a local login that
+  *is* an owner (Terraform matches by `location/name`, so no drift). This is
+  **not** a transient flake — it reproduces for every new CI-created subdomain.
 
 ## Don't
 

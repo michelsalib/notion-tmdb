@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import type {
+  BilletReducDbConfig,
   DOMAIN,
   DomainToConfig,
   GBookDbConfig,
@@ -68,6 +69,18 @@ function computeDefaultState<T extends DOMAIN>(
     } as IgdbConfig as DomainToConfig<T>;
   }
 
+  if (domain == "BilletReduc") {
+    return {
+      id: dbId,
+      url: "",
+      status: "",
+      title: "",
+      genre: "",
+      venue: "",
+      author: "",
+    } as BilletReducDbConfig as DomainToConfig<T>;
+  }
+
   return {
     id: dbId,
     url: "",
@@ -80,9 +93,54 @@ function computeDefaultState<T extends DOMAIN>(
   } as TmdbDbConfig as DomainToConfig<T>;
 }
 
-function getdbFields<T extends "GBook" | "TMDB" | "GoCardless" | "IGDB">(
-  domain: T,
-): DbField<T>[] {
+function getdbFields<
+  T extends "GBook" | "TMDB" | "GoCardless" | "IGDB" | "BilletReduc",
+>(domain: T): DbField<T>[] {
+  if (domain == "BilletReduc") {
+    return [
+      {
+        label: "URL",
+        dbConfigField: "url",
+        columnType: "url",
+        required: true,
+        helperText:
+          "This mandatory field helps associate your entry with the data provider.",
+      },
+      {
+        label: "Status",
+        dbConfigField: "status",
+        columnType: "date",
+        required: true,
+        helperText:
+          "This mandatory field helps the plugin to identify your entries that need to be synched.",
+      },
+      {
+        label: "Title",
+        dbConfigField: "title",
+        columnType: "title",
+        required: false,
+      },
+      {
+        label: "Genre",
+        columnType: "multi_select",
+        dbConfigField: "genre",
+        required: false,
+      },
+      {
+        label: "Venue",
+        columnType: "rich_text",
+        dbConfigField: "venue",
+        required: false,
+      },
+      {
+        label: "Author",
+        columnType: "rich_text",
+        dbConfigField: "author",
+        required: false,
+      },
+    ] as DbField<"BilletReduc">[] as DbField<T>[];
+  }
+
   if (domain == "GoCardless") {
     return [
       {
@@ -222,7 +280,7 @@ function getdbFields<T extends "GBook" | "TMDB" | "GoCardless" | "IGDB">(
 }
 
 export function DbConfigForm<
-  T extends "GBook" | "TMDB" | "GoCardless" | "IGDB",
+  T extends "GBook" | "TMDB" | "GoCardless" | "IGDB" | "BilletReduc",
 >({
   notionDatabases,
   initialConfig,

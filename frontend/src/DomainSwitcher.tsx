@@ -65,6 +65,13 @@ export function DomainSwitcher({ variant }: { variant: "h2" | "h6" }) {
           IGDB
         </MenuItem>
         <MenuItem
+          value="BilletReduc"
+          sx={{ fontSize: "large", fontWeight: font.fontWeight }}
+          disabled={pre == "Bitwarden"}
+        >
+          BilletRéduc
+        </MenuItem>
+        <MenuItem
           value="GBook"
           sx={{ fontSize: "large", fontWeight: font.fontWeight }}
           disabled={pre == "Bitwarden"}

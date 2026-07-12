@@ -30,8 +30,8 @@ Common gotchas the recommended ruleset enforces:
 Monorepo using npm workspaces (installed by Bun):
 
 - `backend/` — Elysia HTTP app + Cloud Run Job entrypoint. tsyringe DI,
-  Notion + TMDB + IGDB + GBook + GoCardless + Bitwarden clients, MongoDB
-  Atlas.
+  Notion + TMDB + IGDB + GBook + BilletReduc + GoCardless + Bitwarden clients,
+  MongoDB Atlas.
 - `frontend/` — React 19 + MUI, bundled with Bun's built-in bundler.
 - `infra/` — Terraform (Cloud Run, Cloud Scheduler, Artifact Registry,
   Secret Manager, GCS backup bucket, MongoDB Atlas M0, WIF for CI, budget

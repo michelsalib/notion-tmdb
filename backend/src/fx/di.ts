@@ -4,6 +4,7 @@ import {
   DependencyContainer,
   instanceCachingFactory,
 } from "tsyringe";
+import { BilletReducClient } from "../providers/BilletReduc/BilletReducClient.js";
 import { BitwardenBackup } from "../providers/BitwardenBackup/BitwardenBackup.js";
 import type { DbProvider } from "../providers/DbProvider.js";
 import { GBookClient } from "../providers/GBook/GBookClient.js";
@@ -30,6 +31,8 @@ import {
   MONGO_URL,
   NOTION_BACKUP_CLIENT_ID,
   NOTION_BACKUP_CLIENT_SECRET,
+  NOTION_BILLETREDUC_CLIENT_ID,
+  NOTION_BILLETREDUC_CLIENT_SECRET,
   NOTION_CLIENT_ID,
   NOTION_CLIENT_SECRET,
   NOTION_GBOOK_CLIENT_ID,
@@ -76,6 +79,11 @@ export function loadEnvironmentConfig(env: {
   bind(NOTION_BACKUP_CLIENT_SECRET, env["NOTION_BACKUP_CLIENT_SECRET"]);
   bind(NOTION_GBOOK_CLIENT_ID, env["NOTION_GBOOK_CLIENT_ID"]);
   bind(NOTION_GBOOK_CLIENT_SECRET, env["NOTION_GBOOK_CLIENT_SECRET"]);
+  bind(NOTION_BILLETREDUC_CLIENT_ID, env["NOTION_BILLETREDUC_CLIENT_ID"]);
+  bind(
+    NOTION_BILLETREDUC_CLIENT_SECRET,
+    env["NOTION_BILLETREDUC_CLIENT_SECRET"],
+  );
   bind(NOTION_GOCARDLESS_CLIENT_ID, env["NOTION_GOCARDLESS_CLIENT_ID"]);
   bind(NOTION_GOCARDLESS_CLIENT_SECRET, env["NOTION_GOCARDLESS_CLIENT_SECRET"]);
 
@@ -147,6 +155,8 @@ export function loadEnvironmentConfig(env: {
           return c.resolve(NOTION_IGDB_CLIENT_ID);
         case "GBook":
           return c.resolve(NOTION_GBOOK_CLIENT_ID);
+        case "BilletReduc":
+          return c.resolve(NOTION_BILLETREDUC_CLIENT_ID);
         case "backup":
           return c.resolve(NOTION_BACKUP_CLIENT_ID);
         case "GoCardless":
@@ -166,6 +176,8 @@ export function loadEnvironmentConfig(env: {
           return c.resolve(NOTION_IGDB_CLIENT_SECRET);
         case "GBook":
           return c.resolve(NOTION_GBOOK_CLIENT_SECRET);
+        case "BilletReduc":
+          return c.resolve(NOTION_BILLETREDUC_CLIENT_SECRET);
         case "backup":
           return c.resolve(NOTION_BACKUP_CLIENT_SECRET);
         case "GoCardless":
@@ -187,6 +199,8 @@ export function loadEnvironmentConfig(env: {
           return c.resolve(GBookClient);
         case "IGDB":
           return c.resolve(IgdbClient);
+        case "BilletReduc":
+          return c.resolve(BilletReducClient);
         case "GoCardless":
           return c.resolve(GoCardlessClient);
         case "BitwardenBackup":
@@ -273,6 +287,7 @@ const HOSTNAME_DOMAIN: Record<string, DOMAIN> = {
   "notion-tmdb": "TMDB",
   "notion-gbook": "GBook",
   "notion-igdb": "IGDB",
+  "notion-billetreduc": "BilletReduc",
   "notion-backup": "backup",
   "notion-gocardless": "GoCardless",
   "bitwarden-backup": "BitwardenBackup",
@@ -282,6 +297,7 @@ const STATE_DOMAIN: Record<string, DOMAIN> = {
   tmdb: "TMDB",
   gbook: "GBook",
   igdb: "IGDB",
+  billetreduc: "BilletReduc",
   backup: "backup",
   gocardless: "GoCardless",
   bitwardenbackup: "BitwardenBackup",

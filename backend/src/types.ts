@@ -47,6 +47,13 @@ export interface IgdbConfig extends DbConfigBase {
   rating: string;
 }
 
+export interface BilletReducDbConfig extends DbConfigBase {
+  title: string;
+  genre: string;
+  venue: string;
+  author: string;
+}
+
 export interface ClassificationRule {
   category: string;
   matchers: string[];
@@ -78,7 +85,8 @@ export type Config =
   | GBookDbConfig
   | BackupDbConfig
   | GoCardlessDbConfig
-  | IgdbConfig;
+  | IgdbConfig
+  | BilletReducDbConfig;
 
 export type DomainToConfig<T extends DOMAIN> = T extends "GBook"
   ? GBookDbConfig
@@ -88,9 +96,11 @@ export type DomainToConfig<T extends DOMAIN> = T extends "GBook"
       ? GoCardlessDbConfig
       : T extends "IGDB"
         ? IgdbConfig
-        : T extends "Backup"
-          ? BackupDbConfig
-          : { [key: string]: never };
+        : T extends "BilletReduc"
+          ? BilletReducDbConfig
+          : T extends "Backup"
+            ? BackupDbConfig
+            : { [key: string]: never };
 
 export interface UserData<T extends DOMAIN> {
   id: string;
@@ -135,4 +145,5 @@ export type DOMAIN =
   | "backup"
   | "GoCardless"
   | "BitwardenBackup"
-  | "IGDB";
+  | "IGDB"
+  | "BilletReduc";

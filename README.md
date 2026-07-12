@@ -7,6 +7,8 @@ wanting to use them.
 - **Notion GBook**: syncs a Notion DB with Google Books to help build book
   readlists.
 - **Notion IGDB**: syncs a Notion DB with IGDB to help build game backlogs.
+- **Notion BilletReduc**: syncs a Notion DB with billetreduc.com to help build
+  a theatre watchlist.
 - **Notion GoCardless**: imports bank transactions into a Notion DB via
   GoCardless.
 - **Notion Backup**: periodic backups of a Notion workspace.

@@ -304,6 +304,7 @@ locals {
     "notion-tmdb",
     "notion-gbook",
     "notion-igdb",
+    "notion-billetreduc",
     "notion-backup",
     "notion-gocardless",
     "bitwarden-backup",

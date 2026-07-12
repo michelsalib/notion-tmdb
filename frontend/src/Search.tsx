@@ -91,8 +91,9 @@ export function Search({
               <Stack direction="column">
                 <Typography variant="subtitle2">{option.title}</Typography>
                 <Typography variant="caption">
-                  {option.releaseDate.split("-")[0]}
-                  {option.subtitle ? " - " + option.subtitle : ""}
+                  {[option.releaseDate.split("-")[0], option.subtitle]
+                    .filter(Boolean)
+                    .join(" - ")}
                 </Typography>
               </Stack>
             </Stack>

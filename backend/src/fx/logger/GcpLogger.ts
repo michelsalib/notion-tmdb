@@ -1,38 +1,28 @@
 import type { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { injectable } from "tsyringe";
+import { emit, type LogFields, serializeError } from "./emit.js";
 import type { Logger } from "./Logger.js";
-
-// Cloud Logging auto-parses JSON on stdout. Severity must be one of:
-// DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY.
-// https://cloud.google.com/logging/docs/structured-logging
-type Severity = "DEBUG" | "INFO" | "NOTICE" | "WARNING" | "ERROR";
-
-function emit(severity: Severity, message: string): void {
-  // Single JSON line per record; stderr for ERROR so the platform routes it
-  // into the error reporter, stdout for the rest.
-  const line = JSON.stringify({
-    severity,
-    message,
-    timestamp: new Date().toISOString(),
-  });
-  if (severity === "ERROR") {
-    console.error(line);
-  } else {
-    console.log(line);
-  }
-}
 
 @injectable()
 export class GcpLogger implements Logger {
-  log(message: string): void {
-    emit("INFO", message);
+  log(message: string, meta?: LogFields): void {
+    emit("INFO", message, meta);
   }
-  warn(message: string): void {
-    emit("WARNING", message);
+  warn(message: string, meta?: LogFields): void {
+    emit("WARNING", message, meta);
   }
-  error(message: string): void {
-    emit("ERROR", message);
+  error(message: string | Error, meta?: LogFields): void {
+    if (message instanceof Error) {
+      const err = serializeError(message);
+      emit("ERROR", String(err["message"]), {
+        stack_trace: err["stack_trace"],
+        error_name: err["error_name"],
+        ...meta,
+      });
+      return;
+    }
+    emit("ERROR", message, meta);
   }
   bindAxios(axios: AxiosInstance): void {
     axios.interceptors.request.use(

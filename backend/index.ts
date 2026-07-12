@@ -7,14 +7,36 @@ import "./src/api.js";
 import "./src/auth.js";
 import "./src/static.js";
 import { loadEnvironmentConfig } from "./src/fx/di.js";
+import { patchConsole } from "./src/fx/logger/patchConsole.js";
+import {
+  enterTraceContext,
+  parseCloudTraceContext,
+} from "./src/fx/logger/traceContext.js";
 import { Router } from "./src/fx/router.js";
 
 loadEnvironmentConfig(process.env);
+
+// GCP-mode: route stray console.* calls through the structured emitter so
+// every log ends up as a single JSON line Cloud Logging can parse.
+if (process.env["LOGGER_ENGINE"] === "GCP") {
+  patchConsole();
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FRONTEND_DIST = join(__dirname, "../frontend/dist");
 
 const app = new Elysia();
+
+// Extract Cloud Run's per-request X-Cloud-Trace-Context header and stash it
+// in AsyncLocalStorage so every downstream log carries the same trace ID —
+// Cloud Logging then groups all lines for one request together in the UI.
+app.onRequest(({ request }) => {
+  const ctx = parseCloudTraceContext(
+    request.headers.get("x-cloud-trace-context"),
+    process.env["GCP_PROJECT_ID"],
+  );
+  if (ctx) enterTraceContext(ctx);
+});
 
 Router.load(app);
 

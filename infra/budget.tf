@@ -1,5 +1,5 @@
 # ── Budget alerts ─────────────────────────────────────────────────────────
-# Personal-project safety net. Three thresholds at €1/€5/€10 monthly spend
+# Personal-project safety net. Three thresholds at €1/€2/€3 monthly spend
 # alert the billing admins (that's you) via email. Cloud Run + Atlas M0
 # should sit at €0 under normal load — a €1 breach means something's
 # unexpectedly on. Currency matches the billing account (EUR).
@@ -20,18 +20,18 @@ resource "google_billing_budget" "monthly_alerts" {
   amount {
     specified_amount {
       currency_code = "EUR"
-      units         = "10"
+      units         = "3"
     }
   }
 
-  # Thresholds are expressed as fractions of the budget amount (€10):
-  # 10% = €1, 50% = €5, 100% = €10.
+  # Thresholds are expressed as fractions of the budget amount (€3):
+  # ~33% = €1, ~67% = €2, 100% = €3.
   threshold_rules {
-    threshold_percent = 0.1
+    threshold_percent = 0.333
     spend_basis       = "CURRENT_SPEND"
   }
   threshold_rules {
-    threshold_percent = 0.5
+    threshold_percent = 0.667
     spend_basis       = "CURRENT_SPEND"
   }
   threshold_rules {

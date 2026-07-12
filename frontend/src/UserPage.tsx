@@ -1,8 +1,10 @@
 import {
   Alert,
   Button,
+  Checkbox,
   CircularProgress,
   Container,
+  FormControlLabel,
   LinearProgress,
   Paper,
   Stack,
@@ -20,7 +22,12 @@ import {
 } from "./Context";
 import { DbConfigForm } from "./DbConfigForm";
 import { EmbedPage } from "./EmbedPage";
+import { MultiEmbedPage } from "./MultiEmbedPage";
 import { Navigation } from "./Navigation";
+
+// Connectors that share the search → add shape and can be combined into the
+// single multi-connector embed widget (see MultiEmbedPage / computeDomain).
+const SEARCH_DOMAINS = ["TMDB", "IGDB", "GBook", "BilletReduc"];
 
 export function UserPage() {
   const { domain } = useContext(DomainContext);
@@ -29,7 +36,13 @@ export function UserPage() {
   const userConfig = useContext(ConfigContext);
   const [newConfig, setNewConfig] = useState<Config | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [multi, setMulti] = useState(false);
   const { setSnackbar } = useContext(SnackbarContext);
+
+  const canMulti = SEARCH_DOMAINS.includes(domain);
+  const embedUrl = `${window.location.origin}?userId=${auth.userId}${
+    multi && canMulti ? "&multi=1" : ""
+  }`;
 
   if (!userConfig) {
     return (
@@ -91,7 +104,7 @@ export function UserPage() {
             <Alert variant="outlined" severity="info">
               Your plugin is ready to be embeded in notion
               <TextField
-                defaultValue={`${window.location.origin}?userId=${auth.userId}`}
+                value={embedUrl}
                 size="small"
                 slotProps={{
                   input: {
@@ -101,10 +114,26 @@ export function UserPage() {
                 }}
                 sx={{ width: "100%" }}
               />
+              {canMulti ? (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={multi}
+                      onChange={(e) => setMulti(e.target.checked)}
+                    />
+                  }
+                  label="One widget for all my connectors (pick the source from a dropdown)"
+                />
+              ) : (
+                ""
+              )}
             </Alert>
             <Paper>
               {domain == "backup" || domain == "BitwardenBackup" ? (
                 <Backup />
+              ) : multi && canMulti ? (
+                <MultiEmbedPage />
               ) : (
                 <EmbedPage />
               )}

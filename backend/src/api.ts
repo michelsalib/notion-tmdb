@@ -1,4 +1,5 @@
 import { DependencyContainer, injectable } from "tsyringe";
+import { SEARCH_DOMAINS, unScopedContainer } from "./fx/di.js";
 import {
   DATA_PROVIDER,
   DB_PROVIDER,
@@ -39,6 +40,33 @@ export class Api {
     const results = await client.search((request.query as any)["query"]);
 
     return { results };
+  }
+
+  // Which search connectors the current workspace has actually linked. Drives
+  // the multi-connector embed dropdown so it only offers connectors that have a
+  // configured record in their (per-domain) collection. The Notion workspace id
+  // is stable across the per-connector OAuth apps, so one userId spans them all.
+  async connectors(container: DependencyContainer) {
+    const userId = container.resolve<string | undefined>(USER_ID);
+
+    if (!userId) {
+      return { connectors: [] };
+    }
+
+    const connectors: DOMAIN[] = [];
+
+    for (const domain of Object.values(SEARCH_DOMAINS)) {
+      const scoped = await unScopedContainer(domain);
+      const user = await scoped
+        .resolve<DbProvider>(DB_PROVIDER)
+        .getUser(userId);
+
+      if (user?.config) {
+        connectors.push(domain);
+      }
+    }
+
+    return { connectors };
   }
 
   async sync(container: DependencyContainer) {
@@ -198,6 +226,11 @@ Router.register(Api, "getUser", {
 });
 Router.register(Api, "search", {
   path: "/api/search",
+  method: "GET",
+  authenticate: false,
+});
+Router.register(Api, "connectors", {
+  path: "/api/connectors",
   method: "GET",
   authenticate: false,
 });

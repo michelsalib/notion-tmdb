@@ -12,8 +12,18 @@ import { useTranslation } from "react-i18next";
 
 export function Search({
   onChange,
+  domain,
+  placeholder,
+  borderless,
 }: {
   onChange: (result: Suggestion | null) => void;
+  // When set, target this connector per-request instead of the host's default
+  // (the multi-connector embed widget). Honored by computeDomain in fx/di.ts.
+  domain?: string;
+  placeholder?: string;
+  // Drop the field's own outline + floating label so it can sit inside a shared
+  // input group (the multi-connector widget merges dropdown + search + button).
+  borderless?: boolean;
 }) {
   const [value, setValue] = useState<Suggestion | null>(null);
   const [inputValue, setInputValue] = useState("");
@@ -24,13 +34,17 @@ export function Search({
     () =>
       debounce(
         (inputValue, done: (result: { results: Suggestion[] }) => void) => {
-          void fetch("/api/search?query=" + encodeURIComponent(inputValue))
+          const params = new URLSearchParams({ query: inputValue });
+          if (domain) {
+            params.set("domain", domain);
+          }
+          void fetch("/api/search?" + params.toString())
             .then((res) => res.json())
             .then(done);
         },
         400,
       ),
-    [],
+    [domain],
   );
 
   useEffect(() => {
@@ -80,8 +94,18 @@ export function Search({
         <TextField
           {...params}
           size="small"
-          label={t("SEARCH_PLACEHOLDER")}
           fullWidth
+          label={
+            borderless ? undefined : (placeholder ?? t("SEARCH_PLACEHOLDER"))
+          }
+          placeholder={
+            borderless ? (placeholder ?? t("SEARCH_PLACEHOLDER")) : undefined
+          }
+          sx={
+            borderless
+              ? { "& .MuiOutlinedInput-notchedOutline": { border: 0 } }
+              : undefined
+          }
         />
       )}
       renderOption={(props, option) => {

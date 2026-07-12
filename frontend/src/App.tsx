@@ -24,6 +24,7 @@ import { EmbedPage } from "./EmbedPage";
 import { Footer } from "./Footer";
 import "./i18n";
 import { Login } from "./Login";
+import { MultiEmbedPage } from "./MultiEmbedPage";
 import { UserPage } from "./UserPage";
 
 export function App() {
@@ -36,6 +37,14 @@ export function App() {
   });
   const [config, setConfig] = useState<UserConfig<any> | null>(null);
   const { t } = useTranslation();
+
+  // Opt-in multi-connector embed: one widget with a connector dropdown, served
+  // from any host (the picked connector is sent per-request, not read from the
+  // subdomain). Kept off the default embed so single-connector hosts stay lean.
+  const multi = useMemo(
+    () => new URLSearchParams(window.location.search).has("multi"),
+    [],
+  );
 
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = useMemo(
@@ -67,13 +76,15 @@ export function App() {
           <title>
             {pre} - {post}
           </title>
-          <link rel="icon" type="image/jpeg" href={t("LOGO_PATH")} />
+          <link rel="icon" href={t("LOGO_PATH")} />
         </Helmet>
         <SnackbarContext.Provider value={{ snackbar, setSnackbar }}>
           {loggedIn.status == "none" ? <Login /> : ""}
           {loggedIn.status == "embed" ? (
             domain == "backup" ? (
               <Backup />
+            ) : multi ? (
+              <MultiEmbedPage />
             ) : (
               <EmbedPage />
             )

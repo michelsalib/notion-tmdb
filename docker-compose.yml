@@ -3,7 +3,9 @@ services:
     image: mongo:7
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      # Published on 27027 (not the default 27017) to avoid clashing with a
+      # mongod some devs already run locally on 27017.
+      - "27027:27017"
     volumes:
       - mongo-data:/data/db
 

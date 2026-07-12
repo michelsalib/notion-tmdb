@@ -3,7 +3,7 @@ SYNC_FAILURE: Plays synch failed.
 ADD_SUCCESS: Play successfully added.
 ADD_FAILURE: Play failed to be added.
 PRIMARY_COLOR: red
-LOGO_PATH: /billetreduc.png
+LOGO_PATH: /billetreduc.svg
 SEARCH_PLACEHOLDER: BilletRéduc lookup
 # Notion OAuth public client_id for the "notion-billetreduc" integration.
 AUTH_KEY: 39bd872b-594c-8171-8d97-00378ce38f24

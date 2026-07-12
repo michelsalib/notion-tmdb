@@ -303,7 +303,23 @@ const STATE_DOMAIN: Record<string, DOMAIN> = {
   bitwardenbackup: "BitwardenBackup",
 };
 
+// Search connectors a single embed widget can target per-request via ?domain=.
+// Restricted to the search → add connectors so the override can't be used to
+// reach the backup/gocardless/bitwarden flows from an arbitrary request.
+export const SEARCH_DOMAINS: Record<string, DOMAIN> = {
+  tmdb: "TMDB",
+  gbook: "GBook",
+  igdb: "IGDB",
+  billetreduc: "BilletReduc",
+};
+
 function computeDomain(request: ScopedRequest): DOMAIN {
+  // Explicit per-request connector override (the multi-connector embed widget).
+  const explicit = (request.query as any)?.["domain"]?.toLowerCase();
+  if (explicit && SEARCH_DOMAINS[explicit]) {
+    return SEARCH_DOMAINS[explicit];
+  }
+
   const state = (request.query as any)?.["state"]?.toLowerCase();
   if (state && STATE_DOMAIN[state]) {
     return STATE_DOMAIN[state];

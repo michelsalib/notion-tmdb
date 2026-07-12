@@ -2,3 +2,7 @@ SETTINGS_SUCESS: Saved preferences.
 SETTINGS_FAILURE: Failed saving preferences.
 OPEN: Open
 BACKUP_RETRIEVAL_FAILURE: Failed to retrieve backup.
+MULTI_SEARCH_PLACEHOLDER: Search
+MULTI_NO_CONNECTORS: No connectors linked yet — connect one from the app first.
+MULTI_ADD_SUCCESS: Added.
+MULTI_ADD_FAILURE: Failed to add.

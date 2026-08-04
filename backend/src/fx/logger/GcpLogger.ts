@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { injectable } from "tsyringe";
+import { AXIOS_LOG_CONFIG } from "./axiosLogConfig.js";
 import { emit, type LogFields, serializeError } from "./emit.js";
 import type { Logger } from "./Logger.js";
 
@@ -26,12 +27,28 @@ export class GcpLogger implements Logger {
   }
   bindAxios(axios: AxiosInstance): void {
     axios.interceptors.request.use(
-      (req) => requestLogger(req, { logger: (m) => emit("INFO", m) }),
-      (err) => errorLogger(err, { logger: (m) => emit("ERROR", m) }),
+      (req) =>
+        requestLogger(req, {
+          ...AXIOS_LOG_CONFIG,
+          logger: (m) => emit("INFO", m),
+        }),
+      (err) =>
+        errorLogger(err, {
+          ...AXIOS_LOG_CONFIG,
+          logger: (m) => emit("ERROR", m),
+        }),
     );
     axios.interceptors.response.use(
-      (res) => responseLogger(res, { logger: (m) => emit("INFO", m) }),
-      (err) => errorLogger(err, { logger: (m) => emit("ERROR", m) }),
+      (res) =>
+        responseLogger(res, {
+          ...AXIOS_LOG_CONFIG,
+          logger: (m) => emit("INFO", m),
+        }),
+      (err) =>
+        errorLogger(err, {
+          ...AXIOS_LOG_CONFIG,
+          logger: (m) => emit("ERROR", m),
+        }),
     );
   }
 }

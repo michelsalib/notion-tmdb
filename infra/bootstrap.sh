@@ -47,11 +47,18 @@ echo "  cp terraform.tfvars.example terraform.tfvars && \$EDITOR terraform.tfvar
 echo "  terraform init -backend-config=\"bucket=${STATE_BUCKET}\""
 echo "  terraform apply"
 echo
-echo "Then populate secrets — one shot:"
-echo "  for s in \$(terraform output -json secret_names | jq -r '.[]'); do"
-echo "    read -srp \"\$s: \" v; echo"
-echo "    printf '%s' \"\$v\" | gcloud secrets versions add \"\$s\" --data-file=-"
+echo "Then populate APP_SECRETS. All the hand-managed credentials live in one"
+echo "JSON blob (Secret Manager bills per active version — see secrets.tf), so"
+echo "this prompts for each key and writes them in a single shot:"
+echo "  args=()"
+echo "  for s in \$(terraform output -json app_secret_keys | jq -r '.[]'); do"
+echo "    read -srp \"\$s: \" v; echo; args+=(--arg \"\$s\" \"\$v\")"
 echo "  done"
+echo "  jq -n \"\${args[@]}\" '\$ARGS.named' \\"
+echo "    | gcloud secrets versions add APP_SECRETS --data-file=-"
+echo
+echo "MONGO_URL is not in the blob — Terraform generates it from the Atlas"
+echo "cluster and writes its own secret version."
 echo
 echo "Verify the apex domain (see 'domain_apex' in terraform.tfvars) in"
 echo "Search Console *before* the first 'terraform apply' — domain mappings"

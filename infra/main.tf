@@ -170,16 +170,24 @@ resource "google_cloud_run_v2_service" "app" {
         value = google_secret_manager_secret_version.mongo_url.name
       }
 
-      # Secret-backed env values.
-      dynamic "env" {
-        for_each = local.secret_env_names
-        content {
-          name = env.value
-          value_source {
-            secret_key_ref {
-              secret  = google_secret_manager_secret.secret[env.value].secret_id
-              version = "latest"
-            }
+      # Secret-backed env values. Two refs, not one per credential — see the
+      # header comment in secrets.tf. The backend expands APP_SECRETS into
+      # individual keys at startup.
+      env {
+        name = "APP_SECRETS"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.app_secrets.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "MONGO_URL"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.mongo_url.secret_id
+            version = "latest"
           }
         }
       }
@@ -246,15 +254,21 @@ resource "google_cloud_run_v2_job" "backup" {
           value = var.project_id
         }
 
-        dynamic "env" {
-          for_each = local.secret_env_names
-          content {
-            name = env.value
-            value_source {
-              secret_key_ref {
-                secret  = google_secret_manager_secret.secret[env.value].secret_id
-                version = "latest"
-              }
+        env {
+          name = "APP_SECRETS"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.app_secrets.secret_id
+              version = "latest"
+            }
+          }
+        }
+        env {
+          name = "MONGO_URL"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.mongo_url.secret_id
+              version = "latest"
             }
           }
         }

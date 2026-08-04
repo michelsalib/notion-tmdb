@@ -60,6 +60,6 @@ locals {
 }
 
 resource "google_secret_manager_secret_version" "mongo_url" {
-  secret      = google_secret_manager_secret.secret["MONGO_URL"].id
+  secret      = google_secret_manager_secret.mongo_url.id
   secret_data = local.mongo_url
 }

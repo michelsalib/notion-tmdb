@@ -18,9 +18,9 @@ output "backup_bucket" {
   value       = google_storage_bucket.backup.name
 }
 
-output "secret_names" {
-  description = "Secrets that must be populated out-of-band (gcloud secrets versions add NAME ...)"
-  value       = local.secret_env_names
+output "app_secret_keys" {
+  description = "Keys expected inside the APP_SECRETS JSON blob, which must be populated out-of-band (see bootstrap.sh)"
+  value       = local.app_secret_keys
 }
 
 output "domain_mappings" {

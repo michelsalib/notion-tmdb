@@ -7,6 +7,7 @@ import "./src/api.js";
 import "./src/auth.js";
 import "./src/static.js";
 import { loadEnvironmentConfig } from "./src/fx/di.js";
+import { resolveEnv } from "./src/fx/env.js";
 import { patchConsole } from "./src/fx/logger/patchConsole.js";
 import {
   enterTraceContext,
@@ -14,7 +15,7 @@ import {
 } from "./src/fx/logger/traceContext.js";
 import { Router } from "./src/fx/router.js";
 
-loadEnvironmentConfig(process.env);
+loadEnvironmentConfig(resolveEnv(process.env));
 
 // GCP-mode: route stray console.* calls through the structured emitter so
 // every log ends up as a single JSON line Cloud Logging can parse.

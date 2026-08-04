@@ -54,6 +54,19 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
   }
 
   async *sync(): AsyncGenerator<string> {
+    // A stored record can lack an API key entirely — `auth.ts` used to persist
+    // one on any `/login` hit without query params. Skip those instead of
+    // round-tripping to Bitwarden, which answers `invalid_client` and (before
+    // JobOrchestrator isolated users) aborted the whole weekly run.
+    const credentials = this.user.bitwardenVault;
+    if (!credentials?.clientId || !credentials.clientSecret) {
+      this.logger.warn("Skipping user with no Bitwarden API key", {
+        user_id: this.user.id,
+      });
+
+      return "Skipped: no Bitwarden API key.";
+    }
+
     const client = await this.createClient();
 
     yield "Syncing vault...";

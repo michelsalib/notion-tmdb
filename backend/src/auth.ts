@@ -38,11 +38,27 @@ export class Auth {
     const db = container.resolve<DbProvider>(DB_PROVIDER);
 
     if (domain == "BitwardenBackup") {
+      const clientId = (request.query as any)["client_id"] as
+        | string
+        | undefined;
+      const clientSecret = (request.query as any)["client_secret"] as
+        | string
+        | undefined;
+
+      // Without both halves of the API key there is nothing to store: writing
+      // the record anyway used to persist a user whose clientId was literally
+      // `undefined`, which then failed `invalid_client` on every weekly run of
+      // the backup Job and aborted it before the remaining users were reached.
+      if (!clientId || !clientSecret) {
+        reply.status(400);
+        return "client_id and client_secret are both required";
+      }
+
       const userData: BitwardenUserData = {
-        id: (request.query as any)["client_id"] as string,
+        id: clientId,
         bitwardenVault: {
-          clientId: (request.query as any)["client_id"] as string,
-          clientSecret: (request.query as any)["client_secret"] as string,
+          clientId,
+          clientSecret,
         },
         config: {},
       };

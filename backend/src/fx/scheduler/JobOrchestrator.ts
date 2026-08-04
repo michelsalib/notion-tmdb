@@ -21,15 +21,32 @@ export class JobOrchestrator {
 
   async start(): Promise<void> {
     const users = this.db.listConfiguredUsers();
+    const failed: string[] = [];
 
     for await (const user of users) {
-      const userContainer = await userIdContainer(user.id, this.domain);
-      const backup =
-        userContainer.resolve<BackupDataProvider<any>>(DATA_PROVIDER);
+      // Isolate each user: an unreachable or misconfigured account used to
+      // throw straight out of this loop, so every user still queued behind it
+      // in cursor order was silently skipped for the week.
+      try {
+        const userContainer = await userIdContainer(user.id, this.domain);
+        const backup =
+          userContainer.resolve<BackupDataProvider<any>>(DATA_PROVIDER);
 
-      for await (const message of backup.sync()) {
-        this.logger.log(message);
+        for await (const message of backup.sync()) {
+          this.logger.log(message);
+        }
+      } catch (error) {
+        failed.push(user.id);
+        this.logger.error(error as Error, { user_id: user.id });
       }
+    }
+
+    // Still exit non-zero so a genuine breakage surfaces as a failed execution
+    // — but only after every other user has had their turn.
+    if (failed.length > 0) {
+      throw new Error(
+        `Backup failed for ${failed.length} of the configured users: ${failed.join(", ")}`,
+      );
     }
   }
 }

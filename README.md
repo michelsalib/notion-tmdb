@@ -10,7 +10,6 @@ rest.
 - **Notion IGDB** — build game backlogs, synced from IGDB.
 - **Notion BilletReduc** — build a theatre watchlist, synced from
   billetreduc.com.
-- **Notion GoCardless** — import your bank transactions via GoCardless.
 - **Notion Backup** — periodic backups of a Notion workspace.
 - **Bitwarden Backup** — periodic backups of a Bitwarden vault.
 
@@ -26,7 +25,7 @@ Curious what's coming next? The roadmap lives on
 - **Runtime**: Bun 1.3, deployed as a Cloud Run v2 Service (HTTP) plus a
   Cloud Run Job for the weekly Bitwarden backup.
 - **Backend**: TypeScript, Elysia, tsyringe (DI), Notion / TMDB / IGDB /
-  GBook / GoCardless / Bitwarden clients, MongoDB Atlas.
+  GBook / BilletReduc / Bitwarden clients, MongoDB Atlas.
 - **Frontend**: React 19 + MUI, bundled with Bun's built-in bundler.
 - **Tooling**: Biome (lint + format), TypeScript via
   [`tsgo`](https://github.com/microsoft/typescript-go) (native preview
@@ -43,7 +42,7 @@ Curious what's coming next? The roadmap lives on
 backend/   Elysia app (API, auth, background job entrypoint)
 frontend/  React SPA served by the backend
 infra/     Terraform (GCP + MongoDB Atlas)
-support/   One-off scripts (e.g. Cosmos → Atlas data migration)
+support/   One-off operational scripts
 ```
 
 ## Development
@@ -55,6 +54,14 @@ Want to hack on it? You'll need [Bun](https://bun.sh) 1.3+ and npm 10+ (for
 bun install                       # install all workspaces
 bun run dev                       # backend + hot reload (PORT=7071)
 cd frontend && bun start          # frontend dev server (:5173)
+```
+
+Before pushing, run what CI runs:
+
+```sh
+bun run check                     # Biome lint + format
+bun run typecheck                 # both workspaces via tsgo
+bun test                          # unit tests
 ```
 
 Open **http://localhost:7071** and you're running — the backend serves the

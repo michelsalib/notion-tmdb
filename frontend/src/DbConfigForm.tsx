@@ -12,7 +12,6 @@ import type {
   DOMAIN,
   DomainToConfig,
   GBookDbConfig,
-  GoCardlessDbConfig,
   IgdbConfig,
   NotionDatabase,
   TmdbDbConfig,
@@ -20,7 +19,6 @@ import type {
 import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import { DomainContext } from "./Context";
 import { DbConfigField, DbField } from "./Form/DbConfigField";
-import { GoCardlessBanks } from "./Form/GoCardlessBanks";
 
 function computeDefaultState<T extends DOMAIN>(
   dbId: string,
@@ -36,24 +34,6 @@ function computeDefaultState<T extends DOMAIN>(
       genre: "",
       releaseDate: "",
     } as GBookDbConfig as DomainToConfig<T>;
-  }
-
-  if (domain == "GoCardless") {
-    return {
-      id: dbId,
-      url: "",
-      status: "",
-      amount: "",
-      bookingDate: "",
-      title: "",
-      valueDate: "",
-      goCardlessAccounts: [],
-      goCardlessId: "",
-      goCardlessKey: "",
-      classification: "",
-      account: "",
-      classificationRules: [],
-    } as GoCardlessDbConfig as DomainToConfig<T>;
   }
 
   if (domain == "IGDB") {
@@ -93,9 +73,9 @@ function computeDefaultState<T extends DOMAIN>(
   } as TmdbDbConfig as DomainToConfig<T>;
 }
 
-function getdbFields<
-  T extends "GBook" | "TMDB" | "GoCardless" | "IGDB" | "BilletReduc",
->(domain: T): DbField<T>[] {
+function getdbFields<T extends "GBook" | "TMDB" | "IGDB" | "BilletReduc">(
+  domain: T,
+): DbField<T>[] {
   if (domain == "BilletReduc") {
     return [
       {
@@ -139,69 +119,6 @@ function getdbFields<
         required: false,
       },
     ] as DbField<"BilletReduc">[] as DbField<T>[];
-  }
-
-  if (domain == "GoCardless") {
-    return [
-      {
-        label: "Id",
-        dbConfigField: "url",
-        columnType: "rich_text",
-        required: true,
-        helperText:
-          "This mandatory field helps associate your entry with the data provider.",
-      },
-      {
-        label: "Status",
-        dbConfigField: "status",
-        columnType: "date",
-        required: true,
-        helperText:
-          "This mandatory field helps the plugin to identify your entries that need to be synched.",
-      },
-      {
-        label: "Account",
-        columnType: "select",
-        dbConfigField: "account",
-        required: false,
-      },
-      {
-        label: "Title",
-        dbConfigField: "title",
-        columnType: "title",
-        required: false,
-      },
-      {
-        label: "Amount",
-        dbConfigField: "amount",
-        columnType: "number",
-        required: false,
-      },
-      {
-        label: "Payment date",
-        dbConfigField: "valueDate",
-        columnType: "date",
-        required: false,
-      },
-      {
-        label: "Debit date",
-        dbConfigField: "bookingDate",
-        columnType: "date",
-        required: false,
-      },
-      {
-        label: "Classification",
-        dbConfigField: "classification",
-        columnType: "multi_select",
-        required: false,
-      },
-      {
-        label: "Classification rules",
-        dbConfigField: "classificationRules",
-        columnType: "classification[]",
-        required: false,
-      },
-    ] as DbField<"GoCardless">[] as DbField<T>[];
   }
 
   const result: DbField<T>[] = [
@@ -280,7 +197,7 @@ function getdbFields<
 }
 
 export function DbConfigForm<
-  T extends "GBook" | "TMDB" | "GoCardless" | "IGDB" | "BilletReduc",
+  T extends "GBook" | "TMDB" | "IGDB" | "BilletReduc",
 >({
   notionDatabases,
   initialConfig,
@@ -303,24 +220,11 @@ export function DbConfigForm<
     (db) => db.id == config.id,
   ) as NotionDatabase;
   const columns = Object.values(database.properties);
-  const idColumns = columns.filter(
-    (p) => p.type == (domain == "GoCardless" ? "rich_text" : "url"),
-  );
+  const idColumns = columns.filter((p) => p.type == "url");
   const statusColumns = columns.filter((p) => p.type == "date");
 
   return (
     <Stack spacing={2}>
-      {domain == "GoCardless" ? (
-        <Fragment>
-          <Typography variant="h6">Connect your bank</Typography>
-          <GoCardlessBanks
-            value={(config as GoCardlessDbConfig).goCardlessAccounts}
-          ></GoCardlessBanks>
-        </Fragment>
-      ) : (
-        ""
-      )}
-
       <Typography variant="h6">Pick your database</Typography>
       <FormControl>
         <InputLabel>Database</InputLabel>

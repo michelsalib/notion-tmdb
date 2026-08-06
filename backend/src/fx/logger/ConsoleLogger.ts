@@ -1,4 +1,4 @@
-import type { AxiosInstance } from "axios";
+import type { Axios } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { injectable } from "tsyringe";
 import { AXIOS_LOG_CONFIG } from "./axiosLogConfig.js";
@@ -19,7 +19,7 @@ export class ConsoleLogger implements Logger {
     if (meta) console.error(message, meta);
     else console.error(message);
   }
-  bindAxios(axios: AxiosInstance) {
+  bindAxios(axios: Axios) {
     // Redacted in dev too: the same live credentials are in play locally, and
     // console output routinely gets pasted into issues and terminal shares.
     axios.interceptors.request.use(

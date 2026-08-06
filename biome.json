@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -19,7 +19,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "off",
         "noDoubleEquals": "off",
@@ -49,6 +49,25 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["backend/src/**", "!backend/src/fx/logger/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "axios-logger": "Import `createProviderClient` from `providers/httpClient.ts` instead. Attaching axios-logger's requestLogger/responseLogger by hand inherits `data: true`, which logs request and response bodies — that leaked provider client_secrets and bank payloads into Cloud Logging."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "parser": {
       "unsafeParameterDecoratorsEnabled": true

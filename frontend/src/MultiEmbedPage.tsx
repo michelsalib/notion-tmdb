@@ -12,22 +12,20 @@ import {
   useTheme,
 } from "@mui/material";
 import * as colors from "@mui/material/colors";
+import { DOMAINS, SEARCHABLE_DOMAINS } from "backend/src/domains";
 import type { Suggestion } from "backend/src/types";
 import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SnackbarContext } from "./Context";
 import { Search } from "./Search";
 
-// Search connectors that share the search → add embed shape. `domain` must
-// match both the values honored by computeDomain (backend/src/fx/di.ts) and the
-// i18n namespace names (frontend/static/locales/*), so switching the dropdown
-// can pull that connector's own labels + PRIMARY_COLOR.
-const CONNECTORS: { domain: string; label: string }[] = [
-  { domain: "TMDB", label: "TMDB" },
-  { domain: "IGDB", label: "IGDB" },
-  { domain: "GBook", label: "GBook" },
-  { domain: "BilletReduc", label: "BilletRéduc" },
-];
+// Search connectors that share the search → add embed shape, derived from the
+// shared DOMAINS registry. The domain keys double as i18n namespace names
+// (frontend/static/locales/*), so switching the dropdown pulls that
+// connector's own labels + PRIMARY_COLOR.
+const CONNECTORS: { domain: string; label: string }[] = SEARCHABLE_DOMAINS.map(
+  (domain) => ({ domain, label: DOMAINS[domain].label }),
+);
 
 const STORAGE_KEY = "multiEmbedDomain";
 

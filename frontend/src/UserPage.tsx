@@ -10,6 +10,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
+import { SEARCHABLE_DOMAINS } from "backend/src/domains";
 import type { Config } from "backend/src/types";
 import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,10 +26,6 @@ import { EmbedPage } from "./EmbedPage";
 import { MultiEmbedPage } from "./MultiEmbedPage";
 import { Navigation } from "./Navigation";
 
-// Connectors that share the search → add shape and can be combined into the
-// single multi-connector embed widget (see MultiEmbedPage / computeDomain).
-const SEARCH_DOMAINS = ["TMDB", "IGDB", "GBook", "BilletReduc"];
-
 export function UserPage() {
   const { domain } = useContext(DomainContext);
   const auth = useContext(AuthContext);
@@ -39,7 +36,7 @@ export function UserPage() {
   const [multi, setMulti] = useState(false);
   const { setSnackbar } = useContext(SnackbarContext);
 
-  const canMulti = SEARCH_DOMAINS.includes(domain);
+  const canMulti = SEARCHABLE_DOMAINS.includes(domain);
   const embedUrl = `${window.location.origin}?userId=${auth.userId}${
     multi && canMulti ? "&multi=1" : ""
   }`;

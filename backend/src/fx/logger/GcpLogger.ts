@@ -1,4 +1,4 @@
-import type { AxiosInstance } from "axios";
+import type { Axios } from "axios";
 import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { injectable } from "tsyringe";
 import { AXIOS_LOG_CONFIG } from "./axiosLogConfig.js";
@@ -25,7 +25,7 @@ export class GcpLogger implements Logger {
     }
     emit("ERROR", message, meta);
   }
-  bindAxios(axios: AxiosInstance): void {
+  bindAxios(axios: Axios): void {
     axios.interceptors.request.use(
       (req) =>
         requestLogger(req, {

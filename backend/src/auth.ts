@@ -54,13 +54,16 @@ export class Auth {
         return "client_id and client_secret are both required";
       }
 
+      // No `config` until the user picks a database. It used to be written as
+      // `{}`, which is truthy — so every `if (!user.config)` guard downstream
+      // passed for a brand-new user and the flow carried on with an undefined
+      // database id instead of returning "needs to be configured first".
       const userData: BitwardenUserData = {
         id: clientId,
         bitwardenVault: {
           clientId,
           clientSecret,
         },
-        config: {},
       };
 
       await db.putUser(userData);
@@ -87,7 +90,9 @@ export class Auth {
         workspaceIcon: tokenResponse.workspace_icon as string,
         accessToken: tokenResponse.access_token,
       },
-      config: existingUser?.config || {},
+      // Carried over on re-auth so relinking a workspace keeps its database
+      // mapping; left undefined (not `{}`) for a first-time user — see above.
+      config: existingUser?.config,
     };
 
     await db.putUser(userData);

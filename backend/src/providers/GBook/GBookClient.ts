@@ -1,8 +1,10 @@
-import axios, { AxiosInstance } from "axios";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { injectable } from "tsyringe";
+import type { AxiosInstance } from "axios";
+import { inject, injectable } from "tsyringe";
+import { LOGGER } from "../../fx/keys.js";
+import type { Logger } from "../../fx/logger/Logger.js";
 import type { GBookDbConfig, NotionItem, Suggestion } from "../../types.js";
 import type { DataProvider } from "../DataProvider.js";
+import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 interface VolumeInfo {
@@ -21,13 +23,10 @@ interface VolumeInfo {
 export class GBookClient implements DataProvider<"GBook"> {
   private readonly client: AxiosInstance;
 
-  constructor() {
-    this.client = axios.create({
+  constructor(@inject(LOGGER) logger: Logger) {
+    this.client = createProviderClient(logger, {
       baseURL: "https://www.googleapis.com/books/v1/",
     });
-
-    this.client.interceptors.request.use(requestLogger, errorLogger);
-    this.client.interceptors.response.use(responseLogger, errorLogger);
   }
 
   async *sync(

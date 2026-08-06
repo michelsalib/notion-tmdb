@@ -1,5 +1,11 @@
 import { AlertColor } from "@mui/material";
-import { DOMAIN, UserConfig } from "backend/src/types";
+import {
+  ALL_DOMAINS,
+  type DOMAIN,
+  DOMAINS,
+  type DomainDefinition,
+} from "backend/src/domains";
+import { UserConfig } from "backend/src/types";
 import { createContext } from "react";
 
 export const AuthContext = createContext(loginState());
@@ -48,56 +54,25 @@ function loginState(): {
   };
 }
 
-export type PreDomain = "Bitwarden" | "Notion";
-export type PostDomain =
-  | "backup"
-  | "GBook"
-  | "GoCardless"
-  | "TMDB"
-  | "IGDB"
-  | "BilletReduc";
+export type PreDomain = DomainDefinition["pre"];
+export type PostDomain = DomainDefinition["post"];
 
+// Resolved from the shared DOMAINS registry (backend/src/domains.ts) by
+// matching the hostname against each connector's subdomain, rather than a
+// hand-maintained regex plus an if-chain that had to be kept in step with it.
 export function domainState(): {
   domain: DOMAIN;
   pre: PreDomain;
   post: PostDomain;
 } {
-  try {
-    const [, pre, post]: any =
-      /(bitwarden|notion)-(backup|gbook|gocardless|tmdb|igdb|billetreduc)/.exec(
-        window.location.origin,
-      )!;
+  const origin = window.location.origin;
 
-    if (pre == "bitwarden") {
-      return {
-        domain: "BitwardenBackup",
-        pre: "Bitwarden",
-        post: "backup",
-      };
-    }
+  const match = ALL_DOMAINS.find((domain) =>
+    origin.includes(DOMAINS[domain].subdomain),
+  );
 
-    if (post == "gbook") {
-      return { domain: "GBook", pre: "Notion", post: "GBook" };
-    }
+  const domain = match ?? "TMDB";
+  const { pre, post } = DOMAINS[domain];
 
-    if (post == "igdb") {
-      return { domain: "IGDB", pre: "Notion", post: "IGDB" };
-    }
-
-    if (post == "billetreduc") {
-      return { domain: "BilletReduc", pre: "Notion", post: "BilletReduc" };
-    }
-
-    if (post == "backup") {
-      return { domain: "backup", pre: "Notion", post: "backup" };
-    }
-
-    if (post == "gocardless") {
-      return { domain: "GoCardless", pre: "Notion", post: "GoCardless" };
-    }
-  } catch {
-    // default
-  }
-
-  return { domain: "TMDB", pre: "Notion", post: "TMDB" };
+  return { domain, pre, post };
 }

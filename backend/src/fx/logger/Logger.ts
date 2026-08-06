@@ -1,4 +1,4 @@
-import type { AxiosInstance } from "axios";
+import type { Axios } from "axios";
 import type { LogFields } from "./emit.js";
 
 export interface Logger {
@@ -7,5 +7,7 @@ export interface Logger {
   // Accepts an Error so the stack trace is serialized into `stack_trace`
   // (which GCP Error Reporting picks up).
   error(message: string | Error, meta?: LogFields): void;
-  bindAxios(axios: AxiosInstance): void;
+  // Typed as `Axios` rather than `AxiosInstance` so it also accepts clients
+  // built with `new Axios(...)` (NotionBackup's asset downloader).
+  bindAxios(axios: Axios): void;
 }

@@ -57,29 +57,6 @@ export interface BilletReducDbConfig extends DbConfigBase {
   author: string;
 }
 
-export interface ClassificationRule {
-  category: string;
-  matchers: string[];
-}
-
-export interface GoCardlessDbConfig extends DbConfigBase {
-  goCardlessAccounts: GoCardlessAccount[];
-  title: string;
-  valueDate: string;
-  bookingDate: string;
-  amount: string;
-  account: string;
-  classification: string;
-  classificationRules: ClassificationRule[];
-}
-
-export interface GoCardlessAccount {
-  requisitionId: string;
-  accountIds: string[];
-  name: string;
-  logo: string;
-}
-
 // The backup connectors need no fields beyond the base ones.
 export type BackupDbConfig = DbConfigBase;
 
@@ -87,7 +64,6 @@ export type Config =
   | TmdbDbConfig
   | GBookDbConfig
   | BackupDbConfig
-  | GoCardlessDbConfig
   | IgdbConfig
   | BilletReducDbConfig;
 
@@ -100,7 +76,6 @@ export type Config =
 interface DomainConfigMap extends Record<DOMAIN, Config> {
   GBook: GBookDbConfig;
   TMDB: TmdbDbConfig;
-  GoCardless: GoCardlessDbConfig;
   IGDB: IgdbConfig;
   BilletReduc: BilletReducDbConfig;
   backup: BackupDbConfig;
@@ -139,12 +114,6 @@ export interface Suggestion {
   releaseDate: string;
   posterPath: string;
   subtitle: string;
-}
-
-export interface Bank {
-  id: string;
-  name: string;
-  logo: string;
 }
 
 export type NotionItem = Omit<CreatePageParameters, "parent">;

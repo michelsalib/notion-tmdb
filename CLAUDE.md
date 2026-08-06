@@ -60,7 +60,7 @@ surprise.
 Monorepo using npm workspaces (installed by Bun):
 
 - `backend/` — Elysia HTTP app + Cloud Run Job entrypoint. tsyringe DI,
-  Notion + TMDB + IGDB + GBook + BilletReduc + GoCardless + Bitwarden clients,
+  Notion + TMDB + IGDB + GBook + BilletReduc + Bitwarden clients,
   MongoDB Atlas.
 - `frontend/` — React 19 + MUI, bundled with Bun's built-in bundler.
 - `infra/` — Terraform (Cloud Run, Cloud Scheduler, Artifact Registry,

@@ -14,7 +14,6 @@ import { Router, type ScopedReply, type ScopedRequest } from "./fx/router.js";
 import type { BackupDataProvider } from "./providers/BackupDataProvider.js";
 import type { DataProvider } from "./providers/DataProvider.js";
 import type { DbProvider } from "./providers/DbProvider.js";
-import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import type { Config, UserData } from "./types.js";
 import { asWebByteStream } from "./utils/generator.js";
@@ -175,53 +174,6 @@ export class Api {
       link: await backup.getLink(),
     };
   }
-
-  async listBanks(container: DependencyContainer) {
-    const goCardless = container.resolve<GoCardlessClient>(DATA_PROVIDER);
-
-    return {
-      banks: await goCardless.listBanks(),
-    };
-  }
-
-  async addAccount(container: DependencyContainer) {
-    const goCardless = container.resolve<GoCardlessClient>(DATA_PROVIDER);
-    const request = container.resolve<ScopedRequest>(REQUEST);
-
-    return {
-      link: await goCardless.addAccount(
-        (request.query as any)["id"],
-        request.headers["referer"]!,
-      ),
-    };
-  }
-
-  async storeAccount(container: DependencyContainer) {
-    const request = container.resolve<ScopedRequest>(REQUEST);
-    const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
-    const userId = container.resolve<string>(USER_ID);
-    const { config } = container.resolve<UserData<"GoCardless">>(USER);
-    const db = container.resolve<DbProvider>(DB_PROVIDER);
-    const goCardless = container.resolve<GoCardlessClient>(DATA_PROVIDER);
-
-    if (!config) {
-      const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
-
-      reply.status(400);
-
-      return "Notion db needs to be configured first";
-    }
-
-    const account = await goCardless.retrieveAccount(
-      (request.query as any)["ref"],
-    );
-    config.goCardlessAccounts.push(account);
-
-    await db.putUserConfig(userId, config);
-
-    reply.status(302);
-    reply.header("location", "/");
-  }
 }
 
 Router.register(Api, "getUser", {
@@ -261,21 +213,6 @@ Router.register(Api, "postConfig", {
 });
 Router.register(Api, "getBackup", {
   path: "/api/backup",
-  method: "GET",
-  authenticate: true,
-});
-Router.register(Api, "listBanks", {
-  path: "/api/banks",
-  method: "GET",
-  authenticate: true,
-});
-Router.register(Api, "addAccount", {
-  path: "/api/accounts",
-  method: "POST",
-  authenticate: true,
-});
-Router.register(Api, "storeAccount", {
-  path: "/api/accounts",
   method: "GET",
   authenticate: true,
 });

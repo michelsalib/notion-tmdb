@@ -14,7 +14,6 @@ import { BilletReducClient } from "../providers/BilletReduc/BilletReducClient.js
 import { BitwardenBackup } from "../providers/BitwardenBackup/BitwardenBackup.js";
 import type { DbProvider } from "../providers/DbProvider.js";
 import { GBookClient } from "../providers/GBook/GBookClient.js";
-import { GoCardlessClient } from "../providers/GoCardless/GoCardlessClient.js";
 import { IgdbClient } from "../providers/Igdb/IgdbClient.js";
 import { MongoDbClient } from "../providers/MongoDb/MongoDbClient.js";
 import { NotionBackup } from "../providers/NotionBackup/NotionBackup.js";
@@ -27,8 +26,6 @@ import {
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
   GCP_PROJECT_ID,
-  GOCARDLESS_ID,
-  GOCARDLESS_SECRET,
   IGDB_CLIENT_ID,
   IGDB_CLIENT_SECRET,
   LOGGER,
@@ -42,8 +39,6 @@ import {
   NOTION_CLIENT_SECRET,
   NOTION_GBOOK_CLIENT_ID,
   NOTION_GBOOK_CLIENT_SECRET,
-  NOTION_GOCARDLESS_CLIENT_ID,
-  NOTION_GOCARDLESS_CLIENT_SECRET,
   NOTION_IGDB_CLIENT_ID,
   NOTION_IGDB_CLIENT_SECRET,
   NOTION_TMDB_CLIENT_ID,
@@ -89,12 +84,8 @@ export function loadEnvironmentConfig(env: {
     NOTION_BILLETREDUC_CLIENT_SECRET,
     env["NOTION_BILLETREDUC_CLIENT_SECRET"],
   );
-  bind(NOTION_GOCARDLESS_CLIENT_ID, env["NOTION_GOCARDLESS_CLIENT_ID"]);
-  bind(NOTION_GOCARDLESS_CLIENT_SECRET, env["NOTION_GOCARDLESS_CLIENT_SECRET"]);
 
   // third-party API keys
-  bind(GOCARDLESS_ID, env["GOCARDLESS_ID"]);
-  bind(GOCARDLESS_SECRET, env["GOCARDLESS_SECRET"]);
   bind(TMDB_API_KEY, env["TMDB_API_KEY"]);
   bind(IGDB_CLIENT_ID, env["IGDB_CLIENT_ID"]);
   bind(IGDB_CLIENT_SECRET, env["IGDB_CLIENT_SECRET"]);
@@ -192,7 +183,6 @@ const NOTION_OAUTH_KEYS: Record<DOMAIN, readonly [symbol, symbol] | undefined> =
       NOTION_BILLETREDUC_CLIENT_ID,
       NOTION_BILLETREDUC_CLIENT_SECRET,
     ],
-    GoCardless: [NOTION_GOCARDLESS_CLIENT_ID, NOTION_GOCARDLESS_CLIENT_SECRET],
     backup: [NOTION_BACKUP_CLIENT_ID, NOTION_BACKUP_CLIENT_SECRET],
     BitwardenBackup: undefined,
   };
@@ -204,7 +194,6 @@ const DATA_PROVIDERS: Record<DOMAIN, new (...args: any[]) => unknown> = {
   GBook: GBookClient,
   IGDB: IgdbClient,
   BilletReduc: BilletReducClient,
-  GoCardless: GoCardlessClient,
   BitwardenBackup: BitwardenBackup,
   backup: NotionBackup,
 };

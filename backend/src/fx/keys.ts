@@ -13,12 +13,6 @@ export const NOTION_IGDB_CLIENT_ID = Symbol.for("NOTION_IGDB_CLIENT_ID");
 export const NOTION_IGDB_CLIENT_SECRET = Symbol.for(
   "NOTION_IGDB_CLIENT_SECRET",
 );
-export const NOTION_GOCARDLESS_CLIENT_ID = Symbol.for(
-  "NOTION_GOCARDLESS_CLIENT_ID",
-);
-export const NOTION_GOCARDLESS_CLIENT_SECRET = Symbol.for(
-  "NOTION_GOCARDLESS_CLIENT_SECRET",
-);
 export const NOTION_GBOOK_CLIENT_ID = Symbol.for("NOTION_GBOOK_CLIENT_ID");
 export const NOTION_GBOOK_CLIENT_SECRET = Symbol.for(
   "NOTION_GBOOK_CLIENT_SECRET",
@@ -41,8 +35,6 @@ export const DB_ENGINE = Symbol.for("DB_ENGINE");
 export const STORAGE_ENGINE = Symbol.for("STORAGE_ENGINE");
 export const STORAGE_PROVIDER = Symbol.for("STORAGE_PROVIDER");
 export const DB_PROVIDER = Symbol.for("DB_PROVIDER");
-export const GOCARDLESS_ID = Symbol.for("GOCARDLESS_ID");
-export const GOCARDLESS_SECRET = Symbol.for("GOCARDLESS_SECRET");
 export const LOGGER_ENGINE = Symbol.for("LOGGER_ENGINE");
 export const LOGGER = Symbol.for("LOGGER");
 export const MONGO_URL = Symbol.for("MONGO_URL");

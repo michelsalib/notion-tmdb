@@ -39,8 +39,8 @@ describe("DOMAINS registry", () => {
   });
 
   test("SEARCH_DOMAINS exposes only searchable connectors", () => {
-    // This map backs the per-request ?domain= override, so letting a backup or
-    // GoCardless connector in would widen what an arbitrary request can reach.
+    // This map backs the per-request ?domain= override, so letting a backup
+    // connector in would widen what an arbitrary request can reach.
     for (const domain of Object.values(SEARCH_DOMAINS)) {
       expect(DOMAINS[domain].searchable).toBe(true);
     }
@@ -62,7 +62,7 @@ describe("DOMAINS registry", () => {
     expect(isBackupDomain("backup")).toBe(true);
     expect(isBackupDomain("BitwardenBackup")).toBe(true);
     expect(isBackupDomain("TMDB")).toBe(false);
-    expect(isBackupDomain("GoCardless")).toBe(false);
+    expect(isBackupDomain("BilletReduc")).toBe(false);
   });
 
   test("only Bitwarden-fronted connectors use the bitwarden subdomain", () => {

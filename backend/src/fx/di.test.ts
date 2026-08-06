@@ -57,8 +57,8 @@ describe("computeDomain", () => {
 
   test("the ?domain= override cannot reach a non-search connector", () => {
     // Guards the embed widget: an arbitrary request must not be able to steer
-    // itself into the backup or GoCardless flows.
-    for (const attempt of ["backup", "bitwardenbackup", "gocardless"]) {
+    // itself into the backup flows.
+    for (const attempt of ["backup", "bitwardenbackup"]) {
       expect(
         computeDomain(
           request({
@@ -73,9 +73,9 @@ describe("computeDomain", () => {
   test("falls back to the OAuth state when the hostname does not match", () => {
     expect(
       computeDomain(
-        request({ hostname: "localhost", query: { state: "gocardless" } }),
+        request({ hostname: "localhost", query: { state: "backup" } }),
       ),
-    ).toBe("GoCardless");
+    ).toBe("backup");
   });
 
   test("?domain= takes precedence over state", () => {

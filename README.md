@@ -10,7 +10,6 @@ rest.
 - **Notion IGDB** — build game backlogs, synced from IGDB.
 - **Notion BilletReduc** — build a theatre watchlist, synced from
   billetreduc.com.
-- **Notion GoCardless** — import your bank transactions via GoCardless.
 - **Notion Backup** — periodic backups of a Notion workspace.
 - **Bitwarden Backup** — periodic backups of a Bitwarden vault.
 
@@ -26,7 +25,7 @@ Curious what's coming next? The roadmap lives on
 - **Runtime**: Bun 1.3, deployed as a Cloud Run v2 Service (HTTP) plus a
   Cloud Run Job for the weekly Bitwarden backup.
 - **Backend**: TypeScript, Elysia, tsyringe (DI), Notion / TMDB / IGDB /
-  GBook / GoCardless / Bitwarden clients, MongoDB Atlas.
+  GBook / BilletReduc / Bitwarden clients, MongoDB Atlas.
 - **Frontend**: React 19 + MUI, bundled with Bun's built-in bundler.
 - **Tooling**: Biome (lint + format), TypeScript via
   [`tsgo`](https://github.com/microsoft/typescript-go) (native preview

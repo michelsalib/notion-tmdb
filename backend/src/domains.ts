@@ -59,14 +59,6 @@ export const DOMAINS = {
     pre: "Notion",
     post: "BilletReduc",
   },
-  GoCardless: {
-    subdomain: "notion-gocardless",
-    state: "gocardless",
-    searchable: false,
-    label: "GoCardless",
-    pre: "Notion",
-    post: "GoCardless",
-  },
   backup: {
     subdomain: "notion-backup",
     state: "backup",
@@ -106,7 +98,7 @@ export const STATE_DOMAIN: Record<string, DOMAIN> = byField("state");
  * Connectors a single embed widget may target per-request via `?domain=`.
  *
  * Deliberately only the search → add ones: the override must not be able to
- * reach the backup or GoCardless flows from an arbitrary request.
+ * reach the backup flows from an arbitrary request.
  */
 export const SEARCH_DOMAINS: Record<string, DOMAIN> = Object.fromEntries(
   ALL_DOMAINS.filter((domain) => DOMAINS[domain].searchable).map((domain) => [

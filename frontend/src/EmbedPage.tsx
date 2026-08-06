@@ -2,13 +2,12 @@ import { Button, LinearProgress, Stack } from "@mui/material";
 import type { Suggestion } from "backend/src/types";
 import { Fragment, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DomainContext, SnackbarContext } from "./Context";
+import { SnackbarContext } from "./Context";
 import { Search } from "./Search";
 import { StreamButton } from "./StreamButton";
 
 export function EmbedPage() {
   const { t } = useTranslation();
-  const domain = useContext(DomainContext);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState<Suggestion | null>(null);
   const { setSnackbar } = useContext(SnackbarContext);
@@ -65,20 +64,16 @@ export function EmbedPage() {
       )}
 
       <Stack direction="column" spacing={1.5} sx={{ padding: 1.5 }}>
-        {domain.domain != "GoCardless" ? (
-          <Stack direction="row" spacing={1.5}>
-            <Search onChange={(m) => setValue(m)} />
-            <Button
-              variant="contained"
-              onClick={submit}
-              disabled={loading || !value}
-            >
-              Create
-            </Button>
-          </Stack>
-        ) : (
-          ""
-        )}
+        <Stack direction="row" spacing={1.5}>
+          <Search onChange={(m) => setValue(m)} />
+          <Button
+            variant="contained"
+            onClick={submit}
+            disabled={loading || !value}
+          >
+            Create
+          </Button>
+        </Stack>
 
         <StreamButton
           onChange={(loading) => setLoading(loading)}

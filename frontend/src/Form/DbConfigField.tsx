@@ -1,7 +1,6 @@
 import { Alert, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import type { DOMAIN, DomainToConfig, NotionDatabase } from "backend/src/types";
 import { Fragment } from "react";
-import { Classifications } from "./Classifications";
 import { MultiTextInput } from "./MultiTextInput";
 
 type NotionPropertyType = NotionDatabase["properties"][0]["type"];
@@ -10,7 +9,7 @@ export interface DbField<T extends DOMAIN> {
   label: string;
   required: boolean;
   dbConfigField: keyof DomainToConfig<T>;
-  columnType: NotionPropertyType | "string" | "string[]" | "classification[]";
+  columnType: NotionPropertyType | "string" | "string[]";
   helperText?: string;
 }
 
@@ -76,10 +75,6 @@ export function DbConfigField<T extends DOMAIN>({
             }
           }}
         ></MultiTextInput>
-      );
-    case "classification[]":
-      return (
-        <Classifications value={value} onChange={(value) => onChange(value)} />
       );
     case "date":
     case "rich_text":

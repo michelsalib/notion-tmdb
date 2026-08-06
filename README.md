@@ -43,7 +43,7 @@ Curious what's coming next? The roadmap lives on
 backend/   Elysia app (API, auth, background job entrypoint)
 frontend/  React SPA served by the backend
 infra/     Terraform (GCP + MongoDB Atlas)
-support/   One-off scripts (e.g. Cosmos → Atlas data migration)
+support/   One-off operational scripts
 ```
 
 ## Development
@@ -55,6 +55,14 @@ Want to hack on it? You'll need [Bun](https://bun.sh) 1.3+ and npm 10+ (for
 bun install                       # install all workspaces
 bun run dev                       # backend + hot reload (PORT=7071)
 cd frontend && bun start          # frontend dev server (:5173)
+```
+
+Before pushing, run what CI runs:
+
+```sh
+bun run check                     # Biome lint + format
+bun run typecheck                 # both workspaces via tsgo
+bun test                          # unit tests
 ```
 
 Open **http://localhost:7071** and you're running — the backend serves the

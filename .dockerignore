@@ -13,10 +13,8 @@ dist
 .env.*
 **/.env
 **/.env.*
-azure
 support
 README.md
-MIGRATION_PLAN.md
 CLAUDE.md
 LICENSE
 docker-compose.yml

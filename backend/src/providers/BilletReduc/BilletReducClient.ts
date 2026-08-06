@@ -1,12 +1,14 @@
-import axios, { AxiosInstance } from "axios";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
-import { injectable } from "tsyringe";
+import type { AxiosInstance } from "axios";
+import { inject, injectable } from "tsyringe";
+import { LOGGER } from "../../fx/keys.js";
+import type { Logger } from "../../fx/logger/Logger.js";
 import type {
   BilletReducDbConfig,
   NotionItem,
   Suggestion,
 } from "../../types.js";
 import type { DataProvider } from "../DataProvider.js";
+import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 const BASE_URL = "https://www.billetreduc.com";
@@ -26,8 +28,11 @@ interface AutocompleteItem {
 export class BilletReducClient implements DataProvider<"BilletReduc"> {
   private readonly client: AxiosInstance;
 
-  constructor() {
-    this.client = axios.create({
+  // Detail pages are ~300 KB of HTML, so response bodies must stay out of the
+  // (budget-capped) GCP logs. `createProviderClient` already pins `data: false`
+  // for every provider, so no special case is needed here any more.
+  constructor(@inject(LOGGER) logger: Logger) {
+    this.client = createProviderClient(logger, {
       baseURL: BASE_URL,
       headers: {
         // billetreduc serves an empty body to obvious bots; look like a browser.
@@ -36,14 +41,6 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
         "Accept-Language": "fr-FR,fr;q=0.9",
       },
     });
-
-    this.client.interceptors.request.use(requestLogger, errorLogger);
-    // Detail pages are ~300 KB of HTML — log the request/status but never the
-    // body, otherwise every sync would blow up the (budget-capped) GCP logs.
-    this.client.interceptors.response.use(
-      (response) => responseLogger(response, { data: false }),
-      errorLogger,
-    );
   }
 
   async search(query: string): Promise<Suggestion[]> {

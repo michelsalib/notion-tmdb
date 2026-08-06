@@ -49,6 +49,25 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["backend/src/**", "!backend/src/fx/logger/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "axios-logger": "Import `createProviderClient` from `providers/httpClient.ts` instead. Attaching axios-logger's requestLogger/responseLogger by hand inherits `data: true`, which logs request and response bodies — that leaked provider client_secrets and bank payloads into Cloud Logging."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "parser": {
       "unsafeParameterDecoratorsEnabled": true

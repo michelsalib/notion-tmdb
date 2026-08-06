@@ -1,3 +1,4 @@
+import type { Readable } from "node:stream";
 import type {
   BlockObjectResponse,
   DatabaseObjectResponse,
@@ -6,9 +7,9 @@ import type {
 import type { Archiver } from "archiver";
 import archiver from "archiver";
 import { Axios } from "axios";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
 import { inject, injectable } from "tsyringe";
-import { REQUEST, STORAGE_PROVIDER } from "../../fx/keys.js";
+import { LOGGER, REQUEST, STORAGE_PROVIDER } from "../../fx/keys.js";
+import type { Logger } from "../../fx/logger/Logger.js";
 import type { ScopedRequest } from "../../fx/router.js";
 import type { Suggestion } from "../../types.js";
 import { retriable } from "../../utils/retriable.js";
@@ -24,6 +25,7 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
     @inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
     @inject(NotionClient) private readonly notion: NotionClient,
     @inject(REQUEST) readonly request: ScopedRequest,
+    @inject(LOGGER) private readonly logger: Logger,
   ) {
     this.client = new Axios({
       headers: {
@@ -31,15 +33,10 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
       },
     });
 
-    this.client.interceptors.request.use(requestLogger, errorLogger);
-    this.client.interceptors.response.use(
-      (res) =>
-        responseLogger(res, {
-          data: false,
-          headers: true,
-        }),
-      errorLogger,
-    );
+    // Was logging responses with `headers: true`. Notion hands out its assets
+    // as pre-signed S3 URLs, so those response headers carry credentials —
+    // `bindAxios` pins headers (and bodies, and params) off.
+    this.logger.bindAxios(this.client);
   }
 
   search(): Promise<Suggestion[]> {
@@ -135,19 +132,29 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
     return this.storage.getBackupLink();
   }
 
+  // Streams each asset straight into the zip. Buffering with
+  // `responseType: "arraybuffer"` held the whole file in RAM twice (the
+  // ArrayBuffer plus its `Buffer.from` copy), which is what the Cloud Run
+  // instance had to be sized around for workspaces with large attachments.
   private async load(
     archive: Archiver,
     fileName: string,
     url: string,
   ): Promise<void> {
-    // TODO: stream would be better to avoid clutter RAM
     const response = await retriable(this.client, "get")(url, {
-      responseType: "arraybuffer",
+      responseType: "stream",
     });
-    const data: ArrayBuffer = response.data;
+    const stream: Readable = response.data;
 
-    archive.append(Buffer.from(data), {
-      name: fileName,
+    archive.append(stream, { name: fileName });
+
+    // archiver consumes queued entries serially, so wait for this one to drain
+    // before requesting the next asset. Without it every download would be
+    // issued up front and sit there holding a socket open while archiver
+    // worked through the backlog one entry at a time.
+    await new Promise<void>((resolve, reject) => {
+      stream.on("end", resolve);
+      stream.on("error", reject);
     });
   }
 }

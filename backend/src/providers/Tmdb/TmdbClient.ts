@@ -1,17 +1,21 @@
-import axios, { AxiosInstance } from "axios";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
+import type { AxiosInstance } from "axios";
 import { inject, injectable } from "tsyringe";
-import { TMDB_API_KEY } from "../../fx/keys.js";
+import { LOGGER, TMDB_API_KEY } from "../../fx/keys.js";
+import type { Logger } from "../../fx/logger/Logger.js";
 import type { NotionItem, Suggestion, TmdbDbConfig } from "../../types.js";
 import type { DataProvider } from "../DataProvider.js";
+import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
 @injectable()
 export class TmdbClient implements DataProvider<"TMDB"> {
   private readonly client: AxiosInstance;
 
-  constructor(@inject(TMDB_API_KEY) tmdbApiKey: string) {
-    this.client = axios.create({
+  constructor(
+    @inject(TMDB_API_KEY) tmdbApiKey: string,
+    @inject(LOGGER) logger: Logger,
+  ) {
+    this.client = createProviderClient(logger, {
       baseURL: "https://api.themoviedb.org/3/",
       headers: {
         common: {
@@ -19,9 +23,6 @@ export class TmdbClient implements DataProvider<"TMDB"> {
         },
       },
     });
-
-    this.client.interceptors.request.use(requestLogger, errorLogger);
-    this.client.interceptors.response.use(responseLogger, errorLogger);
   }
 
   async *sync(

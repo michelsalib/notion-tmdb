@@ -1,25 +1,48 @@
-import axios, { AxiosInstance } from "axios";
-import { errorLogger, requestLogger, responseLogger } from "axios-logger";
+import type { AxiosInstance } from "axios";
 import { inject, injectable } from "tsyringe";
-import { IGDB_CLIENT_ID, IGDB_CLIENT_SECRET } from "../../fx/keys.js";
+import { IGDB_CLIENT_ID, IGDB_CLIENT_SECRET, LOGGER } from "../../fx/keys.js";
+import type { Logger } from "../../fx/logger/Logger.js";
 import type { IgdbConfig, NotionItem, Suggestion } from "../../types.js";
 import type { DataProvider } from "../DataProvider.js";
+import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
+
+// Renew a little early so a token can't expire in flight between the check and
+// the request that uses it.
+const TOKEN_EXPIRY_SKEW_MS = 60_000;
 
 @injectable()
 export class IgdbClient implements DataProvider<"IGDB"> {
+  private client?: AxiosInstance;
+  private tokenExpiresAt = 0;
+  private pendingClient?: Promise<AxiosInstance>;
+
   constructor(
     @inject(IGDB_CLIENT_ID) private clientId: string,
     @inject(IGDB_CLIENT_SECRET) private clientsecret: string,
+    @inject(LOGGER) private readonly logger: Logger,
   ) {}
 
+  // Every public method needs an authenticated client. Previously each call
+  // did a fresh Twitch OAuth exchange, so a single sync burned one token per
+  // entry; hold the client until its token is close to expiring instead.
   private async createClient(): Promise<AxiosInstance> {
-    const client = axios.create({
-      baseURL: "https://api.igdb.com/v4/",
+    if (this.client && Date.now() < this.tokenExpiresAt) {
+      return this.client;
+    }
+
+    // Collapse concurrent callers onto one in-flight token exchange.
+    this.pendingClient ??= this.authenticate().finally(() => {
+      this.pendingClient = undefined;
     });
 
-    client.interceptors.request.use(requestLogger, errorLogger);
-    client.interceptors.response.use(responseLogger, errorLogger);
+    return this.pendingClient;
+  }
+
+  private async authenticate(): Promise<AxiosInstance> {
+    const client = createProviderClient(this.logger, {
+      baseURL: "https://api.igdb.com/v4/",
+    });
 
     const token = await client.post("https://id.twitch.tv/oauth2/token", {
       client_id: this.clientId,
@@ -30,6 +53,12 @@ export class IgdbClient implements DataProvider<"IGDB"> {
     client.defaults.headers["Authorization"] =
       `Bearer ${token.data.access_token}`;
     client.defaults.headers["Client-ID"] = this.clientId;
+
+    // Twitch returns `expires_in` in seconds (~60 days for client_credentials).
+    const expiresInMs = Number(token.data.expires_in ?? 0) * 1000;
+    this.tokenExpiresAt =
+      Date.now() + Math.max(0, expiresInMs - TOKEN_EXPIRY_SKEW_MS);
+    this.client = client;
 
     return client;
   }

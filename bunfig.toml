@@ -1,0 +1,5 @@
+[test]
+# tsyringe throws on import without a reflect polyfill. The app entrypoints
+# (backend/index.ts, backend/job.ts) each do `import "reflect-metadata"`;
+# tests import modules like fx/di.ts directly, so they need it preloaded.
+preload = ["reflect-metadata"]

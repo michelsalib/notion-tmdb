@@ -29,3 +29,33 @@ jobs:
       - name: Frontend typecheck
         if: always()
         run: bun x tsgo -p frontend --noEmit
+
+      - name: Tests
+        if: always()
+        run: bun test
+
+  # infra/ used to be validated only by the deploy job on main, so a malformed
+  # .tf file was not caught until it had already been merged.
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.14.8
+
+      - name: Terraform format check
+        if: always()
+        working-directory: infra
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        if: always()
+        working-directory: infra
+        # -backend=false: validation needs the providers, not the GCS state
+        # bucket, and CI here has no credentials to reach it.
+        run: |
+          terraform init -backend=false
+          terraform validate

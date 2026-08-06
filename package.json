@@ -1,9 +1,8 @@
 {
-  "name": "notion-imdb",
+  "name": "notion-tmdb",
   "version": "1.0.0",
   "description": "An integration between Notion and TMDB",
   "type": "module",
-  "main": "backend/index.ts",
   "scripts": {
     "check": "biome check",
     "format": "biome format --write .",
@@ -12,7 +11,8 @@
     "typecheck": "bun run typecheck:backend && bun run typecheck:frontend",
     "typecheck:backend": "bun x tsgo -p backend --noEmit",
     "typecheck:frontend": "bun x tsgo -p frontend --noEmit",
-    "dev": "bun --env-file=backend/.env --watch --inspect backend/index.ts"
+    "dev": "bun --env-file=backend/.env --watch --inspect backend/index.ts",
+    "test": "bun test"
   },
   "author": "michelsalib@gmail.com",
   "license": "MIT",
@@ -21,8 +21,8 @@
     "frontend"
   ],
   "devDependencies": {
-    "@azure/cosmos": "^4.9.3",
-    "@biomejs/biome": "^2.4.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260524.1"
-  }
+    "@biomejs/biome": "^2.5.7",
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2"
+  },
+  "private": true
 }

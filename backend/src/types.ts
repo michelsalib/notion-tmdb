@@ -2,6 +2,9 @@ import type {
   CreatePageParameters,
   DatabaseObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints.js";
+import type { DOMAIN } from "./domains.js";
+
+export type { DOMAIN };
 
 export interface NotionData {
   workspaceId: string;
@@ -146,11 +149,5 @@ export interface Bank {
 
 export type NotionItem = Omit<CreatePageParameters, "parent">;
 
-export type DOMAIN =
-  | "GBook"
-  | "TMDB"
-  | "backup"
-  | "GoCardless"
-  | "BitwardenBackup"
-  | "IGDB"
-  | "BilletReduc";
+// DOMAIN is derived from the DOMAINS registry in domains.ts and re-exported
+// at the top of this file, so it cannot drift from the connector table.

@@ -4,6 +4,12 @@ import {
   DependencyContainer,
   instanceCachingFactory,
 } from "tsyringe";
+import {
+  type DOMAIN,
+  HOSTNAME_DOMAIN,
+  SEARCH_DOMAINS,
+  STATE_DOMAIN,
+} from "../domains.js";
 import { BilletReducClient } from "../providers/BilletReduc/BilletReducClient.js";
 import { BitwardenBackup } from "../providers/BitwardenBackup/BitwardenBackup.js";
 import type { DbProvider } from "../providers/DbProvider.js";
@@ -15,7 +21,6 @@ import { NotionBackup } from "../providers/NotionBackup/NotionBackup.js";
 import { FilesystemStorage } from "../providers/Storage/FilesystemClient.js";
 import { GcsStorageClient } from "../providers/Storage/GcsStorageClient.js";
 import { TmdbClient } from "../providers/Tmdb/TmdbClient.js";
-import type { DOMAIN } from "../types.js";
 import {
   DATA_PROVIDER,
   DB_ENGINE,
@@ -144,75 +149,65 @@ export function loadEnvironmentConfig(env: {
       throw new Error(`Unknown LOGGER_ENGINE: ${env["LOGGER_ENGINE"]}`);
   }
 
-  // DOMAIN-driven NOTION_CLIENT_ID/SECRET dispatch (resolved per-request from child container)
-  rootContainer.register(NOTION_CLIENT_ID, {
-    useFactory: (c) => {
-      const domain = c.resolve<DOMAIN>(DOMAIN_KEY);
-      switch (domain) {
-        case "TMDB":
-          return c.resolve(NOTION_TMDB_CLIENT_ID);
-        case "IGDB":
-          return c.resolve(NOTION_IGDB_CLIENT_ID);
-        case "GBook":
-          return c.resolve(NOTION_GBOOK_CLIENT_ID);
-        case "BilletReduc":
-          return c.resolve(NOTION_BILLETREDUC_CLIENT_ID);
-        case "backup":
-          return c.resolve(NOTION_BACKUP_CLIENT_ID);
-        case "GoCardless":
-          return c.resolve(NOTION_GOCARDLESS_CLIENT_ID);
-        default:
-          throw new Error(`No NOTION_CLIENT_ID for domain ${domain}`);
-      }
-    },
-  });
-  rootContainer.register(NOTION_CLIENT_SECRET, {
-    useFactory: (c) => {
-      const domain = c.resolve<DOMAIN>(DOMAIN_KEY);
-      switch (domain) {
-        case "TMDB":
-          return c.resolve(NOTION_TMDB_CLIENT_SECRET);
-        case "IGDB":
-          return c.resolve(NOTION_IGDB_CLIENT_SECRET);
-        case "GBook":
-          return c.resolve(NOTION_GBOOK_CLIENT_SECRET);
-        case "BilletReduc":
-          return c.resolve(NOTION_BILLETREDUC_CLIENT_SECRET);
-        case "backup":
-          return c.resolve(NOTION_BACKUP_CLIENT_SECRET);
-        case "GoCardless":
-          return c.resolve(NOTION_GOCARDLESS_CLIENT_SECRET);
-        default:
-          throw new Error(`No NOTION_CLIENT_SECRET for domain ${domain}`);
-      }
-    },
-  });
+  // DOMAIN-driven NOTION_CLIENT_ID/SECRET dispatch (resolved per-request from
+  // the child container). One table instead of two switches that were
+  // byte-identical apart from the _ID/_SECRET suffix.
+  const bindPerDomain = (target: symbol, slot: 0 | 1, label: string): void => {
+    rootContainer.register(target, {
+      useFactory: (c) => {
+        const domain = c.resolve<DOMAIN>(DOMAIN_KEY);
+        const keys = NOTION_OAUTH_KEYS[domain];
+
+        if (!keys) {
+          throw new Error(`No ${label} for domain ${domain}`);
+        }
+
+        return c.resolve(keys[slot]);
+      },
+    });
+  };
+
+  bindPerDomain(NOTION_CLIENT_ID, 0, "NOTION_CLIENT_ID");
+  bindPerDomain(NOTION_CLIENT_SECRET, 1, "NOTION_CLIENT_SECRET");
 
   // DOMAIN-driven DATA_PROVIDER dispatch
   rootContainer.register(DATA_PROVIDER, {
     useFactory: (c) => {
       const domain = c.resolve<DOMAIN>(DOMAIN_KEY);
-      switch (domain) {
-        case "TMDB":
-          return c.resolve(TmdbClient);
-        case "GBook":
-          return c.resolve(GBookClient);
-        case "IGDB":
-          return c.resolve(IgdbClient);
-        case "BilletReduc":
-          return c.resolve(BilletReducClient);
-        case "GoCardless":
-          return c.resolve(GoCardlessClient);
-        case "BitwardenBackup":
-          return c.resolve(BitwardenBackup);
-        case "backup":
-          return c.resolve(NotionBackup);
-        default:
-          throw new Error(`No DATA_PROVIDER for domain ${domain}`);
-      }
+
+      return c.resolve(DATA_PROVIDERS[domain]);
     },
   });
 }
+
+// Notion OAuth app credentials per connector, as [clientId, clientSecret].
+// BitwardenBackup authenticates against Bitwarden directly, so it has no
+// Notion OAuth app — resolving one for it is a programming error.
+const NOTION_OAUTH_KEYS: Record<DOMAIN, readonly [symbol, symbol] | undefined> =
+  {
+    TMDB: [NOTION_TMDB_CLIENT_ID, NOTION_TMDB_CLIENT_SECRET],
+    IGDB: [NOTION_IGDB_CLIENT_ID, NOTION_IGDB_CLIENT_SECRET],
+    GBook: [NOTION_GBOOK_CLIENT_ID, NOTION_GBOOK_CLIENT_SECRET],
+    BilletReduc: [
+      NOTION_BILLETREDUC_CLIENT_ID,
+      NOTION_BILLETREDUC_CLIENT_SECRET,
+    ],
+    GoCardless: [NOTION_GOCARDLESS_CLIENT_ID, NOTION_GOCARDLESS_CLIENT_SECRET],
+    backup: [NOTION_BACKUP_CLIENT_ID, NOTION_BACKUP_CLIENT_SECRET],
+    BitwardenBackup: undefined,
+  };
+
+// Which client implements each connector. Typed as Record<DOMAIN, …> so adding
+// a connector to the registry without wiring a provider fails to compile.
+const DATA_PROVIDERS: Record<DOMAIN, new (...args: any[]) => unknown> = {
+  TMDB: TmdbClient,
+  GBook: GBookClient,
+  IGDB: IgdbClient,
+  BilletReduc: BilletReducClient,
+  GoCardless: GoCardlessClient,
+  BitwardenBackup: BitwardenBackup,
+  backup: NotionBackup,
+};
 
 export async function unScopedContainer(
   domain: DOMAIN,
@@ -285,37 +280,7 @@ function getUserId(request: ScopedRequest): string | undefined {
   return /userId=([\w-]*)/.exec(request.headers["referer"] ?? "")?.[1];
 }
 
-const HOSTNAME_DOMAIN: Record<string, DOMAIN> = {
-  "notion-tmdb": "TMDB",
-  "notion-gbook": "GBook",
-  "notion-igdb": "IGDB",
-  "notion-billetreduc": "BilletReduc",
-  "notion-backup": "backup",
-  "notion-gocardless": "GoCardless",
-  "bitwarden-backup": "BitwardenBackup",
-};
-
-const STATE_DOMAIN: Record<string, DOMAIN> = {
-  tmdb: "TMDB",
-  gbook: "GBook",
-  igdb: "IGDB",
-  billetreduc: "BilletReduc",
-  backup: "backup",
-  gocardless: "GoCardless",
-  bitwardenbackup: "BitwardenBackup",
-};
-
-// Search connectors a single embed widget can target per-request via ?domain=.
-// Restricted to the search → add connectors so the override can't be used to
-// reach the backup/gocardless/bitwarden flows from an arbitrary request.
-export const SEARCH_DOMAINS: Record<string, DOMAIN> = {
-  tmdb: "TMDB",
-  gbook: "GBook",
-  igdb: "IGDB",
-  billetreduc: "BilletReduc",
-};
-
-function computeDomain(request: ScopedRequest): DOMAIN {
+export function computeDomain(request: ScopedRequest): DOMAIN {
   // Explicit per-request connector override (the multi-connector embed widget).
   const explicit = (request.query as any)?.["domain"]?.toLowerCase();
   if (explicit && SEARCH_DOMAINS[explicit]) {

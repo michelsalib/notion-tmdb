@@ -1,5 +1,6 @@
 import { DependencyContainer, injectable } from "tsyringe";
-import { SEARCH_DOMAINS, unScopedContainer } from "./fx/di.js";
+import { type DOMAIN, isBackupDomain, SEARCHABLE_DOMAINS } from "./domains.js";
+import { unScopedContainer } from "./fx/di.js";
 import {
   DATA_PROVIDER,
   DB_PROVIDER,
@@ -15,17 +16,12 @@ import type { DataProvider } from "./providers/DataProvider.js";
 import type { DbProvider } from "./providers/DbProvider.js";
 import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
-import type { Config, DOMAIN, UserData } from "./types.js";
+import type { Config, UserData } from "./types.js";
+import { asWebByteStream } from "./utils/generator.js";
 
 // The two backup connectors resolve to different classes (NotionBackup and
 // BitwardenBackup), so DATA_PROVIDER must be read as the interface they share.
 type AnyBackup = BackupDataProvider<"backup" | "BitwardenBackup">;
-
-function isBackupDomain(domain: DOMAIN): boolean {
-  return domain == "backup" || domain == "BitwardenBackup";
-}
-
-import { asWebByteStream } from "./utils/generator.js";
 
 @injectable()
 export class Api {
@@ -64,7 +60,7 @@ export class Api {
 
     const connectors: DOMAIN[] = [];
 
-    for (const domain of Object.values(SEARCH_DOMAINS)) {
+    for (const domain of SEARCHABLE_DOMAINS) {
       const scoped = await unScopedContainer(domain);
       const user = await scoped
         .resolve<DbProvider>(DB_PROVIDER)

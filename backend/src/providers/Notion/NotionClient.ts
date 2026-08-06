@@ -7,7 +7,8 @@ import {
   UpdatePageParameters,
 } from "@notionhq/client/build/src/api-endpoints.js";
 import { inject, injectable } from "tsyringe";
-import { USER } from "../../fx/keys.js";
+import { LOGGER, USER } from "../../fx/keys.js";
+import type { Logger } from "../../fx/logger/Logger.js";
 import type { Config, NotionUserData } from "../../types.js";
 import { retriable } from "../../utils/retriable.js";
 
@@ -15,7 +16,10 @@ import { retriable } from "../../utils/retriable.js";
 export class NotionClient {
   private readonly client: Client;
 
-  constructor(@inject(USER) private readonly user: NotionUserData<any>) {
+  constructor(
+    @inject(USER) private readonly user: NotionUserData<any>,
+    @inject(LOGGER) private readonly logger: Logger,
+  ) {
     this.client = new Client({
       auth: this.user.notionWorkspace.accessToken,
     });
@@ -31,6 +35,7 @@ export class NotionClient {
       const result = await retriable(
         this.client,
         "search",
+        this.logger,
       )({
         start_cursor: contentCursor || undefined,
       });
@@ -46,6 +51,7 @@ export class NotionClient {
             const blocks = await retriable(
               this.client.blocks.children,
               "list",
+              this.logger,
             )({
               block_id: content.id,
               start_cursor: blockCursor || undefined,
@@ -110,6 +116,7 @@ export class NotionClient {
         const { results, next_cursor } = await retriable(
           this.client.databases,
           "query",
+          this.logger,
         )({
           database_id: dbConfig.id,
           start_cursor: cursor,

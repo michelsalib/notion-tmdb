@@ -10,12 +10,21 @@ import {
   USER_ID,
 } from "./fx/keys.js";
 import { Router, type ScopedReply, type ScopedRequest } from "./fx/router.js";
+import type { BackupDataProvider } from "./providers/BackupDataProvider.js";
 import type { DataProvider } from "./providers/DataProvider.js";
 import type { DbProvider } from "./providers/DbProvider.js";
 import { GoCardlessClient } from "./providers/GoCardless/GoCardlessClient.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
-import { NotionBackup } from "./providers/NotionBackup/NotionBackup.js";
 import type { Config, DOMAIN, UserData } from "./types.js";
+
+// The two backup connectors resolve to different classes (NotionBackup and
+// BitwardenBackup), so DATA_PROVIDER must be read as the interface they share.
+type AnyBackup = BackupDataProvider<"backup" | "BitwardenBackup">;
+
+function isBackupDomain(domain: DOMAIN): boolean {
+  return domain == "backup" || domain == "BitwardenBackup";
+}
+
 import { asWebByteStream } from "./utils/generator.js";
 
 @injectable()
@@ -78,8 +87,8 @@ export class Api {
     reply.header("connection", "keep-alive");
     reply.header("x-accel-buffering", "no");
 
-    if (domain == "backup" || domain == "BitwardenBackup") {
-      const backup = container.resolve<NotionBackup>(DATA_PROVIDER);
+    if (isBackupDomain(domain)) {
+      const backup = container.resolve<AnyBackup>(DATA_PROVIDER);
 
       return asWebByteStream(backup.sync());
     }
@@ -133,8 +142,8 @@ export class Api {
     const user = container.resolve<UserData<any>>(USER);
     const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
 
-    if (domain == "backup" || domain == "BitwardenBackup") {
-      const backup = container.resolve<NotionBackup>(DATA_PROVIDER);
+    if (isBackupDomain(domain)) {
+      const backup = container.resolve<AnyBackup>(DATA_PROVIDER);
 
       return {
         backupDate: await backup.getBackupDate(),
@@ -155,16 +164,16 @@ export class Api {
   async postConfig(container: DependencyContainer) {
     const request = container.resolve<ScopedRequest>(REQUEST);
     const config: Config = (request.body as any).config;
-    const cosmos = container.resolve<DbProvider>(DB_PROVIDER);
+    const db = container.resolve<DbProvider>(DB_PROVIDER);
     const userId = container.resolve<string>(USER_ID);
 
-    await cosmos.putUserConfig(userId, config);
+    await db.putUserConfig(userId, config);
 
     return "Config saved";
   }
 
   async getBackup(container: DependencyContainer) {
-    const backup = container.resolve<NotionBackup>(DATA_PROVIDER);
+    const backup = container.resolve<AnyBackup>(DATA_PROVIDER);
 
     return {
       link: await backup.getLink(),
@@ -196,7 +205,7 @@ export class Api {
     const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
     const userId = container.resolve<string>(USER_ID);
     const { config } = container.resolve<UserData<"GoCardless">>(USER);
-    const cosmos = container.resolve<DbProvider>(DB_PROVIDER);
+    const db = container.resolve<DbProvider>(DB_PROVIDER);
     const goCardless = container.resolve<GoCardlessClient>(DATA_PROVIDER);
 
     if (!config) {
@@ -212,7 +221,7 @@ export class Api {
     );
     config.goCardlessAccounts.push(account);
 
-    await cosmos.putUserConfig(userId, config);
+    await db.putUserConfig(userId, config);
 
     reply.status(302);
     reply.header("location", "/");

@@ -271,16 +271,18 @@ async function loadUser(c: DependencyContainer): Promise<void> {
   c.register(USER, { useValue: userInfo });
 }
 
-function getUserId(request: ScopedRequest): string {
-  let userId = request.cookies["userId"];
+// Returns undefined for an anonymous request: unauthenticated routes (search,
+// connectors) are reached without a userId, and `scopeContainer` already
+// branches on that. The old signature claimed `string` via a cast, which is
+// why USER_ID has to be resolved as `string | undefined` at every call site.
+function getUserId(request: ScopedRequest): string | undefined {
+  const cookieUserId = request.cookies["userId"];
 
-  if (!userId) {
-    userId = /userId=([\w-]*)/.exec(
-      request.headers["referer"] ?? "",
-    )?.[1] as string;
+  if (cookieUserId) {
+    return cookieUserId;
   }
 
-  return userId;
+  return /userId=([\w-]*)/.exec(request.headers["referer"] ?? "")?.[1];
 }
 
 const HOSTNAME_DOMAIN: Record<string, DOMAIN> = {

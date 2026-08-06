@@ -77,8 +77,8 @@ export interface GoCardlessAccount {
   logo: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface BackupDbConfig extends DbConfigBase {}
+// The backup connectors need no fields beyond the base ones.
+export type BackupDbConfig = DbConfigBase;
 
 export type Config =
   | TmdbDbConfig
@@ -88,23 +88,30 @@ export type Config =
   | IgdbConfig
   | BilletReducDbConfig;
 
-export type DomainToConfig<T extends DOMAIN> = T extends "GBook"
-  ? GBookDbConfig
-  : T extends "TMDB"
-    ? TmdbDbConfig
-    : T extends "GoCardless"
-      ? GoCardlessDbConfig
-      : T extends "IGDB"
-        ? IgdbConfig
-        : T extends "BilletReduc"
-          ? BilletReducDbConfig
-          : T extends "Backup"
-            ? BackupDbConfig
-            : { [key: string]: never };
+// Keyed off the DOMAIN union rather than a conditional chain: an index
+// signature makes every member's config type a compile error to omit, whereas
+// the old chain tested `T extends "Backup"` against a union whose member is
+// lowercase `"backup"` and had no arm at all for "BitwardenBackup". Both fell
+// through to a `{ [key: string]: never }` catch-all, so `DomainToConfig` for
+// either backup connector silently resolved to a type with no usable fields.
+interface DomainConfigMap extends Record<DOMAIN, Config> {
+  GBook: GBookDbConfig;
+  TMDB: TmdbDbConfig;
+  GoCardless: GoCardlessDbConfig;
+  IGDB: IgdbConfig;
+  BilletReduc: BilletReducDbConfig;
+  backup: BackupDbConfig;
+  BitwardenBackup: BackupDbConfig;
+}
+
+export type DomainToConfig<T extends DOMAIN> = DomainConfigMap[T];
 
 export interface UserData<T extends DOMAIN> {
   id: string;
-  config: DomainToConfig<T>;
+  // Optional: a user exists from the moment they complete OAuth, but has no
+  // config until they pick a Notion database. Every consumer already guarded
+  // with `if (!user.config)`; the type just used to claim otherwise.
+  config?: DomainToConfig<T>;
 }
 
 export interface NotionUserData<T extends DOMAIN> extends UserData<T> {

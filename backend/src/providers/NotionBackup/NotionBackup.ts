@@ -141,7 +141,11 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
     fileName: string,
     url: string,
   ): Promise<void> {
-    const response = await retriable(this.client, "get")(url, {
+    const response = await retriable(
+      this.client,
+      "get",
+      this.logger,
+    )(url, {
       responseType: "stream",
     });
     const stream: Readable = response.data;

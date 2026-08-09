@@ -8,6 +8,7 @@ import type {
   Suggestion,
   SyncEvent,
   SyncOptions,
+  UrlMatch,
 } from "../../types.js";
 import { entryUrl, idFromQuery } from "../../utils/providerId.js";
 import { runSync } from "../../utils/syncRun.js";
@@ -19,7 +20,9 @@ interface VolumeInfo {
   title: string;
   authors?: string[];
   publishedDate: `${number}-${number}-${number}`;
-  categories: string[];
+  // Optional in fact as well as in the response: it was declared required, so
+  // the guard below looked redundant rather than load-bearing.
+  categories?: string[];
   imageLinks?: {
     thumbnail: string;
   };
@@ -88,11 +91,20 @@ export class GBookClient implements DataProvider<"GBook"> {
       return {
         id: s.id,
         title: s.volumeInfo.title,
-        releaseDate: s.volumeInfo.publishedDate || "NA",
+        // Empty, not "NA": this is display copy, and the suggestion list used
+        // to print the placeholder verbatim as the year.
+        releaseDate: s.volumeInfo.publishedDate || "",
         posterPath: s.volumeInfo.imageLinks?.thumbnail || "",
         subtitle,
       } as Suggestion;
     });
+  }
+
+  // Google stores `canonicalVolumeLink`, whose shape includes the book's
+  // title and so cannot be rebuilt from the id. The volume id is a 12-character
+  // opaque token that appears in it verbatim.
+  urlFor(id: string): UrlMatch {
+    return { contains: id };
   }
 
   async loadNotionEntry(
@@ -161,7 +173,9 @@ export class GBookClient implements DataProvider<"GBook"> {
       };
     }
 
-    if (dbConfig.genre) {
+    // `categories` is absent on a great many volumes, and calling `.flatMap`
+    // on the miss threw for the whole entry rather than skipping one column.
+    if (dbConfig.genre && volumeInfo.categories) {
       bookItem.properties[dbConfig.genre] = {
         multi_select: volumeInfo.categories
           .flatMap((f: string) => f.split(" / "))

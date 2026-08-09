@@ -1,9 +1,7 @@
-import ExpandMore from "@mui/icons-material/ExpandMore";
 import {
   Box,
   Button,
   ButtonGroup,
-  createTheme,
   Divider,
   LinearProgress,
   Link,
@@ -22,8 +20,9 @@ import type { Suggestion } from "backend/src/types";
 import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AuthContext, DomainContext } from "./Context";
-import { Search } from "./Search";
-import { connectorStyle } from "./theme";
+import { Poster, Search } from "./Search";
+import { buildTheme, connectorStyle } from "./theme";
+import { ChevronDown } from "./ui/icons";
 import {
   readLastSync,
   readSetting,
@@ -158,26 +157,24 @@ export function ConnectorWidget({
   // Re-skin the widget with the selected connector's accent, inheriting the
   // app's light/dark mode. Only the multi widget needs this — the single one
   // already runs under its own connector's theme.
+  //
+  // Built through `buildTheme` rather than by spreading the parent and swapping
+  // `palette.primary`. Spreading carried the parent's `components` across
+  // untouched, and those style overrides hold the accent as literal strings
+  // resolved when the parent was built — so picking BilletRéduc in a widget
+  // served from the TMDB host left every focus ring, notched outline and
+  // severity rail drawing in TMDB's blue over a pink control.
   const connectorTheme = useMemo(() => {
     if (!multi || !domain) {
       return parentTheme;
     }
 
-    const style = connectorStyle(domain as DOMAIN);
-    const isDark = parentTheme.palette.mode === "dark";
-
-    return createTheme({
-      ...parentTheme,
-      palette: {
-        mode: parentTheme.palette.mode,
-        primary: {
-          main: isDark ? style.onDark : style.onLight,
-          contrastText: parentTheme.palette.primary.contrastText,
-        },
-        background: parentTheme.palette.background,
-      },
-    });
-  }, [multi, domain, parentTheme]);
+    return buildTheme(
+      domain as DOMAIN,
+      parentTheme.palette.mode,
+      auth.status === "embed",
+    );
+  }, [multi, domain, parentTheme, auth.status]);
 
   function pickDomain(next: string) {
     setPicked(next);
@@ -271,9 +268,39 @@ export function ConnectorWidget({
             borderRadius: 1,
             overflow: "hidden",
             bgcolor: "background.paper",
-            "&:focus-within": { borderColor: "primary.main" },
+            // The group is one control, so it takes the same focus treatment
+            // the theme gives a single input — the field inside it has its own
+            // outline stripped.
+            "&:focus-within": {
+              borderColor: "primary.main",
+              boxShadow: (theme) => `0 0 0 3px ${theme.palette.primary.main}22`,
+            },
           }}
         >
+          {/* The connector's own mark, so a widget dropped into a Notion page
+              says which one it is before anything is typed into it. In the
+              multi widget the same slot is the picker. */}
+          {!multi && domain ? (
+            <Fragment>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  px: 1.25,
+                  bgcolor: "action.selected",
+                }}
+              >
+                <Box
+                  component="img"
+                  src={connectorStyle(domain as DOMAIN).logo}
+                  alt=""
+                  sx={{ height: 18, width: 18, objectFit: "contain" }}
+                />
+              </Box>
+              <Divider orientation="vertical" flexItem />
+            </Fragment>
+          ) : null}
+
           {multi ? (
             <Fragment>
               <Select
@@ -319,6 +346,7 @@ export function ConnectorWidget({
               key={`${domain}-${resetToken}`}
               domain={multi ? domain : undefined}
               borderless
+              checkExisting
               placeholder={label(
                 "SEARCH_PLACEHOLDER",
                 "MULTI_SEARCH_PLACEHOLDER",
@@ -326,6 +354,22 @@ export function ConnectorWidget({
               onChange={(m) => setValue(m)}
             />
           </Box>
+
+          {/* What you are about to add, shown rather than described. The
+              poster art is the richest thing these providers return and it was
+              only ever seen at 28×42 inside a dropdown that closes on pick. */}
+          {value ? (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                pr: 1,
+                flexShrink: 0,
+              }}
+            >
+              <Poster src={value.posterPath} alt="" width={20} height={30} />
+            </Box>
+          ) : null}
 
           <Button
             variant="contained"
@@ -398,7 +442,7 @@ function SyncButton({
           aria-haspopup="menu"
           sx={{ minWidth: 0, px: 0.25, border: 0 }}
         >
-          <ExpandMore sx={{ fontSize: 16 }} />
+          <ChevronDown size={14} />
         </Button>
       </ButtonGroup>
 

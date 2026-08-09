@@ -114,6 +114,41 @@ export interface Suggestion {
   releaseDate: string;
   posterPath: string;
   subtitle: string;
+  /**
+   * The row this item already has in the user's database, if any.
+   *
+   * Never set by `search()`, which is unauthenticated and knows nothing about a
+   * workspace — it is filled in afterwards by `GET /api/existing` and merged in
+   * by the widget. Adding a title twice was the commonest mistake the search
+   * panel allowed, because nothing on a result said it was already there.
+   */
+  existing?: { url: string };
+}
+
+/**
+ * How a connector recognises one of its own rows by the URL it stored.
+ *
+ * Two shapes because the connectors divide cleanly. TMDB and IGDB build the
+ * stored URL from the id, so they can ask for an exact match. GBook stores
+ * Google's `canonicalVolumeLink` and BilletRéduc stores whatever the page's
+ * JSON-LD declares as canonical; neither is derivable from the id, so they
+ * match on a token instead — a Google volume id and a BilletRéduc path both
+ * carry enough entropy that a substring hit is the row and not a coincidence.
+ *
+ * Exactness matters more than reach here: a miss shows no badge, which is the
+ * status quo, while a false hit tells someone a film is already in their
+ * database when it is not, and they do not add it.
+ */
+export interface UrlMatch {
+  equals?: string;
+  contains?: string;
+}
+
+/** One line of the landing page's "lands in Notion as" preview. */
+export interface FieldPreview {
+  key: string;
+  label: string;
+  value: string;
 }
 
 /**

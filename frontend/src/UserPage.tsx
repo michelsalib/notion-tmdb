@@ -1,8 +1,4 @@
-import CheckCircle from "@mui/icons-material/CheckCircle";
-import ContentCopy from "@mui/icons-material/ContentCopy";
-import Done from "@mui/icons-material/Done";
 import {
-  Alert,
   Box,
   Button,
   Checkbox,
@@ -19,7 +15,13 @@ import {
 } from "@mui/material";
 import { SEARCHABLE_DOMAINS } from "backend/src/domains";
 import type { Config, UserConfig } from "backend/src/types";
-import { type ReactNode, useContext, useEffect, useState } from "react";
+import {
+  type MouseEvent,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
 import { ConnectorWidget } from "./ConnectorWidget";
@@ -29,8 +31,15 @@ import {
   DomainContext,
   SnackbarContext,
 } from "./Context";
-import { CreateDatabase, DbConfigForm } from "./DbConfigForm";
+import {
+  CreateDatabase,
+  DbConfigForm,
+  useCreatablePages,
+} from "./DbConfigForm";
 import { Navigation } from "./Navigation";
+import { Field } from "./ui/Field";
+import { Check, Copy } from "./ui/icons";
+import { Note } from "./ui/Note";
 
 /**
  * The settings page, as three ordered steps.
@@ -79,6 +88,10 @@ export function UserPage() {
 
   const isBackup = domain == "backup" || domain == "BitwardenBackup";
   const canMulti = SEARCHABLE_DOMAINS.includes(domain);
+  // `null` until Notion answers. Held here rather than inside `CreateDatabase`
+  // so the "or" separator below is only drawn when there is a genuine
+  // alternative on the other side of it.
+  const creatablePages = useCreatablePages(!isBackup);
 
   if (!userConfig) {
     return (
@@ -182,11 +195,19 @@ export function UserPage() {
               }
             >
               {databases.length === 0 ? (
+                // Nothing to map, so creating one is the way out — and if
+                // there is nowhere to put it either, saying so is the only
+                // useful thing left on the page.
                 <Stack spacing={2}>
-                  <Alert severity="info" variant="outlined">
-                    {t("NO_DATABASES")}
-                  </Alert>
-                  <CreateDatabase onCreated={reloadConfig} />
+                  <Note severity="info">{t("NO_DATABASES")}</Note>
+                  {creatablePages?.length ? (
+                    <CreateDatabase
+                      pages={creatablePages}
+                      onCreated={reloadConfig}
+                    />
+                  ) : creatablePages ? (
+                    <Note severity="info">{t("CREATE_DB_NO_PAGES")}</Note>
+                  ) : null}
                 </Stack>
               ) : (
                 <Stack spacing={2}>
@@ -199,12 +220,24 @@ export function UserPage() {
                       setComplete(isComplete);
                     }}
                   />
-                  <Divider>
-                    <Typography variant="caption" color="text.secondary">
-                      {t("OR")}
-                    </Typography>
-                  </Divider>
-                  <CreateDatabase onCreated={reloadConfig} />
+
+                  {/* Only when there is somewhere to create one. There is a
+                      working mapping directly above this: an "or" followed by
+                      a prerequisite the user has to go and satisfy elsewhere
+                      is not an alternative, it is an interruption. */}
+                  {creatablePages?.length ? (
+                    <>
+                      <Divider>
+                        <Typography variant="caption" color="text.secondary">
+                          {t("OR")}
+                        </Typography>
+                      </Divider>
+                      <CreateDatabase
+                        pages={creatablePages}
+                        onCreated={reloadConfig}
+                      />
+                    </>
+                  ) : null}
                 </Stack>
               )}
             </Step>
@@ -331,25 +364,35 @@ function Step({
       sx={{ p: 2, opacity: state === "locked" ? 0.6 : 1 }}
     >
       <Stack direction="row" spacing={1.5}>
+        {/* The connector's own accent, not Material green. This is the page
+            where someone sets a connector up; it may as well be the colour of
+            the thing being set up. A done step is a quiet tint rather than a
+            filled disc, so the one *active* step is what the eye lands on. */}
         <Box
           aria-hidden
           sx={{
-            width: 24,
-            height: 24,
+            width: 22,
+            height: 22,
             borderRadius: "50%",
             flexShrink: 0,
             display: "grid",
             placeItems: "center",
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 600,
+            fontVariantNumeric: "tabular-nums",
             mt: 0.25,
             border: 1,
-            borderColor: state === "done" ? "success.main" : "divider",
-            bgcolor: state === "done" ? "success.main" : "transparent",
-            color: state === "done" ? "success.contrastText" : "text.secondary",
+            borderColor:
+              state === "done"
+                ? "transparent"
+                : state === "active"
+                  ? "primary.main"
+                  : "divider",
+            bgcolor: state === "done" ? "action.selected" : "transparent",
+            color: state === "locked" ? "text.disabled" : "primary.main",
           }}
         >
-          {state === "done" ? <CheckCircle sx={{ fontSize: 16 }} /> : index}
+          {state === "done" ? <Check size={13} /> : index}
         </Box>
 
         <Stack spacing={children ? 2 : 0} sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -393,29 +436,42 @@ function EmbedUrl({ url }: { url: string }) {
   }
 
   return (
-    <TextField
-      value={url}
-      size="small"
-      fullWidth
-      label={t("EMBED_URL")}
-      helperText={t("EMBED_URL_HELP")}
-      slotProps={{
-        input: {
-          readOnly: true,
-          onClick: (i) => (i.target as HTMLInputElement).select(),
-          endAdornment: (
-            <Tooltip title={copied ? t("COPIED") : t("COPY")}>
-              <IconButton onClick={copy} edge="end" aria-label={t("COPY")}>
-                {copied ? (
-                  <Done fontSize="small" color="success" />
-                ) : (
-                  <ContentCopy fontSize="small" />
-                )}
-              </IconButton>
-            </Tooltip>
-          ),
-        },
-      }}
-    />
+    <Field label={t("EMBED_URL")} help={t("EMBED_URL_HELP")}>
+      {({ id }) => (
+        <TextField
+          id={id}
+          value={url}
+          size="small"
+          fullWidth
+          slotProps={{
+            // Select-on-click belongs on the native input, via `currentTarget`
+            // — the element the handler is bound to. It used to sit on the
+            // `input` slot, which is the `OutlinedInput` *root*, so `target`
+            // was whatever was actually clicked: the copy button, its icon, or
+            // the padding around the field. Clicking any of those threw
+            // `target.select is not a function`.
+            htmlInput: {
+              onClick: (event: MouseEvent<HTMLInputElement>) =>
+                event.currentTarget.select(),
+            },
+            input: {
+              readOnly: true,
+              sx: { fontFamily: "monospace", fontSize: "0.8125rem" },
+              endAdornment: (
+                <Tooltip title={copied ? t("COPIED") : t("COPY")}>
+                  <IconButton onClick={copy} edge="end" aria-label={t("COPY")}>
+                    {copied ? (
+                      <Check size={16} sx={{ color: "success.main" }} />
+                    ) : (
+                      <Copy size={16} />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              ),
+            },
+          }}
+        />
+      )}
+    </Field>
   );
 }

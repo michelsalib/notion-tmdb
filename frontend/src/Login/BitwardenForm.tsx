@@ -1,14 +1,9 @@
-import SecurityIcon from "@mui/icons-material/Security";
-import {
-  Alert,
-  Button,
-  Link,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Button, Link, Stack, TextField, Typography } from "@mui/material";
 import { useCallback, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { Field } from "../ui/Field";
+import { Shield } from "../ui/icons";
+import { Note } from "../ui/Note";
 
 const API_KEY_URL =
   "https://vault.bitwarden.com/#/settings/security/security-keys";
@@ -39,27 +34,36 @@ export function BitwardenForm() {
         />
       </Typography>
 
-      <Alert severity="info" variant="outlined" icon={<SecurityIcon />}>
+      <Note severity="info" icon={<Shield size={15} />}>
         {t("BW_ENCRYPTED")}
-      </Alert>
+      </Note>
 
-      <TextField
-        required
-        size="small"
-        label={t("BW_CLIENT_ID")}
-        value={clientId}
-        onChange={(e) => setClientId(e.target.value)}
-      />
+      <Field label={t("BW_CLIENT_ID")}>
+        {({ id }) => (
+          <TextField
+            id={id}
+            required
+            size="small"
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+          />
+        )}
+      </Field>
+
       {/* type="password": this is half of a credential pair, and it used to
           render in the clear in a field people fill in on a shared screen. */}
-      <TextField
-        required
-        size="small"
-        type="password"
-        label={t("BW_CLIENT_SECRET")}
-        value={clientSecret}
-        onChange={(e) => setClientSecret(e.target.value)}
-      />
+      <Field label={t("BW_CLIENT_SECRET")}>
+        {({ id }) => (
+          <TextField
+            id={id}
+            required
+            size="small"
+            type="password"
+            value={clientSecret}
+            onChange={(e) => setClientSecret(e.target.value)}
+          />
+        )}
+      </Field>
 
       <Button
         variant="contained"

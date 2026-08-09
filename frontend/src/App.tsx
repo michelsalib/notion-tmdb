@@ -1,5 +1,4 @@
 import {
-  Alert,
   Button,
   CssBaseline,
   Snackbar,
@@ -24,6 +23,7 @@ import "./i18n";
 import { Login } from "./Login";
 import { buildTheme, connectorLabel, connectorStyle } from "./theme";
 import { UserPage } from "./UserPage";
+import { Note } from "./ui/Note";
 
 export function App() {
   const loggedIn = useContext(AuthContext);
@@ -93,10 +93,12 @@ export function App() {
             onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
             anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
           >
-            <Alert
-              variant="filled"
+            <Note
               severity={snackbar.color}
               onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
+              // The toast is the one note that floats, so it is the one that
+              // needs a shadow to lift off whatever it lands on.
+              sx={{ boxShadow: 3 }}
               action={
                 snackbar.url ? (
                   <Button
@@ -112,7 +114,7 @@ export function App() {
               }
             >
               {snackbar.message}
-            </Alert>
+            </Note>
           </Snackbar>
         </SnackbarContext.Provider>
       </ThemeProvider>

@@ -1,4 +1,3 @@
-import LockOutlined from "@mui/icons-material/LockOutlined";
 import {
   Box,
   Chip,
@@ -9,13 +8,16 @@ import {
   useTheme,
 } from "@mui/material";
 import { ALL_DOMAINS, type DOMAIN, DOMAINS } from "backend/src/domains";
-import { useCallback, useContext } from "react";
+import type { Suggestion } from "backend/src/types";
+import { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DomainContext } from "./Context";
 import { BitwardenLogin } from "./Login/BitwardenLogin";
 import { NotionLogin } from "./Login/NotionLogin";
+import { RowPreview } from "./Login/RowPreview";
 import { Search } from "./Search";
 import { connectorStyle } from "./theme";
+import { Lock } from "./ui/icons";
 
 /**
  * The landing page.
@@ -32,6 +34,18 @@ export function Login() {
   const { t } = useTranslation();
   const theme = useTheme();
   const style = connectorStyle(domain);
+  // Fills the demo field from the example chips below it.
+  const [seed, setSeed] = useState("");
+  // Picking a result is what asks for the preview — one request on a
+  // deliberate action, rather than one per arrow-key as the highlight moves.
+  const [picked, setPicked] = useState<Suggestion | null>(null);
+
+  // Per connector, so the films page offers films. Comma-separated in the
+  // connector's own namespace; an empty list simply renders no chips.
+  const examples = t("DEMO_EXAMPLES", { defaultValue: "" })
+    .split(",")
+    .map((example) => example.trim())
+    .filter(Boolean);
 
   const switchTo = useCallback((next: DOMAIN) => {
     window.location.href = window.location.origin.replace(
@@ -63,16 +77,7 @@ export function Login() {
             </Typography>
           </Stack>
 
-          <Typography
-            variant="h3"
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: "-0.025em",
-              lineHeight: 1.1,
-              textWrap: "balance",
-            }}
-          >
+          <Typography variant="h1" sx={{ textWrap: "balance" }}>
             {t("PITCH_TITLE")}
           </Typography>
 
@@ -86,12 +91,78 @@ export function Login() {
             anyone connects anything — only adding needs an account. */}
         {DOMAINS[domain].searchable ? (
           <Stack spacing={1}>
-            <Paper variant="outlined" sx={{ p: 1.5 }}>
-              <Search
-                onChange={() => {}}
-                placeholder={t("SEARCH_PLACEHOLDER")}
-              />
-            </Paper>
+            {/* Framed as the thing it becomes: an embed block sitting on a
+                Notion page. The nesting is what carries that — the outer ground
+                is the page, the inner card is the block — using the two
+                surfaces the theme already defines for exactly this pair. */}
+            <Box
+              sx={{
+                p: { xs: 1.5, sm: 2.5 },
+                borderRadius: 1,
+                bgcolor: "background.default",
+                border: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                {/* Notion's block handle, at rest. Not interactive: it is set
+                    dressing that says "this is a block on a page", and giving
+                    it behaviour would promise something the demo cannot do. */}
+                <Box
+                  aria-hidden
+                  sx={{
+                    fontFamily: "monospace",
+                    fontSize: 13,
+                    lineHeight: 1,
+                    color: "text.disabled",
+                    userSelect: "none",
+                  }}
+                >
+                  ⠿
+                </Box>
+                <Typography variant="overline" color="text.disabled">
+                  {t("DEMO_BLOCK_LABEL")}
+                </Typography>
+              </Stack>
+
+              {/* Padding lives on the search row rather than the card, so the
+                  preview's top rule spans the block edge to edge. */}
+              <Paper variant="outlined">
+                <Box sx={{ p: 1.5 }}>
+                  <Search
+                    onChange={setPicked}
+                    placeholder={t("SEARCH_PLACEHOLDER")}
+                    seed={seed}
+                  />
+                </Box>
+
+                {picked ? <RowPreview suggestion={picked} /> : null}
+              </Paper>
+            </Box>
+
+            {examples.length > 0 ? (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: "center", flexWrap: "wrap", gap: 1 }}
+              >
+                <Typography variant="overline" color="text.secondary">
+                  {t("DEMO_TRY")}
+                </Typography>
+                {examples.map((example) => (
+                  <Chip
+                    key={example}
+                    size="small"
+                    clickable
+                    variant="outlined"
+                    label={example}
+                    onClick={() => setSeed(example)}
+                    sx={{ borderColor: "divider" }}
+                  />
+                ))}
+              </Stack>
+            ) : null}
+
             <Typography variant="caption" color="text.secondary">
               {t("DEMO_HINT")}
             </Typography>
@@ -103,7 +174,7 @@ export function Login() {
           {pre == "Bitwarden" && <BitwardenLogin />}
 
           <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-            <LockOutlined sx={{ fontSize: 15, color: "text.secondary" }} />
+            <Lock size={14} sx={{ color: "text.secondary" }} />
             <Typography variant="caption" color="text.secondary">
               {t("PERMISSION_NOTE")}
             </Typography>

@@ -1,11 +1,6 @@
-import AutoAwesome from "@mui/icons-material/AutoAwesome";
-import CheckCircle from "@mui/icons-material/CheckCircle";
 import {
-  Alert,
   Box,
   Button,
-  FormControl,
-  InputLabel,
   MenuItem,
   Select,
   Stack,
@@ -18,6 +13,9 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DomainContext } from "./Context";
 import { PropertyPicker } from "./Form/PropertyPicker";
+import { Field } from "./ui/Field";
+import { Check, Sparkle, Swap } from "./ui/icons";
+import { Note } from "./ui/Note";
 
 /** The properties of one Notion database, in the shape the matcher wants. */
 function toMappable(database: NotionDatabase): MappableProperty[] {
@@ -139,74 +137,83 @@ export function DbConfigForm({
 
   return (
     <Stack spacing={2}>
-      <FormControl fullWidth size="small">
-        <InputLabel id="database-label">{t("DATABASE")}</InputLabel>
-        <Select
-          labelId="database-label"
-          label={t("DATABASE")}
-          value={config["id"] ?? ""}
-          onChange={(event) => selectDatabase(event.target.value)}
-        >
-          {notionDatabases.map((db) => (
-            <MenuItem value={db.id} key={db.id}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <span aria-hidden>{(db.icon as any)?.emoji ?? "🗄️"}</span>
-                <span>{db.title?.[0]?.plain_text ?? t("UNTITLED")}</span>
-              </Stack>
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Field label={t("DATABASE")}>
+        {({ id, labelId }) => (
+          <Select
+            id={id}
+            labelId={labelId}
+            fullWidth
+            size="small"
+            value={config["id"] ?? ""}
+            onChange={(event) => selectDatabase(event.target.value)}
+          >
+            {notionDatabases.map((db) => (
+              <MenuItem value={db.id} key={db.id}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <span aria-hidden>{(db.icon as any)?.emoji ?? "🗄️"}</span>
+                  <span>{db.title?.[0]?.plain_text ?? t("UNTITLED")}</span>
+                </Stack>
+              </MenuItem>
+            ))}
+          </Select>
+        )}
+      </Field>
 
       {!hasRequiredTypes ? (
-        <Alert severity="warning">
+        <Note severity="warning">
           {t("DB_MISSING_COLUMNS", {
             database: database?.title?.[0]?.plain_text ?? t("UNTITLED"),
           })}
-        </Alert>
+        </Note>
       ) : (
         <>
           {guessed !== null && guessed > 0 ? (
-            <Alert
-              icon={<AutoAwesome fontSize="inherit" />}
-              severity="success"
-              variant="outlined"
-            >
+            <Note icon={<Sparkle size={15} />} severity="success">
               {t("AUTO_MATCHED", { matched: guessed, total: fields.length })}
-            </Alert>
+            </Note>
           ) : null}
 
           {missingRequired.length > 0 ? (
-            <Alert severity="info" variant="outlined">
+            <Note severity="info">
               {t("PICK_REQUIRED", {
                 fields: missingRequired.map((f) => f.label).join(", "),
               })}
-            </Alert>
+            </Note>
           ) : null}
 
+          {/* Two columns bridged by the product's own mark. This screen is the
+              most distinctive thing the app does — it is the whole relationship
+              the product names — and as a stack of labelled dropdowns it read
+              as a settings form like any other. */}
           <Box>
-            <Stack
-              direction="row"
-              sx={{ justifyContent: "space-between", mb: 0.5 }}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 24px 1fr" },
+                gap: 1,
+                mb: 0.5,
+              }}
             >
-              <Typography
-                variant="overline"
-                color="text.secondary"
-                sx={{ lineHeight: 1.6 }}
-              >
+              <Typography variant="overline" color="text.secondary">
                 {t("FROM_CONNECTOR")}
               </Typography>
+              <Box sx={{ display: { xs: "none", sm: "block" } }} />
               <Typography
                 variant="overline"
                 color="text.secondary"
-                sx={{ lineHeight: 1.6 }}
+                sx={{ display: { xs: "none", sm: "block" } }}
               >
                 {t("YOUR_COLUMN")}
               </Typography>
-            </Stack>
+            </Box>
 
             <Stack
               divider={<Box sx={{ borderTop: 1, borderColor: "divider" }} />}
+              sx={{ borderTop: 1, borderColor: "divider" }}
             >
               {fields.map((field) => (
                 <MappingRow
@@ -225,7 +232,7 @@ export function DbConfigForm({
   );
 }
 
-/** One `data → column` line. */
+/** One `we fill this in ⇄ into that column` line. */
 function MappingRow({
   field,
   properties,
@@ -241,33 +248,76 @@ function MappingRow({
   const matched = Boolean(value);
 
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={{ xs: 0.5, sm: 2 }}
-      sx={{ alignItems: { sm: "center" }, py: 1.25 }}
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "1fr 24px 1fr" },
+        gap: { xs: 0.5, sm: 1 },
+        alignItems: "center",
+        py: 1.25,
+      }}
     >
-      <Stack sx={{ flex: 1, minWidth: 0 }}>
-        <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-          {matched ? (
-            <CheckCircle color="success" sx={{ fontSize: 15 }} />
-          ) : null}
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+      <Stack spacing={0.25} sx={{ minWidth: 0, alignItems: "flex-start" }}>
+        {/* The connector's side of the pairing, tinted with its own accent —
+            the two pills say "this value" and "that column", and the colour is
+            what tells you which is which without a heading. */}
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{
+            alignItems: "center",
+            maxWidth: "100%",
+            minWidth: 0,
+            px: 1,
+            py: 0.5,
+            borderRadius: 1,
+            bgcolor: "action.selected",
+            color: "primary.main",
+          }}
+        >
+          {matched ? <Check size={13} /> : null}
+          <Typography variant="body2" noWrap sx={{ fontWeight: 560 }}>
             {field.label}
           </Typography>
           {field.required ? (
-            <Typography variant="caption" color="text.secondary">
+            <Box
+              component="span"
+              sx={{
+                fontFamily: "monospace",
+                fontSize: 9.5,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                opacity: 0.75,
+                flexShrink: 0,
+              }}
+            >
               {t("REQUIRED")}
-            </Typography>
+            </Box>
           ) : null}
         </Stack>
         {field.description ? (
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ px: 1, display: "block" }}
+          >
             {field.description}
           </Typography>
         ) : null}
       </Stack>
 
-      <Box sx={{ flex: 1, minWidth: 0, width: { xs: "100%", sm: "auto" } }}>
+      {/* Decorative on this row: the relationship is already carried by the
+          column headings and by the picker's own accessible name. */}
+      <Swap
+        size={14}
+        sx={{
+          color: matched ? "primary.main" : "text.disabled",
+          justifySelf: "center",
+          display: { xs: "none", sm: "block" },
+        }}
+      />
+
+      <Box sx={{ minWidth: 0 }}>
         <PropertyPicker
           field={field}
           properties={properties}
@@ -275,8 +325,46 @@ function MappingRow({
           onChange={onChange}
         />
       </Box>
-    </Stack>
+    </Box>
   );
+}
+
+export interface NotionPage {
+  id: string;
+  title: string;
+}
+
+/**
+ * The pages this integration is allowed to create a database inside. `null`
+ * while it is still being fetched.
+ *
+ * Lifted out of `CreateDatabase` because whether there is anything to offer
+ * decides what the *caller* draws, not just what this component renders. Owned
+ * privately, it produced two versions of the same fault on the settings page:
+ * while the fetch was in flight the component returned `null` under an "or"
+ * separator, leaving an "or" dividing nothing; and when Notion returned no
+ * shared pages, the separator promised an alternative and was followed only by
+ * the prerequisite for it, with the alternative itself absent. Neither is
+ * something the caller could avoid without knowing this.
+ */
+export function useCreatablePages(enabled: boolean): NotionPage[] | null {
+  const [pages, setPages] = useState<NotionPage[] | null>(null);
+
+  useEffect(() => {
+    // The backup connectors map no columns and never create a database, so
+    // they have no use for this. Gated by a flag rather than by calling the
+    // hook conditionally, which React does not allow.
+    if (!enabled) {
+      return;
+    }
+
+    void fetch("/api/pages")
+      .then((r) => r.json())
+      .then(({ pages }: { pages: NotionPage[] }) => setPages(pages))
+      .catch(() => setPages([]));
+  }, [enabled]);
+
+  return pages;
 }
 
 /**
@@ -287,27 +375,17 @@ function MappingRow({
  * read straight off Notion's response.
  */
 export function CreateDatabase({
+  pages,
   onCreated,
 }: {
+  /** Guaranteed non-empty by the caller — see `useCreatablePages`. */
+  pages: NotionPage[];
   onCreated: () => void | Promise<void>;
 }) {
   const { t } = useTranslation();
-  const [pages, setPages] = useState<{ id: string; title: string }[] | null>(
-    null,
-  );
-  const [parent, setParent] = useState("");
+  const [parent, setParent] = useState(() => pages[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    void fetch("/api/pages")
-      .then((r) => r.json())
-      .then(({ pages }: { pages: { id: string; title: string }[] }) => {
-        setPages(pages);
-        setParent(pages[0]?.id ?? "");
-      })
-      .catch(() => setPages([]));
-  }, []);
 
   async function create() {
     setBusy(true);
@@ -334,44 +412,37 @@ export function CreateDatabase({
     }
   }
 
-  if (pages === null) {
-    return null;
-  }
-
-  // Notion databases live inside a page, so with nothing shared there is no
-  // place to put one. Say what to do rather than failing on the API call.
-  if (pages.length === 0) {
-    return (
-      <Alert severity="info" variant="outlined">
-        {t("CREATE_DB_NO_PAGES")}
-      </Alert>
-    );
-  }
-
   return (
     <Stack spacing={1.5}>
       <Typography variant="body2" color="text.secondary">
         {t("CREATE_DB_INTRO")}
       </Typography>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-        <FormControl size="small" sx={{ flex: 1, minWidth: 0 }}>
-          <InputLabel id="parent-page-label">
-            {t("CREATE_DB_PARENT")}
-          </InputLabel>
-          <Select
-            labelId="parent-page-label"
-            label={t("CREATE_DB_PARENT")}
-            value={parent}
-            onChange={(e) => setParent(e.target.value)}
-          >
-            {pages.map((page) => (
-              <MenuItem key={page.id} value={page.id}>
-                {page.title}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1}
+        sx={{ alignItems: { sm: "flex-end" } }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Field label={t("CREATE_DB_PARENT")}>
+            {({ id, labelId }) => (
+              <Select
+                id={id}
+                labelId={labelId}
+                fullWidth
+                size="small"
+                value={parent}
+                onChange={(e) => setParent(e.target.value)}
+              >
+                {pages.map((page) => (
+                  <MenuItem key={page.id} value={page.id}>
+                    {page.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
+          </Field>
+        </Box>
 
         <Button
           variant="outlined"
@@ -383,7 +454,7 @@ export function CreateDatabase({
         </Button>
       </Stack>
 
-      {error ? <Alert severity="error">{error}</Alert> : null}
+      {error ? <Note severity="error">{error}</Note> : null}
     </Stack>
   );
 }

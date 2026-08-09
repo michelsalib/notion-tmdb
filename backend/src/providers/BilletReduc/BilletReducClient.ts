@@ -8,6 +8,7 @@ import type {
   Suggestion,
   SyncEvent,
   SyncOptions,
+  UrlMatch,
 } from "../../types.js";
 import { entryUrl } from "../../utils/providerId.js";
 import { runSync } from "../../utils/syncRun.js";
@@ -66,6 +67,13 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
           subtitle,
         } satisfies Suggestion;
       });
+  }
+
+  // The stored URL is whatever the page's JSON-LD calls canonical, which may
+  // differ from the path we fetched. The path carries the numeric id *and* the
+  // slug, so it survives as a substring of either form.
+  urlFor(id: string): UrlMatch {
+    return { contains: this.toBilletReducPath(id) };
   }
 
   async loadNotionEntry(

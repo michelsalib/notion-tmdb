@@ -1,10 +1,10 @@
-import ExpandMore from "@mui/icons-material/ExpandMore";
 import { Box, Button, Menu, MenuItem, Typography } from "@mui/material";
 import { ALL_DOMAINS, type DOMAIN, DOMAINS } from "backend/src/domains";
 import { useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DomainContext } from "./Context";
 import { connectorStyle } from "./theme";
+import { ChevronDown } from "./ui/icons";
 
 /**
  * Switch connector from the app bar.
@@ -33,7 +33,7 @@ export function DomainSwitcher() {
       <Button
         color="inherit"
         onClick={(e) => setAnchor(e.currentTarget)}
-        endIcon={<ExpandMore />}
+        endIcon={<ChevronDown size={15} />}
         aria-haspopup="menu"
         aria-expanded={Boolean(anchor)}
         aria-label={t("SWITCH_CONNECTOR")}

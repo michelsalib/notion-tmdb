@@ -3,7 +3,6 @@ import {
   ListSubheader,
   MenuItem,
   Select,
-  Stack,
   Typography,
 } from "@mui/material";
 import { type FieldSpec, typeLabel } from "backend/src/fields";
@@ -43,6 +42,33 @@ export function propertyIcon(type: string): string {
     default:
       return "📝";
   }
+}
+
+/**
+ * The property's Notion type, set in the utility face.
+ *
+ * Shown on the closed control, not just inside the open menu: "wrong type" was
+ * only ever explained *after* someone opened the list and found their column
+ * greyed out. On the row it is what tells them, before they touch anything,
+ * that the column they are looking at is a status where a date is needed.
+ */
+function TypeTag({ type }: { type: string }) {
+  return (
+    <Box
+      component="span"
+      aria-hidden
+      sx={{
+        fontFamily: "monospace",
+        fontSize: 10,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
+        color: "text.disabled",
+        flexShrink: 0,
+      }}
+    >
+      {type.replace("_", " ")}
+    </Box>
+  );
 }
 
 /**
@@ -88,17 +114,46 @@ export function PropertyPicker({
       value={selected ? value : ""}
       onChange={(e) => onChange(e.target.value)}
       aria-label={field.label}
+      sx={{
+        // A pill, not a form field. Both sides of a mapping row are one value
+        // each — this column *is* your Notion column — and a boxed dropdown
+        // made the row read as a form to fill in rather than as a pairing to
+        // check. Mapped: a filled tablet with no border. Unmapped: a dashed
+        // outline, so the one thing blocking Save reads as an empty slot.
+        borderRadius: 1,
+        bgcolor: selected ? "action.hover" : "transparent",
+        "& .MuiOutlinedInput-notchedOutline": selected
+          ? { border: 0 }
+          : { borderStyle: "dashed", borderColor: "text.disabled" },
+        "&:hover .MuiOutlinedInput-notchedOutline": selected
+          ? { border: 0 }
+          : undefined,
+        "& .MuiSelect-select": { paddingBlock: 0.75 },
+      }}
       renderValue={() =>
         selected ? (
-          <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              minWidth: 0,
+            }}
+          >
             <span aria-hidden>{propertyIcon(selected.type)}</span>
             <Box
               component="span"
-              sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                flexGrow: 1,
+              }}
             >
               {selected.name}
             </Box>
-          </Stack>
+            <TypeTag type={selected.type} />
+          </Box>
         ) : (
           <Typography variant="body2" color="text.secondary" component="span">
             {field.required ? t("PICK_A_COLUMN") : t("NOT_SYNCED")}

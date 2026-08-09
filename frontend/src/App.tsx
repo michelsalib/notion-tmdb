@@ -2,17 +2,16 @@ import {
   Alert,
   Button,
   CssBaseline,
-  createTheme,
   Snackbar,
   ThemeProvider,
   useMediaQuery,
 } from "@mui/material";
-import * as colors from "@mui/material/colors";
 import { UserConfig } from "backend/src/types";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Backup } from "./Backup";
+import { ConnectorWidget } from "./ConnectorWidget";
 import {
   AuthContext,
   ConfigContext,
@@ -20,16 +19,15 @@ import {
   SnackbarContext,
   SnackbarState,
 } from "./Context";
-import { EmbedPage } from "./EmbedPage";
 import { Footer } from "./Footer";
 import "./i18n";
 import { Login } from "./Login";
-import { MultiEmbedPage } from "./MultiEmbedPage";
+import { buildTheme, connectorLabel, connectorStyle } from "./theme";
 import { UserPage } from "./UserPage";
 
 export function App() {
   const loggedIn = useContext(AuthContext);
-  const { domain, pre, post } = useContext(DomainContext);
+  const { domain, pre } = useContext(DomainContext);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     color: "success",
@@ -46,20 +44,13 @@ export function App() {
     [],
   );
 
+  const embedded = loggedIn.status == "embed";
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode: prefersDarkMode ? "dark" : "light",
-          primary: colors[t("PRIMARY_COLOR") as keyof typeof colors] as any,
-          background: {
-            default: prefersDarkMode ? "rgb(25, 25, 25)" : undefined,
-          },
-        },
-      }),
-    [prefersDarkMode],
+    () => buildTheme(domain, prefersDarkMode ? "dark" : "light", embedded),
+    [domain, prefersDarkMode, embedded],
   );
+
   useEffect(() => {
     if (loggedIn.status != "none") {
       void fetch("/api/config")
@@ -73,29 +64,32 @@ export function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Helmet>
-          <title>
-            {pre} - {post}
-          </title>
-          <link rel="icon" href={t("LOGO_PATH")} />
+          <title>{`${pre} ⇄ ${connectorLabel(domain)}`}</title>
+          <link rel="icon" href={connectorStyle(domain).logo} />
         </Helmet>
         <SnackbarContext.Provider value={{ snackbar, setSnackbar }}>
           {loggedIn.status == "none" ? <Login /> : ""}
-          {loggedIn.status == "embed" ? (
-            domain == "backup" ? (
+          {embedded ? (
+            domain == "backup" || domain == "BitwardenBackup" ? (
               <Backup />
-            ) : multi ? (
-              <MultiEmbedPage />
             ) : (
-              <EmbedPage />
+              <ConnectorWidget multi={multi} />
             )
           ) : (
             ""
           )}
           {loggedIn.status == "sso" ? <UserPage /> : ""}
-          {loggedIn.status != "embed" ? <Footer /> : ""}
+          {!embedded ? <Footer /> : ""}
 
+          {/*
+            Full-page surfaces only. In an embed the widget reports inline
+            instead: a Notion embed is often only about as tall as this toast,
+            so a bottom-centre snackbar covered the very thing it was
+            reporting on.
+          */}
           <Snackbar
-            open={snackbar.open}
+            open={snackbar.open && !embedded}
+            autoHideDuration={6000}
             onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
             anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
           >

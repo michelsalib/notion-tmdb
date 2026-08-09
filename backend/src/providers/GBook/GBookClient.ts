@@ -2,7 +2,14 @@ import type { AxiosInstance } from "axios";
 import { inject, injectable } from "tsyringe";
 import { LOGGER } from "../../fx/keys.js";
 import type { Logger } from "../../fx/logger/Logger.js";
-import type { GBookDbConfig, NotionItem, Suggestion } from "../../types.js";
+import type {
+  GBookDbConfig,
+  NotionItem,
+  Suggestion,
+  SyncEvent,
+  SyncOptions,
+} from "../../types.js";
+import { plural } from "../../utils/plural.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
@@ -32,8 +39,32 @@ export class GBookClient implements DataProvider<"GBook"> {
   async *sync(
     notionClient: NotionClient,
     dbConfig: GBookDbConfig,
-  ): AsyncGenerator<string> {
-    const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
+    options?: SyncOptions,
+  ): AsyncGenerator<SyncEvent> {
+    const entriesToLoad = await notionClient.listDatabaseEntries(
+      dbConfig,
+      options,
+    );
+    const total = entriesToLoad.length;
+
+    if (!total) {
+      yield {
+        message: "Already up to date.",
+        current: 0,
+        total: 0,
+        done: true,
+      };
+
+      return;
+    }
+
+    yield {
+      message: `Syncing ${total} ${plural(total, "book")}…`,
+      current: 0,
+      total,
+    };
+
+    let current = 0;
 
     for (const entry of entriesToLoad) {
       const url: string = (
@@ -50,10 +81,17 @@ export class GBookClient implements DataProvider<"GBook"> {
         page_id: entry.id,
       });
 
-      yield `Updated ${title}`;
+      current++;
+
+      yield { message: `Updated ${title}.`, current, total };
     }
 
-    yield "Finished synching books.";
+    yield {
+      message: `Synced ${total} ${plural(total, "book")}.`,
+      current: total,
+      total,
+      done: true,
+    };
   }
 
   async search(query: string): Promise<Suggestion[]> {

@@ -1,8 +1,99 @@
-SETTINGS_SUCESS: Saved preferences.
-SETTINGS_FAILURE: Failed saving preferences.
+# Shared copy. Per-connector wording lives in that connector's namespace and
+# falls back here (see fallbackNS in src/i18n.ts).
+
+# --- generic actions ---
 OPEN: Open
-BACKUP_RETRIEVAL_FAILURE: Failed to retrieve backup.
+SAVE: Save
+DISCARD: Discard
+ADD: Add
+COPY: Copy link
+COPIED: Copied
+LOGOUT: Log out
+OR: or
+UNTITLED: Untitled
+REQUIRED: required
+SWITCH_CONNECTOR: Switch connector
+
+# --- settings ---
+SETTINGS_SUCCESS: Preferences saved.
+SETTINGS_FAILURE: Could not save your preferences. Try again.
+UNSAVED_CHANGES: You have unsaved changes.
+SAVE_TO_FINISH: Save to finish setting up.
+SAVE_BLOCKED: Pick a column for each required field to save.
+DATABASE: Database
+PREVIEW: Preview
+EMBED_URL: Widget link
+EMBED_URL_HELP: In Notion, type /embed and paste this link.
+MULTI_WIDGET_OPTION: One widget for all my connectors, with a source picker
+
+# --- setup steps ---
+STEP_CONNECTED: Notion connected
+STEP_CONNECTED_SUB: You can disconnect at any time from Notion's settings.
+STEP_DATABASE: Choose a database
+STEP_DATABASE_SUB: Pick the database to fill in, then check the column matches.
+STEP_DATABASE_DONE: Column matches are saved. Change them here any time.
+STEP_EMBED: Add the widget to Notion
+STEP_EMBED_SUB: Paste this link into any Notion page.
+STEP_EMBED_LOCKED: Unlocks once you have saved a database.
+NO_DATABASES: We cannot see any database in your workspace yet. Share one with the integration, or let us create one for you.
+
+# --- column mapping ---
+FROM_CONNECTOR: What we fill in
+YOUR_COLUMN: Your column
+AUTO_MATCHED: Matched {{matched}} of {{total}} columns automatically. Check them below, or just save.
+PICK_REQUIRED: "Still needed: {{fields}}."
+DB_MISSING_COLUMNS: "{{database}} has no link or date column, so there is nowhere to write to. Add them in Notion, or let us create a database for you."
+PICK_A_COLUMN: Pick a column
+NOT_SYNCED: Not synced
+COMPATIBLE_COLUMNS: "{{type}} columns"
+UNAVAILABLE_COLUMNS: Wrong type for this field
+WRONG_TYPE: "{{has}}, needs {{needs}}"
+
+# --- creating a database ---
+CREATE_DB_INTRO: Or let us build one with the right columns already set up.
+CREATE_DB_PARENT: Create it inside
+CREATE_DB_ACTION: Create a database
+CREATE_DB_SUCCESS: Database created and matched.
+CREATE_DB_FAILURE: Could not create the database. Check the page is shared with the integration.
+CREATE_DB_NO_PAGES: Share a Notion page with this integration first — a new database has to live inside a page.
+
+# --- widget ---
+SYNCING: Syncing…
+ADDING: Adding…
+SYNC_NOW: Sync now
+SYNC_OPTIONS: More sync options
+SYNC_NEW_ONLY: Sync new entries
+SYNC_NEW_ONLY_HINT: Anything with no sync date yet
+SYNC_REFRESH_HEADING: Refresh older entries (overwrites mapped columns)
+SYNC_OLDER_THAN: Synced over {{days}} days ago
+SYNC_EVERYTHING: Everything, however recent
+SYNC_PROGRESS: Syncing {{current}} of {{total}}
+LAST_SYNC: Last sync {{when}} · {{items}} updated
+NEVER_SYNCED: Not synced from this browser yet
+MULTI_PICK_CONNECTOR: Pick a source
 MULTI_SEARCH_PLACEHOLDER: Search
 MULTI_NO_CONNECTORS: No connectors linked yet — connect one from the app first.
 MULTI_ADD_SUCCESS: Added.
-MULTI_ADD_FAILURE: Failed to add.
+MULTI_ADD_FAILURE: Could not add that. Try again.
+
+# --- backup ---
+BACKUP_CREATE: Back up now
+BACKUP_DOWNLOAD: Download
+BACKUP_LAST: Last backup
+BACKUP_NEVER: Never
+BACKUP_RETRIEVAL_FAILURE: Could not fetch the backup. Try again.
+
+# --- sign in ---
+CONNECT_NOTION: Connect with Notion
+CONNECT_BITWARDEN: Connect with Bitwarden
+NO_RESULTS: No results
+BW_INTRO: To reach your vault we need <keys>your Bitwarden API key</keys>. You will find it under Security → Keys.
+BW_ENCRYPTED: Your vault stays encrypted with your master password. We can copy it, but we cannot read what is inside.
+BW_CLIENT_ID: Client ID
+BW_CLIENT_SECRET: Client secret
+BW_SUBMIT: Connect vault
+
+# --- footer ---
+FOOTER_CODE: Code on GitHub
+FOOTER_ROADMAP: Roadmap in Notion
+FOOTER_CREDIT: Made with 💚 by

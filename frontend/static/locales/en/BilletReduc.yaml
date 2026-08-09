@@ -1,9 +1,17 @@
-SYNC_SUCESS: Plays synched.
-SYNC_FAILURE: Plays synch failed.
-ADD_SUCCESS: Play successfully added.
-ADD_FAILURE: Play failed to be added.
-PRIMARY_COLOR: red
-LOGO_PATH: /billetreduc.svg
-SEARCH_PLACEHOLDER: BilletRéduc lookup
+SYNC_SUCCESS: Plays synced.
+SYNC_FAILURE: Could not sync your plays.
+ADD_SUCCESS: Play added.
+ADD_FAILURE: Could not add that play. Try again.
+SEARCH_PLACEHOLDER: Search plays
 # Notion OAuth public client_id for the "notion-billetreduc" integration.
 AUTH_KEY: 39bd872b-594c-8171-8d97-00378ce38f24
+
+PITCH_TITLE: Type a play. Get a filled-in row.
+PITCH_BODY: Drop one widget into any Notion page. Search BilletRéduc, hit Add, and the venue, author and genre land in your database.
+DEMO_HINT: Live search — try it before you connect anything.
+PERMISSION_NOTE: We only read the database you pick, and only write the columns you map.
+HOW_IT_WORKS: How it works
+HOW_STEP_1: Connect your Notion workspace.
+HOW_STEP_2: Pick a database — we match the columns for you.
+HOW_STEP_3: Paste the widget link into any Notion page.
+ALSO_CONNECTS: Also connects

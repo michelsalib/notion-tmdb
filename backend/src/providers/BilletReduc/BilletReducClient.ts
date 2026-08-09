@@ -6,7 +6,10 @@ import type {
   BilletReducDbConfig,
   NotionItem,
   Suggestion,
+  SyncEvent,
+  SyncOptions,
 } from "../../types.js";
+import { plural } from "../../utils/plural.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
@@ -137,8 +140,32 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
   async *sync(
     notionClient: NotionClient,
     dbConfig: BilletReducDbConfig,
-  ): AsyncGenerator<string> {
-    const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
+    options?: SyncOptions,
+  ): AsyncGenerator<SyncEvent> {
+    const entriesToLoad = await notionClient.listDatabaseEntries(
+      dbConfig,
+      options,
+    );
+    const total = entriesToLoad.length;
+
+    if (!total) {
+      yield {
+        message: "Already up to date.",
+        current: 0,
+        total: 0,
+        done: true,
+      };
+
+      return;
+    }
+
+    yield {
+      message: `Syncing ${total} ${plural(total, "play")}…`,
+      current: 0,
+      total,
+    };
+
+    let current = 0;
 
     for (const entry of entriesToLoad) {
       const url: string = (
@@ -152,10 +179,17 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
         page_id: entry.id,
       });
 
-      yield `Loaded ${title}.`;
+      current++;
+
+      yield { message: `Loaded ${title}.`, current, total };
     }
 
-    yield "Finished synching plays.";
+    yield {
+      message: `Synced ${total} ${plural(total, "play")}.`,
+      current: total,
+      total,
+      done: true,
+    };
   }
 
   // Accepts a "/spectacle/…" path or a full billetreduc URL (pasted into

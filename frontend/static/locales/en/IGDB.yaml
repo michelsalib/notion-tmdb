@@ -1,8 +1,16 @@
-SYNC_SUCESS: Games synched.
-SYNC_FAILURE: Games synch failed.
-ADD_SUCCESS: Game successfully added.
-ADD_FAILURE: Game failed to be added.
-PRIMARY_COLOR: cyan
-LOGO_PATH: /igdb.svg
-SEARCH_PLACEHOLDER: IGDB lookup
+SYNC_SUCCESS: Games synced.
+SYNC_FAILURE: Could not sync your games.
+ADD_SUCCESS: Game added.
+ADD_FAILURE: Could not add that game. Try again.
+SEARCH_PLACEHOLDER: Search games
 AUTH_KEY: 201d872b-594c-807f-8bcc-0037766ba4e6
+
+PITCH_TITLE: Type a game. Get a filled-in row.
+PITCH_BODY: Drop one widget into any Notion page. Search for a game, hit Add, and the cover, studio, genre, rating and release date land in your database.
+DEMO_HINT: Live search — try it before you connect anything.
+PERMISSION_NOTE: We only read the database you pick, and only write the columns you map.
+HOW_IT_WORKS: How it works
+HOW_STEP_1: Connect your Notion workspace.
+HOW_STEP_2: Pick a database — we match the columns for you.
+HOW_STEP_3: Paste the widget link into any Notion page.
+ALSO_CONNECTS: Also connects

@@ -63,8 +63,7 @@ export const DOMAINS = {
     subdomain: "notion-backup",
     state: "backup",
     searchable: false,
-    // Lowercase because the domain switcher renders it as "Notion ⇄ backup".
-    label: "backup",
+    label: "Backup",
     pre: "Notion",
     post: "backup",
   },

@@ -72,12 +72,15 @@ export function Search({
       sx={{ width: "100%" }}
       size="small"
       autoHighlight
+      // No caret: this is a search field, not a closed list to open. Inside
+      // the merged input group it read as a second, non-functional control.
+      forcePopupIcon={false}
       getOptionLabel={(option) => option.title}
       getOptionKey={(x) => x.id}
       options={options}
       value={value}
       isOptionEqualToValue={(o, v) => o.id == v.id}
-      noOptionsText="No result"
+      noOptionsText={t("NO_RESULTS")}
       filterOptions={(x) => x}
       onChange={(event, newValue) => {
         setValue(newValue);

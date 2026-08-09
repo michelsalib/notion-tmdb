@@ -1,5 +1,11 @@
 import { DependencyContainer, injectable } from "tsyringe";
 import { type DOMAIN, isBackupDomain, SEARCHABLE_DOMAINS } from "./domains.js";
+import {
+  DOMAIN_FIELDS,
+  type FieldSpec,
+  isSearchDomain,
+  type SEARCH_DOMAIN,
+} from "./fields.js";
 import { unScopedContainer } from "./fx/di.js";
 import {
   DATA_PROVIDER,
@@ -17,10 +23,24 @@ import type { DbProvider } from "./providers/DbProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
 import type { Config, UserData } from "./types.js";
 import { asWebByteStream } from "./utils/generator.js";
+import { staleBefore } from "./utils/syncWindow.js";
 
 // The two backup connectors resolve to different classes (NotionBackup and
 // BitwardenBackup), so DATA_PROVIDER must be read as the interface they share.
 type AnyBackup = BackupDataProvider<"backup" | "BitwardenBackup">;
+
+/** What `POST /api/database` names the database it creates, per connector. */
+const DATABASE_TITLES: Record<SEARCH_DOMAIN, string> = {
+  TMDB: "Films",
+  IGDB: "Games",
+  GBook: "Books",
+  BilletReduc: "Plays",
+};
+
+/** The Notion schema for one field's column type. */
+function propertySchema(field: FieldSpec): any {
+  return { [field.columnType]: {} };
+}
 
 @injectable()
 export class Api {
@@ -76,6 +96,7 @@ export class Api {
   async sync(container: DependencyContainer) {
     const user = container.resolve<UserData<any>>(USER);
     const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
+    const request = container.resolve<ScopedRequest>(REQUEST);
     const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
     reply.header("content-type", "text/event-stream");
     reply.header("cache-control", "no-cache, no-transform");
@@ -98,7 +119,11 @@ export class Api {
     const notionClient = container.resolve(NotionClient);
     const dataProvider = container.resolve<DataProvider>(DATA_PROVIDER);
 
-    return asWebByteStream(dataProvider.sync(notionClient, user.config));
+    return asWebByteStream(
+      dataProvider.sync(notionClient, user.config, {
+        staleBefore: staleBefore((request.query as any)["days"]),
+      }),
+    );
   }
 
   async add(container: DependencyContainer) {
@@ -167,6 +192,68 @@ export class Api {
     return "Config saved";
   }
 
+  /** Pages a new database could be created inside. */
+  async getPages(container: DependencyContainer) {
+    return { pages: await container.resolve(NotionClient).listPages() };
+  }
+
+  /**
+   * Create a ready-made database and map it in one step.
+   *
+   * The alternative for a new user is to build a database in Notion by hand,
+   * guess which column types the connector needs, and then map seven dropdowns.
+   * Creating it here means the shape is right by construction and the mapping
+   * is read straight off the response rather than guessed.
+   */
+  async createDatabase(container: DependencyContainer) {
+    const request = container.resolve<ScopedRequest>(REQUEST);
+    const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
+    const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
+
+    if (!isSearchDomain(domain)) {
+      reply.status(400);
+
+      return "This connector does not use a database";
+    }
+
+    const parentPageId = (request.body as any)?.parentPageId as
+      | string
+      | undefined;
+
+    if (!parentPageId) {
+      reply.status(400);
+
+      return "parentPageId is required";
+    }
+
+    const fields = DOMAIN_FIELDS[domain];
+    const notionClient = container.resolve(NotionClient);
+    const database = await notionClient.createDatabase(
+      parentPageId,
+      DATABASE_TITLES[domain],
+      Object.fromEntries(
+        fields.map((field) => [field.createAs, propertySchema(field)]),
+      ),
+    );
+
+    // Read the mapping back off the created schema rather than assuming it:
+    // Notion is the one that assigns property ids.
+    const config = {
+      id: database.id,
+      ...Object.fromEntries(
+        fields.map((field) => [
+          field.key,
+          database.properties[field.createAs]?.id ?? "",
+        ]),
+      ),
+    } as Config;
+
+    const db = container.resolve<DbProvider>(DB_PROVIDER);
+    await db.putUserConfig(container.resolve<string>(USER_ID), config);
+
+    return { config, database };
+  }
+
   async getBackup(container: DependencyContainer) {
     const backup = container.resolve<AnyBackup>(DATA_PROVIDER);
 
@@ -214,5 +301,15 @@ Router.register(Api, "postConfig", {
 Router.register(Api, "getBackup", {
   path: "/api/backup",
   method: "GET",
+  authenticate: true,
+});
+Router.register(Api, "getPages", {
+  path: "/api/pages",
+  method: "GET",
+  authenticate: true,
+});
+Router.register(Api, "createDatabase", {
+  path: "/api/database",
+  method: "POST",
   authenticate: true,
 });

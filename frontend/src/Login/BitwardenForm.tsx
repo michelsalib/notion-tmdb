@@ -1,16 +1,21 @@
 import SecurityIcon from "@mui/icons-material/Security";
 import {
+  Alert,
   Button,
-  FormControl,
   Link,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { useCallback, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+
+const API_KEY_URL =
+  "https://vault.bitwarden.com/#/settings/security/security-keys";
 
 export function BitwardenForm() {
-  const [clientId, seltClientId] = useState("");
+  const { t } = useTranslation();
+  const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
 
   const login = useCallback(() => {
@@ -18,37 +23,52 @@ export function BitwardenForm() {
   }, [clientId, clientSecret]);
 
   return (
-    <Stack spacing={2}>
-      <Typography>
-        To access your vault, you need to provide{" "}
-        <Link href="https://vault.bitwarden.com/#/settings/security/security-keys">
-          your api key from Bitwarden
-        </Link>
-        .
+    <Stack spacing={2} sx={{ width: "100%" }}>
+      <Typography variant="body2">
+        <Trans
+          i18nKey="BW_INTRO"
+          components={{
+            keys: (
+              <Link
+                href={API_KEY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              />
+            ),
+          }}
+        />
       </Typography>
-      <Typography>
-        <SecurityIcon sx={{ verticalAlign: "text-bottom" }} /> The accessed
-        vault stays encrypted with your master password, preventing us to read
-        any of its crypted data.
-      </Typography>
-      <FormControl required>
-        <TextField
-          required
-          label="Client id"
-          value={clientId}
-          onChange={(e) => seltClientId(e.target.value)}
-        ></TextField>
-      </FormControl>
-      <FormControl required>
-        <TextField
-          required
-          label="Client secret"
-          value={clientSecret}
-          onChange={(e) => setClientSecret(e.target.value)}
-        ></TextField>
-      </FormControl>
-      <Button variant="contained" onClick={login}>
-        Login
+
+      <Alert severity="info" variant="outlined" icon={<SecurityIcon />}>
+        {t("BW_ENCRYPTED")}
+      </Alert>
+
+      <TextField
+        required
+        size="small"
+        label={t("BW_CLIENT_ID")}
+        value={clientId}
+        onChange={(e) => setClientId(e.target.value)}
+      />
+      {/* type="password": this is half of a credential pair, and it used to
+          render in the clear in a field people fill in on a shared screen. */}
+      <TextField
+        required
+        size="small"
+        type="password"
+        label={t("BW_CLIENT_SECRET")}
+        value={clientSecret}
+        onChange={(e) => setClientSecret(e.target.value)}
+      />
+
+      <Button
+        variant="contained"
+        size="large"
+        onClick={login}
+        disabled={!clientId || !clientSecret}
+        sx={{ alignSelf: "flex-start" }}
+      >
+        {t("BW_SUBMIT")}
       </Button>
     </Stack>
   );

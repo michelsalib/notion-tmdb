@@ -19,7 +19,7 @@ export function NotionLogin() {
   }, []);
 
   return (
-    <Button variant="outlined" onClick={login}>
+    <Button variant="outlined" size="large" onClick={login}>
       <SvgIcon sx={{ marginRight: 1 }}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -36,7 +36,7 @@ export function NotionLogin() {
           />
         </svg>
       </SvgIcon>
-      Connect with Notion
+      {t("CONNECT_NOTION")}
     </Button>
   );
 }

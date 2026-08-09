@@ -50,10 +50,65 @@ exist. `DOMAIN` is derived from its keys, and the hostname/state/search
 lookups plus the frontend's dropdowns are all computed from its fields.
 
 To add a connector: add one entry there, then wire its config type in
-`types.ts` (`DomainConfigMap`) and its client in `fx/di.ts`
-(`DATA_PROVIDERS`, `NOTION_OAUTH_KEYS`). Those three are `Record<DOMAIN, …>`,
-so a half-finished connector is a compile error rather than a runtime
-surprise.
+`types.ts` (`DomainConfigMap`), its client in `fx/di.ts` (`DATA_PROVIDERS`,
+`NOTION_OAUTH_KEYS`), and its accent + logo in `frontend/src/theme.ts`
+(`CONNECTOR_STYLES`). Those are all `Record<DOMAIN, …>`, so a half-finished
+connector is a compile error rather than a runtime surprise. A *searchable*
+connector also needs an entry in `fields.ts` (`DOMAIN_FIELDS`, keyed by
+`SEARCH_DOMAIN`).
+
+## Fields and column mapping
+
+`backend/src/fields.ts` is the single source of truth for what each connector
+writes into Notion. Three things derive from it, which is why it is not just a
+list inside the form:
+
+- `DbConfigForm` renders one mapping row per field;
+- `POST /api/database` builds a correctly-shaped database from `createAs`;
+- `mapping.ts` scores a user's existing Notion properties against `label` +
+  `aliases` to preselect a mapping.
+
+Two rules that are load-bearing rather than stylistic:
+
+- **The sync-marker field is `Sync date`, for every connector.** Not "Status":
+  it is a Notion *date*, and a database's *status* property is the one type it
+  cannot accept, so that name sent everyone to the one greyed-out option and
+  they stopped. Not a per-connector reading like "Date watched" either — the
+  value written is `new Date()` at sync time, so it records when the plugin last
+  refreshed the row, not when the user watched the film. `aliases` still carry
+  the older wordings so existing columns keep auto-matching; change the label
+  freely, but never drop an alias.
+- **`guessMapping` must stay conservative.** A wrong guess on a required field
+  is silent and permanent — every later sync writes to the wrong column. The
+  `unambiguousScore` floor deliberately only applies when exactly one property
+  *and* one field share a type; `mapping.test.ts` pins the regression where a
+  lone date column called "Release date" was claimed as the sync marker.
+
+## Sync
+
+`listDatabaseEntries` selects the rows a run touches: linked, and either never
+synced or synced before a cutoff.
+
+- The default (no `?days=`) is **rows with an empty sync date only** — the cheap
+  path that makes adding an entry fast. `GET /api/sync?days=N` widens it to
+  "also anything synced more than N days ago", and `days=0` means every row.
+- **The cutoff is computed server-side** (`utils/syncWindow.ts`), from an age
+  rather than an instant sent by the browser, so a skewed client clock cannot
+  pick a different window than the user chose. A value that is not a plain
+  number or numeric string is ignored — `Number([])` is `0`, so a repeated
+  `?days=` query param would otherwise read as the widest possible sweep.
+- **The query is paginated.** It used to make one unpaginated call and silently
+  stop at Notion's 100-row page. That was survivable when only new rows ever
+  matched; with a re-sync cutoff a run can legitimately match every row.
+
+## Colour
+
+Connector accents live in `frontend/src/theme.ts`, as explicit hex per theme
+mode. Don't go back to MUI hue names (`colors.lightBlue` etc.): three of them
+resolved to near-identical blues, and MUI's `getContrastText` picks button
+labels against a 3:1 threshold — the bar for UI components, not the 4.5:1 one
+for text. Every value in `CONNECTOR_STYLES` clears 4.5:1 against its own
+ground; check any new one before adding it.
 
 ## Layout
 
@@ -110,3 +165,10 @@ Monorepo using npm workspaces (installed by Bun):
 - Don't introduce Fastify/Inversify/Cosmos code — those were removed.
 - Don't hand-roll a provider axios client or a per-connector `switch` — use
   `createProviderClient` and the `DOMAINS` registry.
+- Don't restate a connector's field list anywhere but `fields.ts`.
+- Don't add a webfont to `frontend/index.html` — the app is pinned to the
+  system stack in `theme.ts`, and the old Google Fonts link blocked first
+  paint on a third-party request.
+- Don't report embed progress through the `Snackbar`. A Notion embed is often
+  no taller than the toast, so it covered the widget it was reporting on;
+  the widget has an inline status row for this (see `ConnectorWidget`).

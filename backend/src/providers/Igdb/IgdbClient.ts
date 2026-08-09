@@ -123,10 +123,12 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       `fields
         name,
         genres.name,
+        platforms.name,
         involved_companies.company.name,
         cover.url,
         artworks.url,
         rating,
+        aggregated_rating,
         url,
         first_release_date;
       where slug = "${id}";`,
@@ -219,9 +221,28 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       };
     }
 
+    if (dbConfig.platforms && data.platforms) {
+      gameItem.properties[dbConfig.platforms] = {
+        multi_select: data.platforms.map((p: any) => {
+          return {
+            name: p.name,
+          };
+        }),
+      };
+    }
+
     if (dbConfig.rating && data.rating) {
       gameItem.properties[dbConfig.rating] = {
         number: data.rating,
+      };
+    }
+
+    // Distinct from `rating`, which is IGDB's own users. A game too obscure or
+    // too new to have been reviewed carries no `aggregated_rating` at all,
+    // rather than a zero.
+    if (dbConfig.criticRating && data.aggregated_rating) {
+      gameItem.properties[dbConfig.criticRating] = {
+        number: data.aggregated_rating,
       };
     }
 

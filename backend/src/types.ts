@@ -32,7 +32,9 @@ export interface TmdbDbConfig extends DbConfigBase {
   releaseDate: string;
   genre: string;
   director: string;
+  cast: string;
   rating: string;
+  runtime: string;
 }
 
 export interface GBookDbConfig extends DbConfigBase {
@@ -40,6 +42,8 @@ export interface GBookDbConfig extends DbConfigBase {
   releaseDate: string;
   genre: string;
   author: string;
+  publisher: string;
+  pageCount: string;
 }
 
 export interface IgdbConfig extends DbConfigBase {
@@ -48,6 +52,8 @@ export interface IgdbConfig extends DbConfigBase {
   genre: string;
   companies: string;
   rating: string;
+  criticRating: string;
+  platforms: string;
 }
 
 export interface BilletReducDbConfig extends DbConfigBase {
@@ -55,6 +61,8 @@ export interface BilletReducDbConfig extends DbConfigBase {
   genre: string;
   venue: string;
   author: string;
+  cast: string;
+  rating: string;
 }
 
 // The backup connectors need no fields beyond the base ones.

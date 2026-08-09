@@ -143,6 +143,27 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
       };
     }
 
+    // Written whole rather than truncated the way TMDB's is: a troupe is a
+    // handful of people, and `performer` is the one credit billetreduc fills in
+    // consistently — `workPerformed.author` above is missing on over half the
+    // plays, so for a revival this is often the only cast the row will get.
+    const cast = this.namesOf(event.performer);
+    if (dbConfig.cast && cast) {
+      playItem.properties[dbConfig.cast] = {
+        rich_text: [{ text: { content: cast, link: { url } } }],
+      };
+    }
+
+    // billetreduc scores out of 10, and only once a play has reviews at all —
+    // roughly half the sampled pages carry no `aggregateRating`. Checked for a
+    // number rather than truthiness so a genuine 0 is still written.
+    const rating = event.aggregateRating?.ratingValue;
+    if (dbConfig.rating && typeof rating === "number") {
+      playItem.properties[dbConfig.rating] = {
+        number: rating,
+      };
+    }
+
     return { notionItem: playItem, title };
   }
 
@@ -250,12 +271,23 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
   }
 
   private extractAuthors(event: any): string | undefined {
-    const author = event?.workPerformed?.author;
-    if (!author) {
+    return this.namesOf(event?.workPerformed?.author);
+  }
+
+  /**
+   * `name` off a schema.org Person, or a comma-separated list of them.
+   *
+   * Every person-shaped field on these pages is singular on some plays and an
+   * array on others — `author` and `performer` both — so neither can assume a
+   * shape.
+   */
+  private namesOf(value: unknown): string | undefined {
+    if (!value) {
       return undefined;
     }
-    const names = (Array.isArray(author) ? author : [author])
-      .map((a: any) => a?.name)
+
+    const names = (Array.isArray(value) ? value : [value])
+      .map((person: any) => person?.name)
       .filter(Boolean);
 
     return names.length ? names.join(", ") : undefined;

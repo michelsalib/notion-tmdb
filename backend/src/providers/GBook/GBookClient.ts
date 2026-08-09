@@ -19,10 +19,12 @@ import { NotionClient } from "../Notion/NotionClient.js";
 interface VolumeInfo {
   title: string;
   authors?: string[];
+  publisher?: string;
   publishedDate: `${number}-${number}-${number}`;
   // Optional in fact as well as in the response: it was declared required, so
   // the guard below looked redundant rather than load-bearing.
   categories?: string[];
+  pageCount?: number;
   imageLinks?: {
     thumbnail: string;
   };
@@ -170,6 +172,29 @@ export class GBookClient implements DataProvider<"GBook"> {
             },
           },
         ],
+      };
+    }
+
+    if (dbConfig.publisher && volumeInfo.publisher) {
+      bookItem.properties[dbConfig.publisher] = {
+        rich_text: [
+          {
+            text: {
+              content: volumeInfo.publisher,
+              link: {
+                url: volumeInfo.canonicalVolumeLink,
+              },
+            },
+          },
+        ],
+      };
+    }
+
+    // Absent for volumes Google has no scan of, and 0 on a fair number of
+    // ebook entries — writing either over an existing count loses information.
+    if (dbConfig.pageCount && volumeInfo.pageCount) {
+      bookItem.properties[dbConfig.pageCount] = {
+        number: volumeInfo.pageCount,
       };
     }
 

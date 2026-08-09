@@ -16,6 +16,25 @@ import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 
+const TMDB_WEB = "https://www.themoviedb.org";
+
+/**
+ * How many of a film's cast to write.
+ *
+ * TMDB returns the full billing — hundreds of names on a big production, past
+ * Notion's 2000-character limit for one text block. The first few are the
+ * billed leads, which is what a library column is for.
+ */
+const TOP_BILLED = 5;
+
+/** `Name, Name, Name`, each name linking to its own TMDB page. */
+function linkedNames(entries: [name: string, path: string][]) {
+  return entries.flatMap(([name, path], i) => [
+    ...(i > 0 ? [{ text: { content: ", " } }] : []),
+    { text: { content: name, link: { url: `${TMDB_WEB}${path}` } } },
+  ]);
+}
+
 @injectable()
 export class TmdbClient implements DataProvider<"TMDB"> {
   private readonly client: AxiosInstance;
@@ -100,7 +119,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
   // is this film or is not. A `contains` on the bare id would match /movie/271
   // for id 27.
   urlFor(id: string): UrlMatch {
-    return { equals: `https://www.themoviedb.org/movie/${id}` };
+    return { equals: `${TMDB_WEB}/movie/${id}` };
   }
 
   async loadNotionEntry(
@@ -127,7 +146,7 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       },
       properties: {
         [dbConfig.url]: {
-          url: `https://www.themoviedb.org/movie/${tmdbId}`,
+          url: `${TMDB_WEB}/movie/${tmdbId}`,
         },
         [dbConfig.status]: {
           date: {
@@ -175,11 +194,21 @@ export class TmdbClient implements DataProvider<"TMDB"> {
             text: {
               content: director.name,
               link: {
-                url: `https://www.themoviedb.org/person/${director.id}`,
+                url: `${TMDB_WEB}/person/${director.id}`,
               },
             },
           },
         ],
+      };
+    }
+
+    if (dbConfig.cast && data.credits?.cast?.length) {
+      movieItem.properties[dbConfig.cast] = {
+        rich_text: linkedNames(
+          data.credits.cast
+            .slice(0, TOP_BILLED)
+            .map((c: any) => [c.name, `/person/${c.id}`]),
+        ),
       };
     }
 
@@ -196,6 +225,14 @@ export class TmdbClient implements DataProvider<"TMDB"> {
     if (dbConfig.rating) {
       movieItem.properties[dbConfig.rating] = {
         number: Number(data.vote_average),
+      };
+    }
+
+    // `runtime` is null for a film TMDB has no runtime for, and 0 for plenty of
+    // unreleased ones. Neither is worth writing over whatever is in the cell.
+    if (dbConfig.runtime && data.runtime) {
+      movieItem.properties[dbConfig.runtime] = {
+        number: data.runtime,
       };
     }
 

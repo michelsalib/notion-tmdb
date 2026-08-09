@@ -145,6 +145,37 @@ const AUTHOR: FieldSpec = {
   createAs: "Author",
 };
 
+/**
+ * The people on screen or on stage.
+ *
+ * Shared by TMDB and BilletRéduc, which fill it from different-sized lists: a
+ * film's billing runs to hundreds of names and is truncated, a play's troupe is
+ * a handful and is written whole. That is a connector decision, so it lives in
+ * the clients; the column is the same column either way.
+ *
+ * Deliberately `rich_text` rather than `multi_select`. A multi-select would add
+ * a permanent option to the database for every actor ever synced, and Notion
+ * keeps those options forever — a few dozen films would leave a dropdown no one
+ * can use.
+ */
+const CAST: FieldSpec = {
+  key: "cast",
+  label: "Cast",
+  columnType: "rich_text",
+  required: false,
+  aliases: [
+    "cast",
+    "actors",
+    "acteurs",
+    "starring",
+    "avec",
+    "distribution",
+    "casting",
+    "interpretes",
+  ],
+  createAs: "Cast",
+};
+
 export const DOMAIN_FIELDS: Record<SEARCH_DOMAIN, readonly FieldSpec[]> = {
   TMDB: [
     linkField("TMDB"),
@@ -160,7 +191,27 @@ export const DOMAIN_FIELDS: Record<SEARCH_DOMAIN, readonly FieldSpec[]> = {
       aliases: ["director", "realisateur", "directed by", "mise en scene"],
       createAs: "Director",
     },
+    CAST,
     RATING,
+    {
+      key: "runtime",
+      label: "Runtime",
+      columnType: "number",
+      required: false,
+      description: "In minutes.",
+      // Runtime and `RATING` are both numbers here, so they compete for the
+      // same columns and their alias lists have to stay disjoint — nothing
+      // scoring here may also read as a score.
+      aliases: [
+        "runtime",
+        "duration",
+        "duree",
+        "length",
+        "longueur",
+        "minutes",
+      ],
+      createAs: "Runtime",
+    },
   ],
   IGDB: [
     linkField("IGDB"),
@@ -185,6 +236,44 @@ export const DOMAIN_FIELDS: Record<SEARCH_DOMAIN, readonly FieldSpec[]> = {
       createAs: "Studio",
     },
     RATING,
+    {
+      key: "criticRating",
+      label: "Critic rating",
+      columnType: "number",
+      required: false,
+      description: "The press score, out of 100.",
+      // Never a bare "rating"/"score"/"note": those belong to `RATING`, which is
+      // also a number on this connector. Every alias here has to name the press
+      // specifically, or a database with one score column would be a coin toss.
+      aliases: [
+        "critic rating",
+        "critic score",
+        "critics",
+        "metacritic",
+        "press",
+        "presse",
+        "note presse",
+        "critique",
+      ],
+      createAs: "Critic rating",
+    },
+    {
+      key: "platforms",
+      label: "Platforms",
+      columnType: "multi_select",
+      required: false,
+      aliases: [
+        "platform",
+        "platforms",
+        "plateforme",
+        "plateformes",
+        "console",
+        "consoles",
+        "system",
+        "support",
+      ],
+      createAs: "Platforms",
+    },
   ],
   GBook: [
     linkField("GBook"),
@@ -193,6 +282,38 @@ export const DOMAIN_FIELDS: Record<SEARCH_DOMAIN, readonly FieldSpec[]> = {
     RELEASE_DATE,
     GENRE,
     AUTHOR,
+    {
+      key: "publisher",
+      label: "Publisher",
+      columnType: "rich_text",
+      required: false,
+      // "published by" has to out-score `AUTHOR` on a column of that name, and
+      // does: it matches whole, where AUTHOR only catches the "by".
+      aliases: [
+        "publisher",
+        "editeur",
+        "edition",
+        "editions",
+        "published by",
+        "maison d edition",
+      ],
+      createAs: "Publisher",
+    },
+    {
+      key: "pageCount",
+      label: "Page count",
+      columnType: "number",
+      required: false,
+      aliases: [
+        "pages",
+        "page count",
+        "pagecount",
+        "nombre de pages",
+        "length",
+        "longueur",
+      ],
+      createAs: "Page count",
+    },
   ],
   BilletReduc: [
     linkField("BilletReduc"),
@@ -208,6 +329,8 @@ export const DOMAIN_FIELDS: Record<SEARCH_DOMAIN, readonly FieldSpec[]> = {
       createAs: "Venue",
     },
     AUTHOR,
+    CAST,
+    RATING,
   ],
 };
 

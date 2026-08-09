@@ -68,6 +68,42 @@ describe("nameScore", () => {
       MATCH_THRESHOLD,
     );
   });
+
+  // Each connector now has two fields of some type where it used to have one,
+  // so the pairs below compete for the same columns and only the alias lists
+  // keep them apart.
+  test("a second field of the same type does not poach the first one's column", () => {
+    // TMDB: Cast and Director are both rich_text, Runtime and Rating both numbers.
+    expect(nameScore("Director", field("cast"))).toBeLessThan(MATCH_THRESHOLD);
+    expect(nameScore("Réalisateur", field("cast"))).toBeLessThan(
+      MATCH_THRESHOLD,
+    );
+    expect(nameScore("Rating", field("runtime"))).toBeLessThan(MATCH_THRESHOLD);
+    expect(nameScore("Note", field("runtime"))).toBeLessThan(MATCH_THRESHOLD);
+
+    // GBook: Publisher and Author are both rich_text. "Published by" has to
+    // reach Publisher even though AUTHOR's "by" also matches it.
+    const gbook = (key: string) =>
+      DOMAIN_FIELDS.GBook.find((f) => f.key === key)!;
+
+    expect(nameScore("Publisher", gbook("author"))).toBeLessThan(
+      MATCH_THRESHOLD,
+    );
+    expect(nameScore("Published by", gbook("publisher"))).toBeGreaterThan(
+      nameScore("Published by", gbook("author")),
+    );
+
+    // IGDB: a bare score column belongs to the players' rating, not the press's.
+    const igdb = (key: string) =>
+      DOMAIN_FIELDS.IGDB.find((f) => f.key === key)!;
+
+    expect(nameScore("Rating", igdb("criticRating"))).toBeLessThan(
+      nameScore("Rating", igdb("rating")),
+    );
+    expect(nameScore("Note", igdb("criticRating"))).toBeLessThan(
+      nameScore("Note", igdb("rating")),
+    );
+  });
 });
 
 describe("guessMapping", () => {
@@ -151,6 +187,28 @@ describe("guessMapping", () => {
     );
 
     expect(mapped).toEqual({});
+  });
+
+  test("assigns each new field its own column end to end", () => {
+    const mapped = byKey(
+      guessMapping(
+        TMDB,
+        props(
+          ["Name", "title"],
+          ["URL", "url"],
+          ["Watched on", "date"],
+          ["Director", "rich_text"],
+          ["Cast", "rich_text"],
+          ["Rating", "number"],
+          ["Runtime", "number"],
+        ),
+      ),
+    );
+
+    expect(mapped["director"]).toBe("p3");
+    expect(mapped["cast"]).toBe("p4");
+    expect(mapped["rating"]).toBe("p5");
+    expect(mapped["runtime"]).toBe("p6");
   });
 
   test("every connector maps its own conventional shape", () => {

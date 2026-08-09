@@ -68,7 +68,7 @@ list inside the form:
 - `mapping.ts` scores a user's existing Notion properties against `label` +
   `aliases` to preselect a mapping.
 
-Two rules that are load-bearing rather than stylistic:
+Three rules that are load-bearing rather than stylistic:
 
 - **The sync-marker field is `Sync date`, for every connector.** Not "Status":
   it is a Notion *date*, and a database's *status* property is the one type it
@@ -83,6 +83,13 @@ Two rules that are load-bearing rather than stylistic:
   `unambiguousScore` floor deliberately only applies when exactly one property
   *and* one field share a type; `mapping.test.ts` pins the regression where a
   lone date column called "Release date" was claimed as the sync marker.
+- **Two fields of the same `columnType` on one connector need disjoint
+  `aliases`.** Type is a hard filter, so same-type siblings are the only fields
+  that can ever be handed each other's column — Cast vs Director, Runtime vs
+  Rating, Publisher vs Author, Critic rating vs Rating. The narrower one has to
+  qualify every alias ("critic score", never a bare "score"), because greedy
+  assignment gives the column to whichever field scores higher and the loser
+  then takes whatever is left. `mapping.test.ts` pins each of those pairs.
 
 ## Sync
 

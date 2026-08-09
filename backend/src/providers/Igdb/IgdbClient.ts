@@ -123,6 +123,11 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       where slug = "${id}";`,
     );
 
+    // An unknown slug comes back as an empty array, not a 404.
+    if (!data) {
+      throw new Error(`no IGDB game with slug "${id}"`);
+    }
+
     const gameItem: NotionItem = {
       properties: {
         [dbConfig.url]: {
@@ -136,12 +141,20 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       },
     };
 
-    if (data.cover?.url) {
+    // Artwork and cover art are independently optional on IGDB, so they get
+    // separate guards: a game with box art but no artworks (Type Help, say)
+    // used to pass a `cover.url` check and then index into a missing
+    // `artworks`. The page banner falls back to the box art in that case.
+    const banner = data.artworks?.[0]?.url ?? data.cover?.url;
+    if (banner) {
       gameItem.cover = {
         external: {
-          url: `https:${data.artworks[0].url.replace("t_thumb", "t_1080p")}`,
+          url: `https:${banner.replace("t_thumb", "t_1080p")}`,
         },
       };
+    }
+
+    if (data.cover?.url) {
       gameItem.icon = {
         external: {
           url: `https:${data.cover.url.replace("t_thumb", "t_cover_big")}`,
@@ -170,7 +183,7 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       };
     }
 
-    if (dbConfig.genre) {
+    if (dbConfig.genre && data.genres) {
       gameItem.properties[dbConfig.genre] = {
         multi_select: data.genres.map((g: any) => {
           return {

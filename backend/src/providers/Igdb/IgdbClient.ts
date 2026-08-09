@@ -9,7 +9,8 @@ import type {
   SyncEvent,
   SyncOptions,
 } from "../../types.js";
-import { plural } from "../../utils/plural.js";
+import { entryUrl, idAfterSegment } from "../../utils/providerId.js";
+import { runSync } from "../../utils/syncRun.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
@@ -217,56 +218,29 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       dbConfig,
       options,
     );
-    const total = entriesToLoad.length;
 
-    if (!total) {
-      yield {
-        message: "Already up to date.",
-        current: 0,
-        total: 0,
-        done: true,
-      };
+    yield* runSync(
+      entriesToLoad,
+      "game",
+      async (entry) => {
+        const id = idAfterSegment(entryUrl(entry, dbConfig.url), "games");
 
-      return;
-    }
+        if (!id) {
+          throw new Error("not an IGDB game link");
+        }
 
-    yield {
-      message: `Syncing ${total} ${plural(total, "game")}…`,
-      current: 0,
-      total,
-    };
+        // load from igdb
+        const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
 
-    let current = 0;
+        // populate in notion
+        await notionClient.updatePage({
+          ...notionItem,
+          page_id: entry.id,
+        });
 
-    for (const entry of entriesToLoad) {
-      const url: string = (
-        Object.values(entry.properties).find((p) => p.id == dbConfig.url) as any
-      ).url;
-      const id = this.extractId(url);
-
-      // load from tmdb
-      const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
-
-      // populate in notion
-      await notionClient.updatePage({
-        ...notionItem,
-        page_id: entry.id,
-      });
-
-      current++;
-
-      yield { message: `Loaded ${title}.`, current, total };
-    }
-
-    yield {
-      message: `Synced ${total} ${plural(total, "game")}.`,
-      current: total,
-      total,
-      done: true,
-    };
-  }
-
-  private extractId(url: string): string {
-    return /https:\/\/www.igdb.com\/games\/(.*)$/i.exec(url)?.[1] as string;
+        return title;
+      },
+      (entry) => entryUrl(entry, dbConfig.url),
+    );
   }
 }

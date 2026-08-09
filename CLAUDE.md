@@ -101,6 +101,25 @@ synced or synced before a cutoff.
   stop at Notion's 100-row page. That was survivable when only new rows ever
   matched; with a re-sync cutoff a run can legitimately match every row.
 
+Every connector drives its run through `runSync()` (`utils/syncRun.ts`) rather
+than looping itself. Two rules live there:
+
+- **A failing row is skipped, not fatal.** Each connector used to `await` its
+  provider call straight inside the loop, so the first row that threw ended the
+  generator. Since a row is only marked synced once it succeeds, a permanently
+  bad one stayed in the default "never synced" selection and killed every
+  subsequent run too — the connector was bricked until the user found the row by
+  hand. A run where *nothing* succeeded still throws, so an expired token or a
+  provider outage surfaces as an error instead of "0 synced, 25 skipped".
+- **Skips name the row.** "Skipped: status code 404" gives a user with 25 films
+  nothing to act on, hence the `label` argument.
+
+Pull a provider id out of a stored link with `utils/providerId.ts`, never with a
+regex over the raw string. `idAfterSegment`/`idFromQuery` parse the value as a
+URL, because the greedy `(.*)$` they replaced folded a pasted link's query
+string into the id: `/movie/550?language=en-US` went out with axios appending
+its own `language` after the one already there, and TMDB answered 400.
+
 ## Colour
 
 Connector accents live in `frontend/src/theme.ts`, as explicit hex per theme

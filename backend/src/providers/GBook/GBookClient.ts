@@ -9,7 +9,8 @@ import type {
   SyncEvent,
   SyncOptions,
 } from "../../types.js";
-import { plural } from "../../utils/plural.js";
+import { entryUrl, idFromQuery } from "../../utils/providerId.js";
+import { runSync } from "../../utils/syncRun.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
@@ -45,53 +46,30 @@ export class GBookClient implements DataProvider<"GBook"> {
       dbConfig,
       options,
     );
-    const total = entriesToLoad.length;
 
-    if (!total) {
-      yield {
-        message: "Already up to date.",
-        current: 0,
-        total: 0,
-        done: true,
-      };
+    yield* runSync(
+      entriesToLoad,
+      "book",
+      async (entry) => {
+        const id = idFromQuery(entryUrl(entry, dbConfig.url), "id");
 
-      return;
-    }
+        if (!id) {
+          throw new Error("not a Google Books link");
+        }
 
-    yield {
-      message: `Syncing ${total} ${plural(total, "book")}…`,
-      current: 0,
-      total,
-    };
+        // load from google books
+        const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
 
-    let current = 0;
+        // populate in notion
+        await notionClient.updatePage({
+          ...notionItem,
+          page_id: entry.id,
+        });
 
-    for (const entry of entriesToLoad) {
-      const url: string = (
-        Object.values(entry.properties).find((p) => p.id == dbConfig.url) as any
-      ).url;
-      const id = /\?id=(.*)$/i.exec(url)?.[1] as string;
-
-      // load from tmdb
-      const { notionItem, title } = await this.loadNotionEntry(id, dbConfig);
-
-      // populate in notion
-      await notionClient.updatePage({
-        ...notionItem,
-        page_id: entry.id,
-      });
-
-      current++;
-
-      yield { message: `Updated ${title}.`, current, total };
-    }
-
-    yield {
-      message: `Synced ${total} ${plural(total, "book")}.`,
-      current: total,
-      total,
-      done: true,
-    };
+        return title;
+      },
+      (entry) => entryUrl(entry, dbConfig.url),
+    );
   }
 
   async search(query: string): Promise<Suggestion[]> {

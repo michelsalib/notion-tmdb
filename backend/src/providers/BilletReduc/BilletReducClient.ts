@@ -9,7 +9,8 @@ import type {
   SyncEvent,
   SyncOptions,
 } from "../../types.js";
-import { plural } from "../../utils/plural.js";
+import { entryUrl } from "../../utils/providerId.js";
+import { runSync } from "../../utils/syncRun.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
@@ -146,50 +147,28 @@ export class BilletReducClient implements DataProvider<"BilletReduc"> {
       dbConfig,
       options,
     );
-    const total = entriesToLoad.length;
 
-    if (!total) {
-      yield {
-        message: "Already up to date.",
-        current: 0,
-        total: 0,
-        done: true,
-      };
+    yield* runSync(
+      entriesToLoad,
+      "play",
+      async (entry) => {
+        const url = entryUrl(entry, dbConfig.url);
 
-      return;
-    }
+        if (!url) {
+          throw new Error("no link to sync from");
+        }
 
-    yield {
-      message: `Syncing ${total} ${plural(total, "play")}…`,
-      current: 0,
-      total,
-    };
+        const { notionItem, title } = await this.loadNotionEntry(url, dbConfig);
 
-    let current = 0;
+        await notionClient.updatePage({
+          ...notionItem,
+          page_id: entry.id,
+        });
 
-    for (const entry of entriesToLoad) {
-      const url: string = (
-        Object.values(entry.properties).find((p) => p.id == dbConfig.url) as any
-      ).url;
-
-      const { notionItem, title } = await this.loadNotionEntry(url, dbConfig);
-
-      await notionClient.updatePage({
-        ...notionItem,
-        page_id: entry.id,
-      });
-
-      current++;
-
-      yield { message: `Loaded ${title}.`, current, total };
-    }
-
-    yield {
-      message: `Synced ${total} ${plural(total, "play")}.`,
-      current: total,
-      total,
-      done: true,
-    };
+        return title;
+      },
+      (entry) => entryUrl(entry, dbConfig.url),
+    );
   }
 
   // Accepts a "/spectacle/…" path or a full billetreduc URL (pasted into

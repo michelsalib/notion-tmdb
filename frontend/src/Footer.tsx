@@ -8,6 +8,7 @@ import {
   styled,
   useTheme,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 const Item = styled(Box)(({ theme }) => ({
   ...theme.typography.body2,
@@ -19,6 +20,7 @@ const Item = styled(Box)(({ theme }) => ({
 
 export function Footer() {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Paper
@@ -27,7 +29,10 @@ export function Footer() {
         borderLeft: "none",
         borderRight: "none",
         borderRadius: 0,
-        marginTop: 6,
+        // Pushed to the bottom by the flex column on <body> (see main.tsx)
+        // rather than by a fixed top margin, which floated it mid-viewport on
+        // any page shorter than the fold.
+        marginTop: "auto",
       }}
     >
       <Container maxWidth="sm" sx={{ padding: 2 }}>
@@ -38,7 +43,7 @@ export function Footer() {
         >
           <Item>
             <Link href="https://github.com/michelsalib/notion-tmdb">
-              Code on Github
+              {t("FOOTER_CODE")}
               <SvgIcon sx={{ marginLeft: 1, verticalAlign: "bottom" }}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -59,7 +64,7 @@ export function Footer() {
 
           <Item>
             <Link href="https://michelsalib.notion.site/ca1917bcf6174025a8533ed51450a073?v=101bb1cb1e0980c8870b000c95acaf85">
-              Project in Notion
+              {t("FOOTER_ROADMAP")}
               <SvgIcon sx={{ marginLeft: 1, verticalAlign: "bottom" }}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -80,8 +85,8 @@ export function Footer() {
           </Item>
 
           <Item>
-            Made with 💚 by{" "}
-            <Link href="https://michelsalib.com">Michel Salib</Link>.
+            {t("FOOTER_CREDIT")}{" "}
+            <Link href="https://michelsalib.com">Michel Salib</Link>
           </Item>
         </Stack>
       </Container>

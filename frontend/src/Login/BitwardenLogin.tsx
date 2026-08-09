@@ -1,16 +1,18 @@
 import { Button, SvgIcon, useTheme } from "@mui/material";
 import { Fragment, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BitwardenForm } from "./BitwardenForm";
 
 export function BitwardenLogin() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [form, setForm] = useState(false);
 
   return (
     <Fragment>
       {form && <BitwardenForm />}
       {!form && (
-        <Button variant="outlined" onClick={() => setForm(true)}>
+        <Button variant="outlined" size="large" onClick={() => setForm(true)}>
           <SvgIcon sx={{ marginRight: 1 }}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -30,7 +32,7 @@ export function BitwardenLogin() {
               />
             </svg>
           </SvgIcon>
-          Connect with Bitwarden
+          {t("CONNECT_BITWARDEN")}
         </Button>
       )}
     </Fragment>

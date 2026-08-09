@@ -2,7 +2,14 @@ import type { AxiosInstance } from "axios";
 import { inject, injectable } from "tsyringe";
 import { LOGGER, TMDB_API_KEY } from "../../fx/keys.js";
 import type { Logger } from "../../fx/logger/Logger.js";
-import type { NotionItem, Suggestion, TmdbDbConfig } from "../../types.js";
+import type {
+  NotionItem,
+  Suggestion,
+  SyncEvent,
+  SyncOptions,
+  TmdbDbConfig,
+} from "../../types.js";
+import { plural } from "../../utils/plural.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
 import { NotionClient } from "../Notion/NotionClient.js";
@@ -28,8 +35,32 @@ export class TmdbClient implements DataProvider<"TMDB"> {
   async *sync(
     notionClient: NotionClient,
     dbConfig: TmdbDbConfig,
-  ): AsyncGenerator<string> {
-    const entriesToLoad = await notionClient.listDatabaseEntries(dbConfig);
+    options?: SyncOptions,
+  ): AsyncGenerator<SyncEvent> {
+    const entriesToLoad = await notionClient.listDatabaseEntries(
+      dbConfig,
+      options,
+    );
+    const total = entriesToLoad.length;
+
+    if (!total) {
+      yield {
+        message: "Already up to date.",
+        current: 0,
+        total: 0,
+        done: true,
+      };
+
+      return;
+    }
+
+    yield {
+      message: `Syncing ${total} ${plural(total, "film")}…`,
+      current: 0,
+      total,
+    };
+
+    let current = 0;
 
     for (const entry of entriesToLoad) {
       const url: string = (
@@ -46,10 +77,17 @@ export class TmdbClient implements DataProvider<"TMDB"> {
         page_id: entry.id,
       });
 
-      yield `Loaded ${title}.`;
+      current++;
+
+      yield { message: `Loaded ${title}.`, current, total };
     }
 
-    yield "Finished synching movies.";
+    yield {
+      message: `Synced ${total} ${plural(total, "film")}.`,
+      current: total,
+      total,
+      done: true,
+    };
   }
 
   private extractId(url: string): string {

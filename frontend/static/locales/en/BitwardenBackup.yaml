@@ -1,4 +1,11 @@
-SYNC_SUCESS: Backup created.
+SYNC_SUCCESS: Backup created.
 SYNC_FAILURE: Backup failed.
-PRIMARY_COLOR: blue
-LOGO_PATH: /BitwardenBackup.png
+
+PITCH_TITLE: Keep a copy of your Bitwarden vault.
+PITCH_BODY: Connect with an API key and take a weekly export of your vault. It stays encrypted with your master password the whole way.
+PERMISSION_NOTE: Your vault stays encrypted with your master password — we never see its contents.
+HOW_IT_WORKS: How it works
+HOW_STEP_1: Paste your Bitwarden API key.
+HOW_STEP_2: A backup runs every week, automatically.
+HOW_STEP_3: Download the archive whenever you need it.
+ALSO_CONNECTS: Also connects

@@ -1,5 +1,12 @@
-SYNC_SUCESS: Backup created.
+SYNC_SUCCESS: Backup created.
 SYNC_FAILURE: Backup failed.
-PRIMARY_COLOR: teal
-LOGO_PATH: /backup.jpeg
 AUTH_KEY: 11bd872b-594c-805e-9a8e-0037587bf62d
+
+PITCH_TITLE: Keep a copy of your Notion workspace.
+PITCH_BODY: Connect once and take a full export whenever you want, or let it run on a schedule. Download the archive any time.
+PERMISSION_NOTE: We read your workspace to build the archive, and store nothing else.
+HOW_IT_WORKS: How it works
+HOW_STEP_1: Connect your Notion workspace.
+HOW_STEP_2: Run a backup, or leave it to the schedule.
+HOW_STEP_3: Download the archive whenever you need it.
+ALSO_CONNECTS: Also connects

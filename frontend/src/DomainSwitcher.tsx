@@ -1,82 +1,86 @@
-import SyncAlt from "@mui/icons-material/SyncAlt";
-import { MenuItem, Select, Typography, useTheme } from "@mui/material";
-import { ALL_DOMAINS, DOMAINS } from "backend/src/domains";
-import { useCallback, useContext } from "react";
-import { DomainContext, PostDomain, PreDomain } from "./Context";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import { Box, Button, Menu, MenuItem, Typography } from "@mui/material";
+import { ALL_DOMAINS, type DOMAIN, DOMAINS } from "backend/src/domains";
+import { useCallback, useContext, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { DomainContext } from "./Context";
+import { connectorStyle } from "./theme";
 
-// Both dropdowns come from the shared DOMAINS registry rather than a hand-kept
-// list of MenuItems. Bitwarden only fronts the backup connector, so every other
-// option is disabled while it is selected — the old markup applied that guard
-// to each entry individually and had missed IGDB.
-const PRE_OPTIONS: PreDomain[] = [
-  ...new Set(ALL_DOMAINS.map((domain) => DOMAINS[domain].pre)),
-];
+/**
+ * Switch connector from the app bar.
+ *
+ * This used to be two `Select variant="standard"` controls rendered at `h2` on
+ * the login page, doubling as the wordmark. The concept was right and now lives
+ * as type on the landing page; what remains here is the ordinary navigation
+ * job, so it is an ordinary labelled menu — one entry per connector, each with
+ * its own mark, instead of two coupled dropdowns whose valid combinations had
+ * to be maintained by disabling options.
+ */
+export function DomainSwitcher() {
+  const { domain, pre } = useContext(DomainContext);
+  const { t } = useTranslation();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
-const POST_OPTIONS = ALL_DOMAINS.filter(
-  (domain) => DOMAINS[domain].pre === "Notion",
-).map((domain) => ({
-  value: DOMAINS[domain].post,
-  label: DOMAINS[domain].label,
-}));
-
-const BITWARDEN_POST: PostDomain = "backup";
-
-export function DomainSwitcher({ variant }: { variant: "h2" | "h6" }) {
-  const theme = useTheme();
-  const font = theme.typography[variant];
-  const { pre, post } = useContext(DomainContext);
-
-  const switchDomain = useCallback((pre: PreDomain, post: PostDomain) => {
-    if (pre == "Bitwarden") {
-      post = BITWARDEN_POST;
-    }
-
+  const switchTo = useCallback((next: DOMAIN) => {
     window.location.href = window.location.origin.replace(
       /(notion|bitwarden)-\w+/,
-      `${pre}-${post}`,
+      DOMAINS[next].subdomain,
     );
   }, []);
 
   return (
-    <Typography variant={variant} component="div" sx={{ flexGrow: 1 }}>
-      <Select
-        value={pre}
-        variant="standard"
-        sx={{ fontSize: font.fontSize, fontWeight: font.fontWeight }}
-        onChange={(e) => switchDomain(e.target.value as PreDomain, post)}
+    <>
+      <Button
+        color="inherit"
+        onClick={(e) => setAnchor(e.currentTarget)}
+        endIcon={<ExpandMore />}
+        aria-haspopup="menu"
+        aria-expanded={Boolean(anchor)}
+        aria-label={t("SWITCH_CONNECTOR")}
+        sx={{ textTransform: "none", gap: 0.5 }}
       >
-        {PRE_OPTIONS.map((option) => (
+        <Box
+          component="img"
+          src={connectorStyle(domain).logo}
+          alt=""
+          sx={{ height: 18, width: 18, objectFit: "contain", mr: 0.75 }}
+        />
+        <Typography component="span" sx={{ fontWeight: 600 }}>
+          {pre}{" "}
+          <Box component="span" sx={{ opacity: 0.6 }}>
+            ⇄
+          </Box>{" "}
+          {DOMAINS[domain].label}
+        </Typography>
+      </Button>
+
+      <Menu
+        anchorEl={anchor}
+        open={Boolean(anchor)}
+        onClose={() => setAnchor(null)}
+      >
+        {ALL_DOMAINS.map((d) => (
           <MenuItem
-            key={option}
-            value={option}
-            sx={{ fontSize: "large", fontWeight: font.fontWeight }}
+            key={d}
+            selected={d === domain}
+            onClick={() => switchTo(d)}
+            sx={{ gap: 1.5 }}
           >
-            {option}
+            <Box
+              component="img"
+              src={connectorStyle(d).logo}
+              alt=""
+              sx={{ height: 20, width: 20, objectFit: "contain" }}
+            />
+            <Box>
+              <Typography variant="body2">{DOMAINS[d].label}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {DOMAINS[d].pre}
+              </Typography>
+            </Box>
           </MenuItem>
         ))}
-      </Select>
-      <SyncAlt
-        fontSize={variant == "h2" ? "large" : "small"}
-        color="primary"
-        sx={{ marginRight: 1, marginLeft: 1 }}
-      />
-      <Select
-        value={post}
-        variant="standard"
-        sx={{ fontSize: font.fontSize, fontWeight: font.fontWeight }}
-        onChange={(e) => switchDomain(pre, e.target.value as PostDomain)}
-      >
-        {POST_OPTIONS.map((option) => (
-          <MenuItem
-            key={option.value}
-            value={option.value}
-            sx={{ fontSize: "large", fontWeight: font.fontWeight }}
-            disabled={pre == "Bitwarden" && option.value != BITWARDEN_POST}
-          >
-            {option.label}
-          </MenuItem>
-        ))}
-      </Select>
-    </Typography>
+      </Menu>
+    </>
   );
 }

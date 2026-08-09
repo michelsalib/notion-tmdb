@@ -116,6 +116,46 @@ export interface Suggestion {
   subtitle: string;
 }
 
+/**
+ * One line of sync progress.
+ *
+ * `sync()` used to yield bare strings, which the widget could only render as a
+ * toast that each new line overwrote — "Loaded 12" with no denominator, no
+ * history, and no way to tell a slow run from a stalled one. Carrying the
+ * counts alongside the message lets the widget draw real progress inline.
+ *
+ * The backup connectors have nothing to count, so a plain string is still a
+ * valid thing to yield and simply arrives with no counts attached.
+ */
+export interface SyncEvent {
+  message: string;
+  /** How many items this run will touch. Sent with the opening event. */
+  total?: number;
+  /** How many have been handled so far. */
+  current?: number;
+  /** Set on the closing event, whatever the outcome. */
+  done?: boolean;
+}
+
+/** A page the connector may create a database inside. */
+export interface NotionPage {
+  id: string;
+  title: string;
+}
+
+export interface SyncOptions {
+  /**
+   * Also refresh rows whose sync date is before this instant (ISO 8601).
+   *
+   * Omitted, sync only picks up rows that have never been synced — which is
+   * every row a user adds, but never a row whose provider data has since
+   * changed. A cutoff turns the same run into "refresh anything older than
+   * this", which is the only way to pick up a rating or a release date that
+   * moved after the row was first filled in.
+   */
+  staleBefore?: string;
+}
+
 export type NotionItem = Omit<CreatePageParameters, "parent">;
 
 // DOMAIN is derived from the DOMAINS registry in domains.ts and re-exported

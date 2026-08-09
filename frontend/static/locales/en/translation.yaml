@@ -86,7 +86,9 @@ BACKUP_RETRIEVAL_FAILURE: Could not fetch the backup. Try again.
 # --- sign in ---
 CONNECT_NOTION: Connect with Notion
 CONNECT_BITWARDEN: Connect with Bitwarden
-NO_RESULTS: No results
+NO_RESULTS_FOR: 'No results for "{{query}}".'
+NO_RESULTS_HINT: Check the spelling, or try the original title.
+SEARCHING: Searching
 BW_INTRO: To reach your vault we need <keys>your Bitwarden API key</keys>. You will find it under Security → Keys.
 BW_ENCRYPTED: Your vault stays encrypted with your master password. We can copy it, but we cannot read what is inside.
 BW_CLIENT_ID: Client ID
@@ -97,3 +99,12 @@ BW_SUBMIT: Connect vault
 FOOTER_CODE: Code on GitHub
 FOOTER_ROADMAP: Roadmap in Notion
 FOOTER_CREDIT: Made with 💚 by
+
+# --- landing demo ---
+DEMO_TRY: Try one
+
+# --- already in the database ---
+ALREADY_ADDED: In Notion
+PREVIEW_HEADING: Lands in Notion as
+PREVIEW_FAILED: Could not load a preview for that one.
+DEMO_BLOCK_LABEL: Embed

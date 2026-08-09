@@ -21,9 +21,10 @@ import type { BackupDataProvider } from "./providers/BackupDataProvider.js";
 import type { DataProvider } from "./providers/DataProvider.js";
 import type { DbProvider } from "./providers/DbProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
-import type { Config, UserData } from "./types.js";
+import type { Config, FieldPreview, UserData } from "./types.js";
 import { asWebByteStream } from "./utils/generator.js";
 import { staleBefore } from "./utils/syncWindow.js";
+import { matchesUrl } from "./utils/urlMatch.js";
 
 // The two backup connectors resolve to different classes (NotionBackup and
 // BitwardenBackup), so DATA_PROVIDER must be read as the interface they share.
@@ -40,6 +41,54 @@ const DATABASE_TITLES: Record<SEARCH_DOMAIN, string> = {
 /** The Notion schema for one field's column type. */
 function propertySchema(field: FieldSpec): any {
   return { [field.columnType]: {} };
+}
+
+/**
+ * One Notion property value, as a line of preview text.
+ *
+ * The preview reuses `loadNotionEntry` rather than asking each connector for a
+ * second, display-shaped view of the same item — one description of what a
+ * connector writes is the point of `fields.ts`. What comes back is a Notion
+ * write payload, so this turns each property back into something readable.
+ */
+function displayValue(property: any): string {
+  if (!property) {
+    return "";
+  }
+
+  if (typeof property.url === "string") {
+    return property.url;
+  }
+
+  if (typeof property.number === "number") {
+    return String(Math.round(property.number * 10) / 10);
+  }
+
+  // Date only: the time is always midnight or the moment of the call, and
+  // neither tells the reader anything.
+  if (property.date?.start) {
+    return String(property.date.start).slice(0, 10);
+  }
+
+  if (Array.isArray(property.title) || Array.isArray(property.rich_text)) {
+    return (property.title ?? property.rich_text)
+      .map((chunk: any) => chunk?.text?.content ?? "")
+      .join("");
+  }
+
+  if (Array.isArray(property.multi_select)) {
+    return property.multi_select.map((option: any) => option.name).join(", ");
+  }
+
+  if (property.select?.name) {
+    return property.select.name;
+  }
+
+  if (typeof property.checkbox === "boolean") {
+    return property.checkbox ? "Yes" : "No";
+  }
+
+  return "";
 }
 
 @injectable()
@@ -64,6 +113,107 @@ export class Api {
     const results = await client.search((request.query as any)["query"]);
 
     return { results };
+  }
+
+  /**
+   * Which of the given ids the workspace already has rows for.
+   *
+   * Deliberately not folded into `/api/search`. That route is unauthenticated
+   * and is what the landing page demo calls, so it must not depend on a
+   * workspace; and this adds a Notion round trip that the search itself should
+   * never wait on. The widget fires it after results are on screen and merges
+   * the badges in, so a slow or failing Notion leaves the list working.
+   */
+  async existing(container: DependencyContainer) {
+    const user = container.resolve<UserData<any>>(USER);
+    const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
+    const request = container.resolve<ScopedRequest>(REQUEST);
+
+    const ids = String((request.query as any)["ids"] ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (isBackupDomain(domain) || !user.config || ids.length === 0) {
+      return { existing: {} };
+    }
+
+    const client = container.resolve<DataProvider>(DATA_PROVIDER);
+    const wanted = ids.map((id) => ({ id, match: client.urlFor(id) }));
+
+    const rows = await container.resolve(NotionClient).findRowsByUrl(
+      user.config,
+      wanted.map((item) => item.match),
+    );
+
+    const existing: Record<string, { url: string }> = {};
+
+    for (const { id, match } of wanted) {
+      const hit = rows.find((row) => matchesUrl(match, row.storedUrl));
+
+      if (hit) {
+        existing[id] = { url: hit.pageUrl };
+      }
+    }
+
+    return { existing };
+  }
+
+  /**
+   * What one item would look like once written to Notion.
+   *
+   * Unauthenticated, because its only caller is the landing page, where the
+   * whole point is to answer "what does it actually fill in?" before anyone
+   * connects a workspace.
+   */
+  async preview(container: DependencyContainer) {
+    const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
+    const request = container.resolve<ScopedRequest>(REQUEST);
+    const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
+
+    const id = (request.query as any)["id"];
+
+    if (!isSearchDomain(domain) || !id) {
+      reply.status(400);
+
+      return "id is required, and this connector must be searchable";
+    }
+
+    const fields = DOMAIN_FIELDS[domain];
+    const client = container.resolve<DataProvider>(DATA_PROVIDER);
+
+    // Address the entry by field key rather than by Notion property id. Every
+    // connector writes `properties[dbConfig[key]]`, so handing it a mapping of
+    // each key to itself yields the same payload keyed by something knowable
+    // without a user — and keeps `fields.ts` the only description of what a
+    // connector writes.
+    const identityConfig = {
+      id: "",
+      ...Object.fromEntries(fields.map((field) => [field.key, field.key])),
+    } as Config;
+
+    const { notionItem, title } = await client.loadNotionEntry(
+      id,
+      identityConfig,
+    );
+
+    const preview: FieldPreview[] = fields
+      // The sync marker is `new Date()` at write time. It does land in Notion,
+      // but "Sync date: today" tells a first-time visitor nothing about what
+      // the connector fetched.
+      .filter((field) => field.key !== "status")
+      .map((field) => ({
+        key: field.key,
+        label: field.label,
+        value: displayValue((notionItem.properties as any)[field.key]),
+      }))
+      .filter((line) => line.value);
+
+    return {
+      title,
+      preview,
+      cover: (notionItem.cover as any)?.external?.url ?? "",
+    };
   }
 
   // Which search connectors the current workspace has actually linked. Drives
@@ -275,6 +425,16 @@ Router.register(Api, "search", {
 });
 Router.register(Api, "connectors", {
   path: "/api/connectors",
+  method: "GET",
+  authenticate: false,
+});
+Router.register(Api, "existing", {
+  path: "/api/existing",
+  method: "GET",
+  authenticate: true,
+});
+Router.register(Api, "preview", {
+  path: "/api/preview",
   method: "GET",
   authenticate: false,
 });

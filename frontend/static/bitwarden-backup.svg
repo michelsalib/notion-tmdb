@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!--
+    The house mark for the `BitwardenBackup` connector. Sibling of `backup.svg`
+    — same grid, same stroke, same arrow — with a shield in place of the
+    database, because what is being copied out here is a vault, and the shield
+    is Bitwarden's own language.
+
+    It replaces a 101 KB 1024×1024 raster that was a JPEG despite its `.png`
+    extension, with a teal ground and an orange ring baked in; at the 20px it is
+    actually drawn at, it read as a teal square.
+
+    See `backup.svg` for why the colours are inlined rather than inherited.
+  -->
+  <style>
+    :root { color: #2F53C8 }
+    @media (prefers-color-scheme: dark) { :root { color: #8FA5F5 } }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 2.6 3.2 4.7v5.5c0 3.5 2.3 6.2 5.8 7.6 3.5-1.4 5.8-4.1 5.8-7.6V4.7Z"/>
+    <path d="M19.4 8.6v9.8m0 0 2.3-2.3m-2.3 2.3-2.3-2.3"/>
+  </g>
+</svg>

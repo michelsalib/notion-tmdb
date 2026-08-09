@@ -15,6 +15,7 @@ import type {
   NotionPage,
   NotionUserData,
   SyncOptions,
+  UrlMatch,
 } from "../../types.js";
 import { retriable } from "../../utils/retriable.js";
 
@@ -195,11 +196,44 @@ export class NotionClient {
     return entries;
   }
 
-  async listExistingItems(dbConfig: Config, ids: string[]): Promise<string[]> {
-    const existingItems: PageObjectResponse[] = [];
+  /**
+   * The rows already in the database whose URL column satisfies any of
+   * `matches`, each paired with the Notion page it belongs to.
+   *
+   * Returns the stored URL rather than just a count, because a filter is a
+   * disjunction and the response never says which arm a row matched — the
+   * caller maps hits back onto the items that produced them.
+   *
+   * This replaces a `listExistingItems` that nothing called, and could not have
+   * worked if anything had: it filtered `rich_text` on what the mapping
+   * guarantees is a `url` property, read `.rich_text[0].text.content` back off
+   * that same property, and compared the result against bare provider ids when
+   * what is stored is a full URL.
+   */
+  async findRowsByUrl(
+    dbConfig: Config,
+    matches: UrlMatch[],
+  ): Promise<{ storedUrl: string; pageUrl: string }[]> {
+    const found: { storedUrl: string; pageUrl: string }[] = [];
 
-    for (let page = 0; page * 100 < ids.length; page++) {
-      const existingItemsToSearch = ids.slice(page * 100, (page + 1) * 100);
+    // Notion caps the operands in a compound filter, and a search returns few
+    // enough results that this is one request in practice — the batching is
+    // here so a larger caller cannot silently truncate.
+    for (let page = 0; page * 100 < matches.length; page++) {
+      const batch = matches
+        .slice(page * 100, (page + 1) * 100)
+        .map((match) => ({
+          property: dbConfig.url,
+          url:
+            match.equals !== undefined
+              ? { equals: match.equals }
+              : { contains: match.contains },
+        }));
+
+      if (batch.length === 0) {
+        continue;
+      }
+
       let cursor: string | undefined;
 
       do {
@@ -210,28 +244,26 @@ export class NotionClient {
         )({
           database_id: dbConfig.id,
           start_cursor: cursor,
-          filter: {
-            or: existingItemsToSearch.map((id) => {
-              return {
-                property: dbConfig.url,
-                rich_text: {
-                  equals: id,
-                },
-              };
-            }),
-          },
+          // A one-operand `or` is rejected, so a single match is sent bare —
+          // the same shape `listDatabaseEntries` uses for its freshness clause.
+          filter: (batch.length === 1 ? batch[0] : { or: batch }) as any,
         });
 
-        existingItems.push(...(results as PageObjectResponse[]));
+        for (const row of results as PageObjectResponse[]) {
+          const property = Object.values(row.properties).find(
+            (p) => p.id === dbConfig.url,
+          ) as { url?: string | null } | undefined;
+
+          if (property?.url) {
+            found.push({ storedUrl: property.url, pageUrl: row.url });
+          }
+        }
+
         cursor = next_cursor ?? undefined;
       } while (cursor);
     }
 
-    return existingItems.map(
-      (i) =>
-        (Object.values(i.properties).find((p) => p.id == dbConfig.url) as any)
-          .rich_text[0].text.content,
-    );
+    return found;
   }
 
   async updatePage(page: UpdatePageParameters): Promise<void> {

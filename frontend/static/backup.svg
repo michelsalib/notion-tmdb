@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!--
+    The house mark for the `backup` connector.
+
+    Drawn on the same 24px grid at the same 1.7 stroke as `src/ui/icons.tsx`:
+    this is an entry in the app's icon set rather than a logo. It replaces an
+    82 KB 1024×1024 JPEG with a dark ground and the word "Backup" baked into it,
+    which was rendered at 18–24px in the switcher and at 16px as the favicon.
+
+    The arrow points *out*, and is shared pixel-for-pixel with
+    `bitwarden-backup.svg`: it is the verb, and the shape beside it says what is
+    being copied. It is the one thing separating these two connectors from the
+    other four, which write *into* Notion rather than copying it out.
+
+    The colours are `CONNECTOR_STYLES.backup` from `src/theme.ts`. They live
+    here rather than being inherited because an SVG referenced by `<img src>` —
+    which is how every connector mark is used — renders in its own document and
+    cannot see the page's `currentColor`. An internal media query still can,
+    so one file covers both themes, including as a favicon.
+  -->
+  <style>
+    :root { color: #0F7269 }
+    @media (prefers-color-scheme: dark) { :root { color: #4FBFAF } }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="8.8" cy="5.4" rx="5.8" ry="2.6"/>
+    <path d="M3 5.4v6.4c0 1.44 2.6 2.6 5.8 2.6s5.8-1.16 5.8-2.6V5.4"/>
+    <path d="M3 8.9c0 1.44 2.6 2.6 5.8 2.6s5.8-1.16 5.8-2.6"/>
+    <path d="M19.4 8.6v9.8m0 0 2.3-2.3m-2.3 2.3-2.3-2.3"/>
+  </g>
+</svg>

@@ -8,6 +8,7 @@ import type {
   SyncEvent,
   SyncOptions,
   TmdbDbConfig,
+  UrlMatch,
 } from "../../types.js";
 import { entryUrl, idAfterSegment } from "../../utils/providerId.js";
 import { runSync } from "../../utils/syncRun.js";
@@ -83,10 +84,23 @@ export class TmdbClient implements DataProvider<"TMDB"> {
         id: s.id,
         title: s.title,
         releaseDate: s.release_date,
-        posterPath: `https://image.tmdb.org/t/p/w500${s.poster_path}`,
+        // Guarded: `poster_path` is null for a film with no artwork, and an
+        // unconditional template produced the string ".../w500null" — truthy,
+        // so the frontend's "no poster" branch never ran and the row rendered
+        // the browser's broken-image glyph instead of a placeholder.
+        posterPath: s.poster_path
+          ? `https://image.tmdb.org/t/p/w500${s.poster_path}`
+          : "",
         subtitle: s.original_title != s.title ? s.original_title : "",
       } as Suggestion;
     });
+  }
+
+  // Exact: `loadNotionEntry` builds this same string, so a stored row either
+  // is this film or is not. A `contains` on the bare id would match /movie/271
+  // for id 27.
+  urlFor(id: string): UrlMatch {
+    return { equals: `https://www.themoviedb.org/movie/${id}` };
   }
 
   async loadNotionEntry(
@@ -148,9 +162,13 @@ export class TmdbClient implements DataProvider<"TMDB"> {
       };
     }
 
-    if (dbConfig.director) {
-      const director = data.credits.crew.find((i: any) => i.job == "Director");
+    // Guarded: plenty of TMDB entries credit no director, and reading `.name`
+    // off the miss threw for the whole entry rather than skipping one column.
+    // Rare enough to survive unnoticed in `add`; the landing-page preview runs
+    // this against whatever a stranger types.
+    const director = data.credits?.crew?.find((i: any) => i.job == "Director");
 
+    if (dbConfig.director && director) {
       movieItem.properties[dbConfig.director] = {
         rich_text: [
           {

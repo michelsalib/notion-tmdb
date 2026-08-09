@@ -8,6 +8,7 @@ import type {
   Suggestion,
   SyncEvent,
   SyncOptions,
+  UrlMatch,
 } from "../../types.js";
 import { entryUrl, idAfterSegment } from "../../utils/providerId.js";
 import { runSync } from "../../utils/syncRun.js";
@@ -90,15 +91,23 @@ export class IgdbClient implements DataProvider<"IGDB"> {
       return {
         id: d.slug,
         title: d.name,
+        // Empty, not "NA": this is display copy, and the suggestion list used
+        // to print the placeholder verbatim as the year.
         releaseDate: d.first_release_date
           ? new Date(d.first_release_date * 1000)
-          : "NA",
+          : "",
         posterPath: d.cover?.url || "",
         subtitle:
           d.involved_companies?.map((c: any) => c.company.name).join(", ") ||
           "",
       };
     });
+  }
+
+  // Exact, for the same reason as TMDB: slugs nest, so `contains: "hades"`
+  // would claim /games/hades-ii.
+  urlFor(id: string): UrlMatch {
+    return { equals: `https://www.igdb.com/games/${id}` };
   }
 
   async loadNotionEntry(

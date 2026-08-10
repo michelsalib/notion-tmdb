@@ -127,6 +127,62 @@ URL, because the greedy `(.*)$` they replaced folded a pasted link's query
 string into the id: `/movie/550?language=en-US` went out with axios appending
 its own `language` after the one already there, and TMDB answered 400.
 
+## Backup
+
+The two backup connectors (`backup`, `BitwardenBackup`) write a zip per run to
+`StorageProvider`, keyed `<userId>/<ISO stamp>.zip`. Four rules are load-bearing:
+
+- **Start the upload before filling the archive.** `putBackup(archive, date)`
+  takes the `Archiver` as a stream and pipes it to storage; `finalize()` is
+  awaited *after*. Awaiting `finalize()` with nothing consuming the stream
+  buffers the entire zip in archiver's memory, which is the only reason the
+  Cloud Run Job asks for 2Gi.
+- **`NotionBackup.sync()` is one pass, not two.** Notion serves assets as
+  pre-signed S3 URLs that expire about an hour after they are issued, so
+  collecting every item first and downloading afterwards meant that on any
+  workspace taking an hour to walk, every URL was dead before the second pass
+  reached it. Download an item's files as the item arrives.
+- **One archive per run, and prune afterwards.** `pruneBackups(KEEP)` runs only
+  once the new zip is stored, so a failed run never costs the user the backup it
+  was replacing. Backups used to overwrite a single `<userId>.zip`, leaving the
+  bucket's object versions as the only history and no way to reach it. The GCS
+  client still lists that legacy flat key so a user who has not run a backup
+  since keeps seeing their last one.
+- **A `?key=` from the browser is matched against the user's own listing**, never
+  concatenated onto their prefix — otherwise `../<other user>.zip` gets handed a
+  signed URL for someone else's workspace.
+
+Archive layout is `data.json` + `manifest.json` + `assets/<kind>_<id><ext>` +
+`markdown/`, described by `utils/backupArchive.ts`. Reading an archive means
+honouring `data_data.json` too — that is what `data.json` was called before the
+manifest existed, and archives in the bucket still use it. `manifest.version`
+says which layout an archive uses.
+
+`utils/backupMarkdown.ts` renders the readable copy: one file per page, in
+folders mirroring the page tree (`Title <id>.md` beside `Title <id>/`), which is
+Notion's own export convention. It is rendered *after* the walk, not during it,
+because a page's links to its sub-pages need their filenames, and those are only
+settled once every page has one. `data.json` remains the source of truth — the
+Markdown is lossy on purpose, and blank-line runs in it get collapsed.
+
+Two things there are easy to break: blank lines around a `<details>` body (a
+toggle) are what stop a renderer treating it as raw HTML, and a property list
+has to be a *list* — consecutive plain lines are one paragraph in Markdown, so
+the values ran into a single sentence.
+
+`listContent` recurses into nested blocks but stops at `child_page` and
+`child_database`, which are their own `search` results; descending into them
+archives every nested page once per ancestor. It reports an unreadable subtree
+through `onSkip` and carries on, and `NotionBackup` fails the run only when
+*nothing* succeeded — same rule as `runSync`, so an expired token is still an
+error rather than an empty zip.
+
+`support/restoreNotionBackup.ts` rebuilds a workspace from an archive. If you
+touch it, note that `strip()` runs over whole nested payloads, so `url` must stay
+out of its field list: it is a bookmark's target, an embed's source, an external
+image and a url column's value, and only *looks* like server-owned metadata
+because pages have one too.
+
 ## Colour
 
 Connector accents live in `frontend/src/theme.ts`, as explicit hex per theme
@@ -198,3 +254,5 @@ Monorepo using npm workspaces (installed by Bun):
 - Don't report embed progress through the `Snackbar`. A Notion embed is often
   no taller than the toast, so it covered the widget it was reporting on;
   the widget has an inline status row for this (see `ConnectorWidget`).
+- Don't `await archive.finalize()` before something is consuming the archive —
+  see "Backup". Don't buffer an asset with `responseType: "arraybuffer"` either.

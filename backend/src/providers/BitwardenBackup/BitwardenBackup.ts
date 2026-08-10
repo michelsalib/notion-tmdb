@@ -5,7 +5,10 @@ import { LOGGER, STORAGE_PROVIDER, USER } from "../../fx/keys.js";
 import type { Logger } from "../../fx/logger/Logger.js";
 import type { BitwardenUserData, Suggestion } from "../../types.js";
 import type { BackupDataProvider } from "../BackupDataProvider.js";
-import type { StorageProvider } from "../Storage/StorageProvider.js";
+import type { BackupRef, StorageProvider } from "../Storage/StorageProvider.js";
+
+/** Archives kept per user; older ones are deleted after a successful run. */
+const KEEP_BACKUPS = 10;
 
 @injectable()
 export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
@@ -76,12 +79,19 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
     yield "Storing backup...";
 
     const archive = archiver("zip");
+
+    // Upload first, finalize second: with no consumer attached, `finalize()`
+    // resolves only once the whole zip is sitting in archiver's buffer.
+    const upload = this.storage.putBackup(archive, new Date());
+
     archive.append(JSON.stringify(vault.data), {
       name: "vault_data.json",
     });
-    await archive.finalize();
 
-    await this.storage.putBackup(archive);
+    await archive.finalize();
+    await upload;
+
+    await this.storage.pruneBackups(KEEP_BACKUPS);
 
     return "Backup done.";
   }
@@ -92,7 +102,11 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
     return meta.lastModified;
   }
 
-  async getLink(): Promise<string> {
-    return this.storage.getBackupLink();
+  listBackups(): Promise<BackupRef[]> {
+    return this.storage.listBackups();
+  }
+
+  async getLink(key?: string): Promise<string> {
+    return this.storage.getBackupLink(key);
   }
 }

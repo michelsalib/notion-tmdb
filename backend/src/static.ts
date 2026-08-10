@@ -1,8 +1,8 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DependencyContainer, injectable } from "tsyringe";
-import { STORAGE_PROVIDER } from "./fx/keys.js";
-import { Router } from "./fx/router.js";
+import { REQUEST, STORAGE_PROVIDER } from "./fx/keys.js";
+import { Router, type ScopedRequest } from "./fx/router.js";
 import { FilesystemStorage } from "./providers/Storage/FilesystemClient.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -22,7 +22,17 @@ export class Static {
     if (!(storage instanceof FilesystemStorage)) {
       return new Response("Not found", { status: 404 });
     }
-    return Bun.file(storage.getBackupFilename());
+
+    const { query } = container.resolve<ScopedRequest>(REQUEST);
+    const filename = await storage.getBackupFilename(
+      typeof query["key"] === "string" ? query["key"] : undefined,
+    );
+
+    if (!filename) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    return Bun.file(filename);
   }
 }
 

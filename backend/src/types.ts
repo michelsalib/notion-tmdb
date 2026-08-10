@@ -3,6 +3,7 @@ import type {
   DatabaseObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints.js";
 import type { DOMAIN } from "./domains.js";
+import type { BackupRef } from "./providers/Storage/StorageProvider.js";
 
 export type { DOMAIN };
 
@@ -113,7 +114,10 @@ export type NotionDatabase = DatabaseObjectResponse;
 export interface UserConfig<T extends DOMAIN> {
   notionDatabases?: NotionDatabase[];
   config?: DomainToConfig<T>;
+  /** Newest backup's date — the same instant as `backups[0]`. */
   backupDate?: Date;
+  /** Stored archives, newest first. Backup connectors only. */
+  backups?: BackupRef[];
 }
 
 export interface Suggestion {

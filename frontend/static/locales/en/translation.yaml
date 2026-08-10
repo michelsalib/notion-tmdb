@@ -78,6 +78,7 @@ MULTI_ADD_FAILURE: Could not add that. Try again.
 
 # --- backup ---
 BACKUP_CREATE: Back up now
+BACKUP_CHOOSE: Backup
 BACKUP_DOWNLOAD: Download
 BACKUP_LAST: Last backup
 BACKUP_NEVER: Never

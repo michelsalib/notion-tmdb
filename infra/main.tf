@@ -228,8 +228,11 @@ resource "google_cloud_run_v2_job" "backup" {
 
         resources {
           limits = {
-            cpu    = "1"
-            memory = "2Gi" # NotionBackup buffers assets in-RAM, OOMs at 1Gi
+            cpu = "1"
+            # Assets stream straight into the upload now, so the peak is the
+            # item metadata a run holds to write data.json — headroom for a
+            # large workspace rather than the whole zip it used to buffer.
+            memory = "2Gi"
           }
         }
 

@@ -35,6 +35,16 @@ function pageTitle(page: PageObjectResponse): string {
   return text.trim() || "Untitled";
 }
 
+/** Told about a subtree the walk could not read, so the walk can carry on. */
+export type SkipReporter = (subject: string, error: unknown) => void;
+
+/**
+ * Blocks whose children belong to another entry in `search`, not to this one.
+ */
+const OPAQUE_CHILDREN = new Set(["child_page", "child_database"]);
+
+const MAX_BLOCK_DEPTH = 20;
+
 @injectable()
 export class NotionClient {
   private readonly client: Client;
@@ -48,7 +58,19 @@ export class NotionClient {
     });
   }
 
-  async *listContent(): AsyncGenerator<
+  /**
+   * Every page, database and block the integration can see.
+   *
+   * `onSkip` is called for a subtree that could not be listed, and the walk
+   * continues. One page deleted between the `search` that named it and the
+   * `children.list` that reads it used to throw straight out of the generator,
+   * discarding a backup of the entire workspace. The caller decides what a
+   * skip means — `NotionBackup` fails the run only if *nothing* was readable,
+   * so an expired token still surfaces as an error rather than as an empty zip.
+   */
+  async *listContent(
+    onSkip?: SkipReporter,
+  ): AsyncGenerator<
     DatabaseObjectResponse | PageObjectResponse | BlockObjectResponse
   > {
     let contentCursor;
@@ -67,30 +89,67 @@ export class NotionClient {
         yield content as DatabaseObjectResponse | PageObjectResponse;
 
         if (content.object == "page") {
-          let blockCursor;
-
-          // on all page blocks
-          do {
-            const blocks = await retriable(
-              this.client.blocks.children,
-              "list",
-              this.logger,
-            )({
-              block_id: content.id,
-              start_cursor: blockCursor || undefined,
-            });
-
-            for (const block of blocks.results) {
-              yield block as BlockObjectResponse;
-            }
-
-            blockCursor = blocks.next_cursor;
-          } while (blockCursor);
+          yield* this.listBlocks(content.id, 0, new Set(), onSkip);
         }
       }
 
       contentCursor = result.next_cursor;
     } while (contentCursor);
+  }
+
+  /**
+   * One block level, then each child level under it.
+   *
+   * This used to list a page's top-level children and stop, so every subtree
+   * under a toggle, column, table or callout was missing from the archive —
+   * silently, because the zip still built and the run still reported success.
+   */
+  private async *listBlocks(
+    parentId: string,
+    depth: number,
+    seen: Set<string>,
+    onSkip?: SkipReporter,
+  ): AsyncGenerator<BlockObjectResponse> {
+    // `seen` closes the loop a pair of synced blocks can form by referencing
+    // each other; the depth cap is the backstop for anything it misses.
+    if (depth >= MAX_BLOCK_DEPTH || seen.has(parentId)) {
+      return;
+    }
+    seen.add(parentId);
+
+    let blockCursor;
+
+    do {
+      let blocks: Awaited<ReturnType<typeof this.client.blocks.children.list>>;
+
+      try {
+        blocks = await retriable(
+          this.client.blocks.children,
+          "list",
+          this.logger,
+        )({
+          block_id: parentId,
+          start_cursor: blockCursor || undefined,
+        });
+      } catch (error) {
+        onSkip?.(parentId, error);
+
+        return;
+      }
+
+      for (const block of blocks.results as BlockObjectResponse[]) {
+        yield block;
+
+        // A child page or database is its own entry in `search`, so its blocks
+        // are walked from there. Descending here would archive every nested
+        // page once per ancestor.
+        if (block.has_children && !OPAQUE_CHILDREN.has(block.type)) {
+          yield* this.listBlocks(block.id, depth + 1, seen, onSkip);
+        }
+      }
+
+      blockCursor = blocks.next_cursor;
+    } while (blockCursor);
   }
 
   async listDatabases(): Promise<DatabaseObjectResponse[]> {

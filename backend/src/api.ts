@@ -314,9 +314,13 @@ export class Api {
 
     if (isBackupDomain(domain)) {
       const backup = container.resolve<AnyBackup>(DATA_PROVIDER);
+      const backups = await backup.listBackups();
 
       return {
-        backupDate: await backup.getBackupDate(),
+        // Kept alongside `backups` because the widget shows "last backup"
+        // before it shows the history, and an older stored client reads it.
+        backupDate: backups[0]?.date,
+        backups,
         config: user.config,
       };
     }
@@ -406,9 +410,13 @@ export class Api {
 
   async getBackup(container: DependencyContainer) {
     const backup = container.resolve<AnyBackup>(DATA_PROVIDER);
+    const { query } = container.resolve<ScopedRequest>(REQUEST);
+    // Only a string: `?key=` twice over gives an array, and the storage layer
+    // matches the key against this user's own listing rather than trusting it.
+    const key = typeof query["key"] === "string" ? query["key"] : undefined;
 
     return {
-      link: await backup.getLink(),
+      link: await backup.getLink(key),
     };
   }
 }

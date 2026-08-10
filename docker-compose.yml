@@ -24,6 +24,35 @@ services:
     volumes:
       - gcs-data:/storage
 
+  # fake-gcs-server creates no bucket on demand, and the app deliberately never
+  # creates its own — in prod the bucket is Terraform's. Without this, a fresh
+  # volume meant every storage call answered "Not Found" until someone found
+  # the curl by hand. Creating a bucket that already exists answers 409, which
+  # is why the exit status is not checked: the point is only that it exists.
+  gcs-init:
+    image: curlimages/curl:latest
+    restart: "no"
+    depends_on:
+      - gcs
+    command:
+      - "--silent"
+      - "--output"
+      - "/dev/null"
+      # gcs is reachable only once it binds, and compose starts us immediately.
+      - "--retry"
+      - "10"
+      - "--retry-delay"
+      - "1"
+      - "--retry-connrefused"
+      - "-X"
+      - "POST"
+      - "http://gcs:4443/storage/v1/b?project=local-dev"
+      - "-H"
+      - "Content-Type: application/json"
+      - "-d"
+      # Must match STORAGE_BUCKET in backend/.env, which compose does not read.
+      - '{"name":"${STORAGE_BUCKET:-notion-backup}"}'
+
 volumes:
   mongo-data:
   gcs-data:

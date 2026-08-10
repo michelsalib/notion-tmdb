@@ -52,9 +52,18 @@ Want to hack on it? You'll need [Bun](https://bun.sh) 1.3+ and npm 10+ (for
 
 ```sh
 bun install                       # install all workspaces
+docker compose up -d              # mongo + a fake GCS on :4443
 bun run dev                       # backend + hot reload (PORT=7071)
 cd frontend && bun start          # frontend dev server (:5173)
 ```
+
+Copy `backend/.env.example` to `backend/.env` and fill in the credentials for
+whichever connector you're working on.
+
+`docker compose up` also creates the backup bucket inside the fake GCS server,
+which creates none of its own. It defaults to `notion-backup`; if you point
+`STORAGE_BUCKET` somewhere else, set the same value in the environment compose
+reads so the two agree.
 
 Before pushing, run what CI runs:
 
@@ -68,6 +77,33 @@ Open **http://localhost:7071** and you're running — the backend serves the
 built SPA in prod and, when there's no `frontend/dist`, transparently proxies
 all non-API requests to the frontend dev server on `:5173`, so a single URL
 covers dev too.
+
+## Restoring a Notion backup
+
+A backup is a zip holding:
+
+- `markdown/` — the whole workspace as Markdown, one file per page, in folders
+  mirroring your page tree. Readable, greppable and diffable with no tooling;
+  start here.
+- `data.json` — every page, database and block exactly as the Notion API
+  returned it. The source of truth, and what a restore reads.
+- `assets/` — the images and attachments Notion was hosting for you.
+- `manifest.json` — what the run captured, and anything it had to skip.
+
+Ten runs are kept per workspace; the widget lets you download any of them.
+
+To rebuild a workspace from one:
+
+```sh
+bun support/restoreNotionBackup.ts --from ~/Downloads/backup.zip --dry-run
+bun support/restoreNotionBackup.ts --from ~/Downloads/backup.zip \
+  --parent <notion page id> --token <integration token>
+```
+
+Restore never writes over the originals — it recreates the tree under the page
+you name. Start with `--dry-run`: it walks the whole archive and prints exactly
+what cannot be brought back (uploaded files, relations, status columns) before
+you have half a workspace. The script's header explains each limitation.
 
 ## Build & deploy
 

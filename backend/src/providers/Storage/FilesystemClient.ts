@@ -5,10 +5,12 @@ import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { inject, injectable } from "tsyringe";
 import { USER_ID } from "../../fx/keys.js";
+import { fileRangeSource } from "../../utils/zipReader.js";
 import {
   type BackupRef,
   backupObjectDate,
   backupObjectName,
+  type OpenedBackup,
   type StorageProvider,
 } from "./StorageProvider.js";
 
@@ -70,6 +72,21 @@ export class FilesystemStorage implements StorageProvider {
     const [newest] = await this.listBackups();
 
     return { lastModified: newest?.date };
+  }
+
+  async openBackup(key?: string): Promise<OpenedBackup | undefined> {
+    const backups = await this.listBackups();
+    const ref = key ? backups.find((backup) => backup.key === key) : backups[0];
+
+    if (!ref) {
+      return undefined;
+    }
+
+    const filename = await this.getBackupFilename(ref.key);
+
+    return filename
+      ? { ref, source: await fileRangeSource(filename) }
+      : undefined;
   }
 
   async pruneBackups(keep: number): Promise<void> {

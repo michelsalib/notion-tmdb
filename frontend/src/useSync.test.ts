@@ -72,6 +72,25 @@ describe("advance", () => {
     });
   });
 
+  test("keeps the link to what the run created, including on failure", () => {
+    // A restore reports the page it built as soon as it exists. Losing it on a
+    // later line — or on the error line, which is exactly when the user needs
+    // it — leaves them hunting their sidebar for a half-finished restore.
+    let state = advance(
+      IDLE,
+      msg({ message: "Restoring…", total: 40, url: "https://notion.so/abc" }),
+    );
+    state = advance(state, msg({ message: "Restored page.", current: 1 }));
+    expect(state.url).toBe("https://notion.so/abc");
+
+    state = advance(state, err("Notion rejected the write"));
+    expect(state).toMatchObject({
+      error: true,
+      url: "https://notion.so/abc",
+      total: 40,
+    });
+  });
+
   test("leaves counts undefined for a connector that reports none", () => {
     const state = advance(IDLE, msg("Backup created."));
 

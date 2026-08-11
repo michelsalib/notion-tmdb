@@ -182,6 +182,12 @@ export interface SyncEvent {
   current?: number;
   /** Set on the closing event, whatever the outcome. */
   done?: boolean;
+  /**
+   * Something the run made that the user will want to open — the page a restore
+   * rebuilds into. Sent as soon as it exists rather than at the end, so a run
+   * that fails half way still leaves a link to what it did build.
+   */
+  url?: string;
 }
 
 /** A page the connector may create a database inside. */

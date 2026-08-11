@@ -1,10 +1,17 @@
 import type { Readable } from "node:stream";
+import type { RangeSource } from "../../utils/zipReader.js";
 
 /** One stored archive. `key` is opaque — hand it back to `getBackupLink`. */
 export interface BackupRef {
   key: string;
   date: Date;
   size: number;
+}
+
+/** An archive opened for reading, paired with what the listing knows about it. */
+export interface OpenedBackup {
+  ref: BackupRef;
+  source: RangeSource;
 }
 
 export interface StorageProvider {
@@ -23,6 +30,17 @@ export interface StorageProvider {
 
   /** A time-limited download link for `key`, or for the newest backup. */
   getBackupLink(key?: string): Promise<string>;
+
+  /**
+   * Open `key` — or the newest archive — for reading, or undefined if there is
+   * none.
+   *
+   * Random access rather than a stream, because a restore wants two entries out
+   * of the tail of an archive whose bulk is assets it never looks at. `key` is
+   * matched against this user's own listing, never joined onto their prefix,
+   * for the same reason `getBackupLink` does it: it arrives from the browser.
+   */
+  openBackup(key?: string): Promise<OpenedBackup | undefined>;
 
   getBackupMeta(): Promise<{
     lastModified?: Date;

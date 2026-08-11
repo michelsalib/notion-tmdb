@@ -21,6 +21,7 @@ import type { BackupDataProvider } from "./providers/BackupDataProvider.js";
 import type { DataProvider } from "./providers/DataProvider.js";
 import type { DbProvider } from "./providers/DbProvider.js";
 import { NotionClient } from "./providers/Notion/NotionClient.js";
+import type { NotionBackup } from "./providers/NotionBackup/NotionBackup.js";
 import type { Config, FieldPreview, UserData } from "./types.js";
 import { asWebByteStream } from "./utils/generator.js";
 import { staleBefore } from "./utils/syncWindow.js";
@@ -276,6 +277,50 @@ export class Api {
     );
   }
 
+  /**
+   * Rebuild a stored archive into the workspace, as a new page at its top level.
+   *
+   * Its own route rather than a mode of `/api/sync`, because it is the one
+   * streaming operation here that *writes* to Notion at scale. Notion-backup
+   * only: a Bitwarden archive has no workspace to come back to.
+   *
+   * Takes no parent. It used to, chosen from a dropdown of every page the
+   * integration could see — which in a real workspace is a scroll of forty
+   * unrelated titles, asking the user to make a filing decision about a copy
+   * they have not read yet. The restore goes to the top level and can be dragged
+   * anywhere afterwards.
+   */
+  async restore(container: DependencyContainer) {
+    const domain = container.resolve<DOMAIN>(DOMAIN_KEY);
+    const request = container.resolve<ScopedRequest>(REQUEST);
+    const { reply } = container.resolve<{ reply: ScopedReply }>(REPLY);
+
+    if (domain !== "backup") {
+      reply.status(400);
+
+      return "This connector has nothing to restore into Notion";
+    }
+
+    // Only a string, for the same reason `getBackup` insists on one: repeating
+    // a query parameter yields an array.
+    const key =
+      typeof request.query["key"] === "string"
+        ? request.query["key"]
+        : undefined;
+
+    reply.header("content-type", "text/event-stream");
+    reply.header("cache-control", "no-cache, no-transform");
+    reply.header("connection", "keep-alive");
+    reply.header("x-accel-buffering", "no");
+
+    // The domain guard above is what makes this the Notion backup connector,
+    // so DATA_PROVIDER is a NotionBackup. Resolved through the same token as
+    // everywhere else rather than by class, to keep one instance per request.
+    const backup = container.resolve<NotionBackup>(DATA_PROVIDER);
+
+    return asWebByteStream(backup.restore(key));
+  }
+
   async add(container: DependencyContainer) {
     const user = container.resolve<UserData<"GBook" | "TMDB">>(USER);
     const request = container.resolve<ScopedRequest>(REQUEST);
@@ -448,6 +493,11 @@ Router.register(Api, "preview", {
 });
 Router.register(Api, "sync", {
   path: "/api/sync",
+  method: "GET",
+  authenticate: true,
+});
+Router.register(Api, "restore", {
+  path: "/api/restore",
   method: "GET",
   authenticate: true,
 });

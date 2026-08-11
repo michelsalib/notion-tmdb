@@ -31,15 +31,12 @@ import {
   DomainContext,
   SnackbarContext,
 } from "./Context";
-import {
-  CreateDatabase,
-  DbConfigForm,
-  useCreatablePages,
-} from "./DbConfigForm";
+import { CreateDatabase, DbConfigForm } from "./DbConfigForm";
 import { Navigation } from "./Navigation";
 import { Field } from "./ui/Field";
 import { Check, Copy } from "./ui/icons";
 import { Note } from "./ui/Note";
+import { useSharedPages } from "./useSharedPages";
 
 /**
  * The settings page, as three ordered steps.
@@ -91,7 +88,8 @@ export function UserPage() {
   // `null` until Notion answers. Held here rather than inside `CreateDatabase`
   // so the "or" separator below is only drawn when there is a genuine
   // alternative on the other side of it.
-  const creatablePages = useCreatablePages(!isBackup);
+  const shared = useSharedPages(!isBackup);
+  const creatablePages = shared.pages;
 
   if (!userConfig) {
     return (
@@ -205,6 +203,8 @@ export function UserPage() {
                       pages={creatablePages}
                       onCreated={reloadConfig}
                     />
+                  ) : shared.failed ? (
+                    <Note severity="warning">{t("PAGES_UNAVAILABLE")}</Note>
                   ) : creatablePages ? (
                     <Note severity="info">{t("CREATE_DB_NO_PAGES")}</Note>
                   ) : null}

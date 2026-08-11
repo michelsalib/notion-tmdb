@@ -92,18 +92,19 @@ A backup is a zip holding:
 
 Ten runs are kept per workspace; the widget lets you download any of them.
 
-To rebuild a workspace from one:
+To rebuild a workspace from one, pick a backup in the widget and hit **Restore**.
+It asks nothing else: one new page — `Restored backup — 2026-08-09 14:31 UTC` —
+appears at the top level of your workspace, the archive is rebuilt inside it, and
+the run's own report is written onto it: where it came from, what it created, and
+every single thing it could not bring back. Drag it wherever it belongs
+afterwards. Nothing you already have is overwritten, moved or deleted, so a
+restore can be read and then thrown away.
 
-```sh
-bun support/restoreNotionBackup.ts --from ~/Downloads/backup.zip --dry-run
-bun support/restoreNotionBackup.ts --from ~/Downloads/backup.zip \
-  --parent <notion page id> --token <integration token>
-```
-
-Restore never writes over the originals — it recreates the tree under the page
-you name. Start with `--dry-run`: it walks the whole archive and prints exactly
-what cannot be brought back (uploaded files, relations, status columns) before
-you have half a workspace. The script's header explains each limitation.
+What a restore cannot recreate: uploaded files (the API takes a link to a file,
+not its bytes, so each one becomes a line naming the file to re-upload),
+relations, rollups, status columns and unique ids, comments and edit history, and
+the position of a sub-page within its parent. The restored page lists every one
+it hit, by name.
 
 ## Build & deploy
 

@@ -9,10 +9,12 @@ import {
   STORAGE_ENDPOINT,
   USER_ID,
 } from "../../fx/keys.js";
+import type { RangeSource } from "../../utils/zipReader.js";
 import {
   type BackupRef,
   backupObjectDate,
   backupObjectName,
+  type OpenedBackup,
   type StorageProvider,
 } from "./StorageProvider.js";
 
@@ -105,7 +107,7 @@ export class GcsStorageClient implements StorageProvider {
   }
 
   async getBackupLink(key?: string): Promise<string> {
-    const file = await this.resolve(key);
+    const file = (await this.resolve(key))?.file;
 
     if (!file) {
       throw new Error("No backup available.");
@@ -136,6 +138,34 @@ export class GcsStorageClient implements StorageProvider {
     return { lastModified: newest?.date };
   }
 
+  async openBackup(key?: string): Promise<OpenedBackup | undefined> {
+    const match = await this.resolve(key);
+
+    if (!match) {
+      return undefined;
+    }
+
+    const { file, ref } = match;
+
+    return {
+      ref,
+      source: {
+        size: ref.size,
+        async read(start, end) {
+          const chunks: Buffer[] = [];
+
+          // GCS treats both ends as inclusive, which is what a `RangeSource`
+          // promises its caller.
+          for await (const chunk of file.createReadStream({ start, end })) {
+            chunks.push(chunk as Buffer);
+          }
+
+          return new Uint8Array(Buffer.concat(chunks));
+        },
+      } satisfies RangeSource,
+    };
+  }
+
   async pruneBackups(keep: number): Promise<void> {
     const stale = (await this.listBackups()).slice(keep);
 
@@ -152,13 +182,17 @@ export class GcsStorageClient implements StorageProvider {
    * traversal (`../<other user>.zip`) would be handed a signed URL for someone
    * else's workspace.
    */
-  private async resolve(key?: string): Promise<File | undefined> {
+  private async resolve(
+    key?: string,
+  ): Promise<{ ref: BackupRef; file: File } | undefined> {
     const backups = await this.list();
     const match = key
       ? backups.find((backup) => backup.key === key)
       : backups[0];
 
-    return match ? this.bucket.file(match.key) : undefined;
+    return match
+      ? { ref: match, file: this.bucket.file(match.key) }
+      : undefined;
   }
 
   private async legacyRef(): Promise<BackupRef | undefined> {

@@ -10,6 +10,8 @@ export interface SyncState {
   current?: number;
   total?: number;
   error?: boolean;
+  /** Something the run created and the user will want to open. */
+  url?: string;
 }
 
 /** What the last completed run did, kept so the widget can show freshness. */
@@ -50,56 +52,42 @@ export function advance(previous: SyncState, chunk: StreamMessage): SyncState {
     message: event.message,
     current: event.current ?? previous.current,
     total: event.total ?? previous.total,
+    // Carried forward for the same reason as the counts, and it matters most on
+    // a failure: a restore that dies half way still built a page, and the error
+    // line is the last thing the user sees.
+    url: event.url ?? previous.url,
     error: chunk.type == "error",
   };
 }
 
 /**
- * Drive `/api/sync` and expose it as progress rather than as a stream of
- * toasts.
+ * Follow one of the streaming endpoints and expose it as progress rather than
+ * as a stream of toasts.
  *
  * Every chunk used to be pushed into the one bottom-centre snackbar, so each
  * line overwrote the last: the user saw flickering text, no history, and no
  * denominator to tell a slow run from a stalled one. Here the counts stay on
  * the state so a caller can draw a real progress bar, and the terminal message
  * persists instead of evaporating on a timeout.
+ *
+ * Shared by `useSync` and `useRestore`: both are a GET that streams
+ * `SyncEvent`s, and the only thing that differs is the path and what to say when
+ * the connection fails.
  */
-export function useSync(options?: {
-  /** `?domain=` override, for the multi-connector widget. */
-  domain?: string;
-  onSettled?: (state: SyncState) => void;
-}) {
+function useStreamedRun(
+  failureKey: string,
+  onSettled?: (state: SyncState) => void,
+) {
   const { t } = useTranslation();
   const [state, setState] = useState<SyncState>(IDLE);
 
-  /**
-   * `days` re-syncs rows already synced longer ago than that (`0` = all of
-   * them). Omitted, only rows that have never been synced are picked up.
-   *
-   * Sent as an age rather than as a computed cutoff so the instant comes off
-   * the server clock: a device with a skewed clock would otherwise silently
-   * sync a different window than the one the user picked.
-   */
-  const sync = useCallback(
-    async (days?: number) => {
+  const run = useCallback(
+    async (path: string) => {
       setState({ running: true, message: "" });
 
       let latest: SyncState = { running: true, message: "" };
 
       try {
-        const params = new URLSearchParams();
-
-        if (options?.domain) {
-          params.set("domain", options.domain);
-        }
-
-        if (days !== undefined) {
-          params.set("days", String(days));
-        }
-
-        const query = params.toString();
-        const path = query ? `/api/sync?${query}` : "/api/sync";
-
         let received = 0;
 
         for await (const chunk of streaming(path)) {
@@ -119,23 +107,94 @@ export function useSync(options?: {
         // all. Treating that as success recorded "Last sync just now · 0 updated"
         // for a run that never happened.
         if (received === 0) {
-          latest = { running: true, message: t("SYNC_FAILURE"), error: true };
+          latest = { running: true, message: t(failureKey), error: true };
         }
       } catch {
-        latest = { running: true, message: t("SYNC_FAILURE"), error: true };
+        latest = { running: true, message: t(failureKey), error: true };
       }
 
       const settled: SyncState = { ...latest, running: false };
 
       setState(settled);
-      options?.onSettled?.(settled);
+      onSettled?.(settled);
 
       return settled;
     },
-    [options?.domain, t],
+    [failureKey, t],
   );
 
-  return { ...state, sync, reset: () => setState(IDLE) };
+  return { state, run, reset: () => setState(IDLE) };
+}
+
+export function useSync(options?: {
+  /** `?domain=` override, for the multi-connector widget. */
+  domain?: string;
+  onSettled?: (state: SyncState) => void;
+}) {
+  const { state, run, reset } = useStreamedRun(
+    "SYNC_FAILURE",
+    options?.onSettled,
+  );
+
+  /**
+   * `days` re-syncs rows already synced longer ago than that (`0` = all of
+   * them). Omitted, only rows that have never been synced are picked up.
+   *
+   * Sent as an age rather than as a computed cutoff so the instant comes off
+   * the server clock: a device with a skewed clock would otherwise silently
+   * sync a different window than the one the user picked.
+   */
+  const sync = useCallback(
+    (days?: number) => {
+      const params = new URLSearchParams();
+
+      if (options?.domain) {
+        params.set("domain", options.domain);
+      }
+
+      if (days !== undefined) {
+        params.set("days", String(days));
+      }
+
+      const query = params.toString();
+
+      return run(query ? `/api/sync?${query}` : "/api/sync");
+    },
+    [options?.domain, run],
+  );
+
+  return { ...state, sync, reset };
+}
+
+/**
+ * Rebuild a stored backup into Notion, under a page the user picks.
+ *
+ * Separate from `useSync` because the two are opposites and a widget shows them
+ * side by side: one reads the workspace into an archive, the other writes an
+ * archive back into the workspace. Sharing the state would leave a restore's
+ * progress line overwriting a backup's.
+ */
+export function useRestore(options?: {
+  onSettled?: (state: SyncState) => void;
+}) {
+  const { state, run, reset } = useStreamedRun(
+    "RESTORE_FAILURE",
+    options?.onSettled,
+  );
+
+  /**
+   * `key` picks a stored archive; omitted, the newest one.
+   *
+   * No parent page: the restore lands at the top level of the workspace, so
+   * there is nothing to ask and nothing to send.
+   */
+  const restore = useCallback(
+    (key?: string) =>
+      run(key ? `/api/restore?key=${encodeURIComponent(key)}` : "/api/restore"),
+    [run],
+  );
+
+  return { ...state, restore, reset };
 }
 
 /**

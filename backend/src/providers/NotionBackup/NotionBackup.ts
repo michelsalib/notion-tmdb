@@ -6,7 +6,7 @@ import { inject, injectable } from "tsyringe";
 import { LOGGER, REQUEST, STORAGE_PROVIDER } from "../../fx/keys.js";
 import type { Logger } from "../../fx/logger/Logger.js";
 import type { ScopedRequest } from "../../fx/router.js";
-import type { Suggestion } from "../../types.js";
+import type { Suggestion, SyncEvent } from "../../types.js";
 import {
   type AssetRef,
   assetFileName,
@@ -15,11 +15,23 @@ import {
   type BackupItem,
   type BackupManifest,
   DATA_ENTRY,
+  LEGACY_DATA_ENTRY,
   MANIFEST_ENTRY,
   MANIFEST_VERSION,
 } from "../../utils/backupArchive.js";
 import { MARKDOWN_DIR, renderMarkdown } from "../../utils/backupMarkdown.js";
+import {
+  NotionRestore,
+  parseArchive,
+  RestoreReport,
+} from "../../utils/notionRestore.js";
+import { plural } from "../../utils/plural.js";
 import { retriable } from "../../utils/retriable.js";
+import {
+  findZipEntry,
+  readZipEntries,
+  readZipEntry,
+} from "../../utils/zipReader.js";
 import type { BackupDataProvider } from "../BackupDataProvider.js";
 import { NotionClient } from "../Notion/NotionClient.js";
 import type { BackupRef, StorageProvider } from "../Storage/StorageProvider.js";
@@ -192,6 +204,64 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
     // Only once the new archive is safely stored, so a failed run never costs
     // the user the backup it was meant to replace.
     await this.storage.pruneBackups(KEEP_BACKUPS);
+  }
+
+  /**
+   * Rebuild the workspace from a stored archive, inside a new page.
+   *
+   * Reads two entries out of the zip and nothing else — `data.json` holds every
+   * archived object, and `assets/` is the bulk of the file but is of no use to a
+   * restore, since Notion's API takes a link to a file rather than its bytes.
+   * That is what `openBackup` gives random access for.
+   *
+   * Takes no parent: the new page goes to the top level of the workspace (see
+   * `NotionClient.createRestoreRoot`), and the archive is never written back
+   * over the originals. See `notionRestore.ts` for the rest of the rules.
+   */
+  async *restore(key?: string): AsyncGenerator<SyncEvent> {
+    const opened = await this.storage.openBackup(key);
+
+    if (!opened) {
+      throw new Error("There is no backup to restore.");
+    }
+
+    const name = opened.ref.key.split("/").pop() ?? opened.ref.key;
+    const entries = await readZipEntries(opened.source);
+    // `data_data.json` is what `data.json` was called before the manifest
+    // existed, and archives in the bucket still use it.
+    const data = findZipEntry(entries, [DATA_ENTRY, LEGACY_DATA_ENTRY]);
+
+    if (!data) {
+      throw new Error(
+        `${name} holds no ${DATA_ENTRY} — is it a Notion backup?`,
+      );
+    }
+
+    const manifest = findZipEntry(entries, [MANIFEST_ENTRY]);
+    const read = async (entry: typeof data): Promise<string> =>
+      new TextDecoder().decode(await readZipEntry(opened.source, entry));
+
+    const archive = parseArchive({
+      name,
+      // The listing's date, which is the run's own stamp in the object name and
+      // is there even for an archive too old to carry a manifest.
+      takenAt: opened.ref.date,
+      data: await read(data),
+      manifest: manifest ? await read(manifest) : undefined,
+    });
+
+    yield {
+      message: `Read ${archive.items.length} archived ${plural(
+        archive.items.length,
+        "item",
+      )} from ${name}.`,
+    };
+
+    yield* new NotionRestore(
+      archive,
+      new RestoreReport(),
+      this.notion.restoreTarget(),
+    ).run();
   }
 
   async getBackupDate(): Promise<Date | undefined> {

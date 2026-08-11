@@ -177,11 +177,65 @@ through `onSkip` and carries on, and `NotionBackup` fails the run only when
 *nothing* succeeded — same rule as `runSync`, so an expired token is still an
 error rather than an empty zip.
 
-`support/restoreNotionBackup.ts` rebuilds a workspace from an archive. If you
-touch it, note that `strip()` runs over whole nested payloads, so `url` must stay
-out of its field list: it is a bookmark's target, an embed's source, an external
-image and a url column's value, and only *looks* like server-owned metadata
-because pages have one too.
+## Restore
+
+`utils/notionRestore.ts` is the walk that rebuilds a workspace from an archive,
+driven by `NotionBackup.restore()` behind `GET /api/restore` — the widget's
+Restore button, on one of the user's stored archives. Everything about *what* a
+restore does belongs in the walk and nothing belongs in the caller; the
+`RestoreTarget` seam is what keeps it testable without writing to a workspace.
+
+There used to be a second caller, `support/restoreNotionBackup.ts`, for a zip on
+disk with a `--dry-run`. It was deleted once the widget covered the job — it is in
+git history if a loose archive ever needs reading again, and the walk it drove is
+unchanged.
+
+- **A restore creates one new page and builds inside it.** It never writes over
+  the originals, so a run can be read and thrown away. That page is also the
+  report: `restoreIntroBlocks` explains what it is *before* the walk starts (so
+  it survives a run that dies half way) and `restoreSummaryBlocks` appends what
+  happened afterwards. A report printed to a terminal is no use to someone who
+  clicked a button in Notion — every skip and dropped column has to end up on
+  that page.
+- **Nobody is asked where it goes.** `createRoot` is a separate `RestoreTarget`
+  method precisely so the walk does not decide: the app sends
+  `parent: { type: "workspace", workspace: true }` and the page lands in the
+  user's Private section, ready to be dragged. There *was* a page picker, and in
+  a real workspace it is a scroll of forty unrelated titles — a filing decision
+  about a copy the user has not read yet, standing between them and the button.
+  Notion allows a workspace parent for public connections and personal access
+  tokens, but not for an internal integration, and the SDK still pins
+  `Notion-Version: 2022-06-28` — so `createRestoreRoot` treats a **400** (and only
+  a 400) as "this parent is not allowed" and falls back to the topmost page the
+  integration can see. A 401 or a 429 is rethrown: the second attempt would fail
+  too, with a worse message.
+- **One bad item is skipped, not fatal**, and a run where *nothing* was created
+  throws — the same rule as `runSync` and `NotionBackup.sync()`. The summary is
+  appended before that throw, so the page still explains itself.
+- `strip()` runs over whole nested payloads, so `url` must stay out of its field
+  list: it is a bookmark's target, an embed's source, an external image and a url
+  column's value, and only *looks* like server-owned metadata because pages have
+  one too. A page's own title goes back as `{ title: { title: [...] } }` — the
+  bare `{ title: [...] }` shorthand is neither documented nor in the SDK's types.
+- **Reading an archive means two entries, not the whole zip.** `utils/zipReader.ts`
+  finds `data.json` and `manifest.json` through the central directory and pulls
+  just those with ranged reads (`StorageProvider.openBackup`). A restore has no
+  use for `assets/`, which is nearly all of the file, and backups are stored
+  COLDLINE where every retrieved byte is billed. It reads the *central*
+  directory, never local headers: archiver streams entries, so their local
+  headers state a size of zero.
+- `listPages` (the *database* parent picker, `GET /api/pages`) has to stay
+  **paginated**. Notion cannot filter database rows out of a search, so they are
+  dropped client-side — and search returns the most recently edited things first,
+  which in a workspace these connectors run on means the rows they keep
+  rewriting. One unpaginated call filtered all 100 results away and told users
+  with plenty of shared pages to go and share one. For the same reason
+  `useSharedPages` reports a *failed* request separately: swallowing it as "no
+  pages" is what made that look like the user's fault.
+- Restore is Notion-only (`domain === "backup"`). A Bitwarden archive stays
+  encrypted with the user's master password and has no workspace to return to,
+  which is why `restore()` lives on `NotionBackup` rather than on
+  `BackupDataProvider`.
 
 ## Colour
 

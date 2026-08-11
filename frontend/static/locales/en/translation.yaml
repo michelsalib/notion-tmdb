@@ -4,6 +4,8 @@
 # --- generic actions ---
 OPEN: Open
 SAVE: Save
+CANCEL: Cancel
+CLOSE: Close
 DISCARD: Discard
 ADD: Add
 COPY: Copy link
@@ -56,6 +58,7 @@ CREATE_DB_ACTION: Create a database
 CREATE_DB_SUCCESS: Database created and matched.
 CREATE_DB_FAILURE: Could not create the database. Check the page is shared with the integration.
 CREATE_DB_NO_PAGES: Share a Notion page with this integration first — a new database has to live inside a page.
+PAGES_UNAVAILABLE: We could not read the pages in your workspace. Reload to try again.
 
 # --- widget ---
 SYNCING: Syncing…
@@ -80,9 +83,20 @@ MULTI_ADD_FAILURE: Could not add that. Try again.
 BACKUP_CREATE: Back up now
 BACKUP_CHOOSE: Backup
 BACKUP_DOWNLOAD: Download
+BACKUP_RESTORE: Restore
 BACKUP_LAST: Last backup
 BACKUP_NEVER: Never
 BACKUP_RETRIEVAL_FAILURE: Could not fetch the backup. Try again.
+
+# --- restore ---
+RESTORE_INTRO: A restore rebuilds this backup as one new page at the top level of your workspace, ready to move wherever you want it. Nothing you have now is overwritten, moved or deleted.
+RESTORE_CAVEAT: Uploaded files, relations, status columns and comments cannot be recreated. The new page lists everything the restore left behind.
+RESTORE_SOURCE: From the backup taken {{when}}.
+RESTORE_ACTION: Restore this backup
+RESTORING: Restoring…
+RESTORE_DONE: Restore finished.
+RESTORE_OPEN: Open the restored page
+RESTORE_FAILURE: Restore failed.
 
 # --- sign in ---
 CONNECT_NOTION: Connect with Notion

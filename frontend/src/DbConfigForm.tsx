@@ -8,7 +8,12 @@ import {
 } from "@mui/material";
 import { type FieldSpec, fieldsFor } from "backend/src/fields";
 import { guessMapping, type MappableProperty } from "backend/src/mapping";
-import type { Config, DOMAIN, NotionDatabase } from "backend/src/types";
+import type {
+  Config,
+  DOMAIN,
+  NotionDatabase,
+  NotionPage,
+} from "backend/src/types";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DomainContext } from "./Context";
@@ -329,44 +334,6 @@ function MappingRow({
   );
 }
 
-export interface NotionPage {
-  id: string;
-  title: string;
-}
-
-/**
- * The pages this integration is allowed to create a database inside. `null`
- * while it is still being fetched.
- *
- * Lifted out of `CreateDatabase` because whether there is anything to offer
- * decides what the *caller* draws, not just what this component renders. Owned
- * privately, it produced two versions of the same fault on the settings page:
- * while the fetch was in flight the component returned `null` under an "or"
- * separator, leaving an "or" dividing nothing; and when Notion returned no
- * shared pages, the separator promised an alternative and was followed only by
- * the prerequisite for it, with the alternative itself absent. Neither is
- * something the caller could avoid without knowing this.
- */
-export function useCreatablePages(enabled: boolean): NotionPage[] | null {
-  const [pages, setPages] = useState<NotionPage[] | null>(null);
-
-  useEffect(() => {
-    // The backup connectors map no columns and never create a database, so
-    // they have no use for this. Gated by a flag rather than by calling the
-    // hook conditionally, which React does not allow.
-    if (!enabled) {
-      return;
-    }
-
-    void fetch("/api/pages")
-      .then((r) => r.json())
-      .then(({ pages }: { pages: NotionPage[] }) => setPages(pages))
-      .catch(() => setPages([]));
-  }, [enabled]);
-
-  return pages;
-}
-
 /**
  * Offer to build the database instead of mapping one.
  *
@@ -378,7 +345,7 @@ export function CreateDatabase({
   pages,
   onCreated,
 }: {
-  /** Guaranteed non-empty by the caller — see `useCreatablePages`. */
+  /** Guaranteed non-empty by the caller — see `useSharedPages`. */
   pages: NotionPage[];
   onCreated: () => void | Promise<void>;
 }) {

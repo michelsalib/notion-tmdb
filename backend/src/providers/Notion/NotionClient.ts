@@ -17,6 +17,7 @@ import type {
   SyncOptions,
   UrlMatch,
 } from "../../types.js";
+import type { RestoreTarget } from "../../utils/notionRestore.js";
 import { retriable } from "../../utils/retriable.js";
 
 /**
@@ -44,6 +45,15 @@ export type SkipReporter = (subject: string, error: unknown) => void;
 const OPAQUE_CHILDREN = new Set(["child_page", "child_database"]);
 
 const MAX_BLOCK_DEPTH = 20;
+
+/** Notion's cap on one search response. */
+const SEARCH_PAGE_SIZE = 100;
+
+/** Enough for a picker; nobody scrolls a thousand-item dropdown. */
+const MAX_PARENT_PAGES = 100;
+
+/** And a ceiling on how far `listPages` will look for them. */
+const MAX_PAGE_SEARCHES = 20;
 
 @injectable()
 export class NotionClient {
@@ -165,22 +175,70 @@ export class NotionClient {
 
   /**
    * Pages the integration can see, as candidate parents for a new database.
+   * (A restore needs no picker — see `createRestoreRoot`.)
    *
-   * Notion databases must be created inside a page, so a user with no shared
-   * page cannot be given one — the caller turns an empty list into an
-   * instruction to share a page rather than a failed API call.
+   * Notion has no way to ask search for "pages that are not database rows", so
+   * the rows are dropped here — and that is why this has to be paginated. It
+   * used to make one unpaginated call and filter its 100 results, and search
+   * returns the most recently edited things first. In a workspace these
+   * connectors are actually being used on, the most recently edited pages are
+   * the database rows they keep rewriting, so all 100 results were rows, every
+   * one was filtered out, and a user with plenty of shared pages was told to go
+   * and share one.
+   *
+   * Bounded at both ends: it stops once there are more pages than a picker can
+   * usefully show, and after a fixed number of requests, so a workspace with
+   * tens of thousands of rows cannot turn opening the settings page into a
+   * minutes-long walk.
    */
   async listPages(): Promise<NotionPage[]> {
-    const { results } = await this.client.search({
-      filter: {
-        property: "object",
-        value: "page",
-      },
-    });
+    const pages: NotionPage[] = [];
 
-    return (results as PageObjectResponse[])
-      .filter((page) => page.parent?.type !== "database_id")
-      .map((page) => ({ id: page.id, title: pageTitle(page) }));
+    for await (const page of this.searchPages()) {
+      pages.push({ id: page.id, title: pageTitle(page) });
+
+      if (pages.length >= MAX_PARENT_PAGES) {
+        break;
+      }
+    }
+
+    return pages;
+  }
+
+  /**
+   * Pages the integration can see that are not database rows, newest first.
+   *
+   * Paginated, and capped at `MAX_PAGE_SEARCHES` requests: a caller that stops
+   * early pays for nothing more, and one that does not cannot walk a workspace
+   * of fifty thousand rows while somebody waits for a page to load.
+   */
+  private async *searchPages(): AsyncGenerator<PageObjectResponse> {
+    let cursor: string | undefined;
+
+    for (let request = 0; request < MAX_PAGE_SEARCHES; request++) {
+      const { results, next_cursor } = await retriable(
+        this.client,
+        "search",
+        this.logger,
+      )({
+        filter: { property: "object", value: "page" },
+        start_cursor: cursor,
+        page_size: SEARCH_PAGE_SIZE,
+      });
+
+      for (const page of results as PageObjectResponse[]) {
+        // A row is a page, but not somewhere anything can be created.
+        if (page.parent?.type !== "database_id") {
+          yield page;
+        }
+      }
+
+      cursor = next_cursor ?? undefined;
+
+      if (!cursor) {
+        return;
+      }
+    }
   }
 
   /**
@@ -323,6 +381,138 @@ export class NotionClient {
     }
 
     return found;
+  }
+
+  /**
+   * The three writes a restore makes, as one object.
+   *
+   * Payload-in rather than a typed helper per shape, because a restore replays
+   * archived Notion objects: the bodies are whatever the workspace happened to
+   * contain, so any signature narrow enough to be useful would be wrong for
+   * something. Bundled here so that the one place in this client where a caller
+   * hands over a whole body stays visible, instead of three loose `any` methods
+   * that read like an invitation.
+   *
+   * Retried, unlike the reads above needing it least: a restore is thousands of
+   * writes in a row, which is exactly the shape Notion rate-limits.
+   */
+  restoreTarget(): RestoreTarget {
+    return {
+      createRoot: (body) => this.createRestoreRoot(body),
+      createPage: async (body) => {
+        const page = await retriable(
+          this.client.pages,
+          "create",
+          this.logger,
+        )(body);
+
+        return { id: page.id, url: "url" in page ? page.url : undefined };
+      },
+      createDatabase: async (body) => {
+        const database = await retriable(
+          this.client.databases,
+          "create",
+          this.logger,
+        )(body);
+
+        return {
+          id: database.id,
+          url: "url" in database ? database.url : undefined,
+        };
+      },
+      appendBlocks: async (parentId, children) => {
+        const { results } = await retriable(
+          this.client.blocks.children,
+          "append",
+          this.logger,
+        )({ block_id: parentId, children });
+
+        return results.map((block) => block.id);
+      },
+    };
+  }
+
+  /**
+   * Create the page a restore is built inside, at the top level of the
+   * workspace.
+   *
+   * A workspace parent is what "the base" means here: the page lands in the
+   * user's own Private section instead of buried inside whichever page a picker
+   * talked them into. Nothing else in this app can do that — a database still
+   * has to be created inside a page — so a restore is the one place worth it,
+   * and it is why the restore panel asks the user nothing at all.
+   *
+   * Notion allows it for public connections, which is what every connector here
+   * is, but only from an API version that accepts the parent; the SDK still pins
+   * `2022-06-28`, and an internal integration token (the restore script's
+   * `--token`) is refused outright. So a rejected *parent* falls back to the
+   * topmost page the integration can see rather than failing the whole restore.
+   * Any other error is rethrown: a bad token or a rate limit would fail the
+   * second attempt too, with a worse message.
+   */
+  private async createRestoreRoot(
+    body: any,
+  ): Promise<{ id: string; url?: string }> {
+    try {
+      return await this.createPageAt(
+        { type: "workspace", workspace: true },
+        body,
+      );
+    } catch (error) {
+      if ((error as { status?: number })?.status !== 400) {
+        throw error;
+      }
+
+      const fallback = await this.topLevelPage();
+
+      if (!fallback) {
+        throw error;
+      }
+
+      this.logger.warn("Restoring into a shared page, not the workspace root", {
+        reason: String(error),
+        page_id: fallback,
+      });
+
+      return await this.createPageAt(
+        { type: "page_id", page_id: fallback },
+        body,
+      );
+    }
+  }
+
+  /**
+   * The page a restore falls back into: one at the top level of the workspace
+   * if the integration can see one, else whatever it can see.
+   *
+   * Preferring a workspace-parented page keeps the fallback as close to the
+   * intent as the API allows, instead of nesting a whole workspace inside some
+   * arbitrary sub-page.
+   */
+  private async topLevelPage(): Promise<string | undefined> {
+    let first: string | undefined;
+
+    for await (const page of this.searchPages()) {
+      first ??= page.id;
+
+      if (page.parent?.type === "workspace") {
+        return page.id;
+      }
+    }
+
+    return first;
+  }
+
+  /** One `pages.create`, with the parent the caller chose. */
+  private async createPageAt(
+    parent: unknown,
+    body: any,
+  ): Promise<{ id: string; url?: string }> {
+    // Cast: the SDK's types predate the workspace parent, and a restore hands
+    // over whole archived payloads anyway.
+    const page = await this.client.pages.create({ ...body, parent } as any);
+
+    return { id: page.id, url: "url" in page ? page.url : undefined };
   }
 
   async updatePage(page: UpdatePageParameters): Promise<void> {

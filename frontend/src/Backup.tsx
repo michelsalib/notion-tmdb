@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Collapse,
   LinearProgress,
   MenuItem,
   Select,
@@ -10,7 +11,8 @@ import {
 import { UserConfig } from "backend/src/types";
 import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ConfigContext, SnackbarContext } from "./Context";
+import { ConfigContext, DomainContext, SnackbarContext } from "./Context";
+import { RestorePanel } from "./Restore";
 import { useSync } from "./useSync";
 
 /** A stored archive as it arrives over the wire — `date` is a JSON string. */
@@ -41,12 +43,20 @@ function label(backup: StoredBackup): string {
 export function Backup() {
   const { t } = useTranslation();
   const { setSnackbar } = useContext(SnackbarContext);
+  const { domain } = useContext(DomainContext);
   const config = useContext(ConfigContext) as UserConfig<"backup"> | null;
   // Local copy of the history: the config context is fetched once at app
   // start, so without this a run you just watched finish would not appear in
   // the list until a reload.
   const [refreshed, setRefreshed] = useState<StoredBackup[] | null>(null);
   const [selected, setSelected] = useState("");
+  /** The archive the open restore panel is for, or null when it is closed. */
+  const [restoring, setRestoring] = useState<StoredBackup | null>(null);
+
+  // Only the Notion connector: a Bitwarden archive stays encrypted with the
+  // user's master password and has no workspace to be rebuilt into. This widget
+  // serves both.
+  const canRestore = domain === "backup";
 
   const history = (refreshed ??
     (config?.backups as unknown as StoredBackup[]) ??
@@ -120,6 +130,15 @@ export function Backup() {
         >
           {t("BACKUP_DOWNLOAD")}
         </Button>
+        {canRestore ? (
+          <Button
+            variant="text"
+            onClick={() => setRestoring(restoring ? null : (current ?? null))}
+            disabled={sync.running || !current}
+          >
+            {t("BACKUP_RESTORE")}
+          </Button>
+        ) : null}
 
         <Box sx={{ flexGrow: 1 }} />
 
@@ -151,6 +170,21 @@ export function Backup() {
           )}
         </Stack>
       </Stack>
+
+      {/* Bound to the archive that was chosen when it opened, not to whatever
+          the picker says now: a restore takes minutes, and a dropdown moved
+          while one is running must not change what the panel claims to be doing.
+          Unmounted when closed, so reopening it does not show the last run. */}
+      <Collapse in={Boolean(restoring)} unmountOnExit>
+        {restoring ? (
+          <RestorePanel
+            backupKey={restoring.key}
+            when={new Date(restoring.date).toLocaleString()}
+            busy={sync.running}
+            onClose={() => setRestoring(null)}
+          />
+        ) : null}
+      </Collapse>
 
       {/* The stream reports inline rather than through the snackbar, which in
           an embed is about as tall as the widget it would be covering. */}

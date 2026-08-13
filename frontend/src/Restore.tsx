@@ -56,18 +56,33 @@ export function RestorePanel({
           <Typography variant="caption" color="text.secondary">
             {restore.message}
           </Typography>
-          <Stack direction="row" spacing={1}>
+          {/* Wraps between the buttons rather than inside either label: this
+              row's primary is the longest label in the panel, and a label
+              broken across two lines reads as two controls. */}
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             {restore.url ? (
               <Button
+                size="small"
                 variant="contained"
                 href={restore.url}
                 target="_blank"
                 rel="noreferrer"
+                sx={{ flexShrink: 0 }}
               >
                 {t("RESTORE_OPEN")}
               </Button>
             ) : null}
-            <Button variant="text" onClick={onClose}>
+            <Button
+              size="small"
+              variant="text"
+              onClick={onClose}
+              sx={{ flexShrink: 0 }}
+            >
               {t("CLOSE")}
             </Button>
           </Stack>
@@ -79,24 +94,43 @@ export function RestorePanel({
             {t("RESTORE_CAVEAT")}
           </Typography>
 
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          {/* Which archive, on its own line and directly above the button — the
+              last thing read before the press. It shared the button row once,
+              where it was the widest item by far and `noWrap` truncated it to
+              "10/08/2026 1…": the one line whose whole job is to be specific,
+              cut short, while the buttons beside it were squeezed under their
+              labels and wrapped mid-phrase. It wraps now rather than clipping. */}
+          {when && !restore.running && !restore.message ? (
+            <Typography variant="caption" color="text.secondary">
+              {t("RESTORE_SOURCE", { when })}
+            </Typography>
+          ) : null}
+
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ alignItems: "center", flexWrap: "wrap" }}
+          >
             <Button
+              size="small"
               variant="contained"
               onClick={() => void restore.restore(backupKey)}
               loading={restore.running}
               disabled={busy}
+              sx={{ flexShrink: 0 }}
             >
               {t("RESTORE_ACTION")}
             </Button>
             {!restore.running ? (
-              <Button variant="text" onClick={onClose}>
+              <Button
+                size="small"
+                variant="text"
+                onClick={onClose}
+                sx={{ flexShrink: 0 }}
+              >
                 {t("CANCEL")}
               </Button>
-            ) : null}
-            {when && !restore.running && !restore.message ? (
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {t("RESTORE_SOURCE", { when })}
-              </Typography>
             ) : null}
           </Stack>
 

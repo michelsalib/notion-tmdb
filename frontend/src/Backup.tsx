@@ -1,10 +1,13 @@
 import {
-  Box,
   Button,
+  ButtonGroup,
   Collapse,
+  Divider,
   LinearProgress,
+  ListItemText,
+  ListSubheader,
+  Menu,
   MenuItem,
-  Select,
   Stack,
   Typography,
 } from "@mui/material";
@@ -13,6 +16,7 @@ import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfigContext, DomainContext, SnackbarContext } from "./Context";
 import { RestorePanel } from "./Restore";
+import { ChevronDown } from "./ui/icons";
 import { useSync } from "./useSync";
 
 /** A stored archive as it arrives over the wire — `date` is a JSON string. */
@@ -36,8 +40,144 @@ function formatSize(bytes: number): string {
   return `${value < 10 && unit > 0 ? value.toFixed(1) : Math.round(value)} ${UNITS[unit]}`;
 }
 
+/** Full form, for the menu — the one place with room for it. */
 function label(backup: StoredBackup): string {
   return `${new Date(backup.date).toLocaleString()} · ${formatSize(backup.size)}`;
+}
+
+/**
+ * A stamp for the tight places — the row caption and the restore panel's
+ * source line.
+ *
+ * `toLocaleString()` in full is "13/08/2026, 14:23:05": a seconds field nobody
+ * reads, in an embed with no width to spare.
+ */
+function shortDate(date: string): string {
+  return new Date(date).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Short form, for the caption sharing a line with the buttons. */
+function shortLabel(backup: StoredBackup): string {
+  return `${shortDate(backup.date)} · ${formatSize(backup.size)}`;
+}
+
+/**
+ * Download, with the archive history and Restore behind a chevron.
+ *
+ * This row was three peer buttons and a `Select` with `nowrap`: roughly 450px of
+ * content in a Notion embed that is regularly narrower than that, and nothing
+ * carried `flexShrink: 0`, so the buttons were squeezed under their labels and
+ * every one of them wrapped mid-phrase ("Back up / now"). Same answer as
+ * `ConnectorWidget`'s sync control — one primary action, the rare ones collapsed
+ * into a menu, which costs no width at all.
+ *
+ * Choosing an older archive *downloads* it rather than arming a button
+ * elsewhere. The two-step only existed because a `Select` cannot live inside the
+ * button it feeds.
+ */
+function DownloadButton({
+  history,
+  current,
+  busy,
+  canRestore,
+  onDownload,
+  onPick,
+  onRestore,
+}: {
+  history: StoredBackup[];
+  /** The archive both Download and Restore currently act on. */
+  current?: StoredBackup;
+  busy: boolean;
+  /** Notion only — a Bitwarden archive has no workspace to rebuild into. */
+  canRestore: boolean;
+  onDownload: () => void;
+  onPick: (backup: StoredBackup) => void;
+  onRestore: () => void;
+}) {
+  const { t } = useTranslation();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+  const choosable = history.length > 1;
+  // With one archive and no restore, the chevron would open an empty menu.
+  const hasMenu = canRestore || choosable;
+
+  const run = (action: () => void) => {
+    setAnchor(null);
+    action();
+  };
+
+  return (
+    <>
+      <ButtonGroup
+        size="small"
+        variant="outlined"
+        disabled={busy || !current}
+        sx={{ flexShrink: 0 }}
+      >
+        <Button onClick={onDownload}>{t("BACKUP_DOWNLOAD")}</Button>
+        {hasMenu ? (
+          <Button
+            onClick={(event) => setAnchor(event.currentTarget)}
+            aria-label={t("BACKUP_OPTIONS")}
+            aria-haspopup="menu"
+            sx={{ minWidth: 0, px: 0.25 }}
+          >
+            <ChevronDown size={14} />
+          </Button>
+        ) : null}
+      </ButtonGroup>
+
+      <Menu
+        anchorEl={anchor}
+        open={Boolean(anchor)}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        // Capped to the viewport so ten archives scroll rather than being cut
+        // off by the iframe's edge, which cannot grow to fit a popup.
+        slotProps={{
+          paper: { sx: { maxHeight: "min(320px, calc(100vh - 16px))" } },
+        }}
+      >
+        {choosable ? (
+          <ListSubheader disableSticky sx={{ lineHeight: 2, fontSize: 11 }}>
+            {t("BACKUP_CHOOSE")}
+          </ListSubheader>
+        ) : null}
+
+        {choosable
+          ? history.map((backup) => (
+              <MenuItem
+                key={backup.key}
+                selected={backup.key === current?.key}
+                onClick={() => run(() => onPick(backup))}
+              >
+                <ListItemText
+                  primary={label(backup)}
+                  slotProps={{ primary: { variant: "body2" } }}
+                />
+              </MenuItem>
+            ))
+          : null}
+
+        {canRestore && choosable ? <Divider /> : null}
+
+        {canRestore ? (
+          <MenuItem onClick={() => run(onRestore)}>
+            <ListItemText
+              primary={t("BACKUP_RESTORE")}
+              slotProps={{ primary: { variant: "body2" } }}
+            />
+          </MenuItem>
+        ) : null}
+      </Menu>
+    </>
+  );
 }
 
 export function Backup() {
@@ -85,11 +225,15 @@ export function Backup() {
     }
   }
 
-  async function download() {
+  async function download(backup?: StoredBackup) {
+    // No key at all is the legacy flat `<userId>.zip`, which is all a user who
+    // has not run a backup since the history landed still has.
+    const target = backup ?? current;
+
     try {
       const response = await fetch(
-        current
-          ? `/api/backup?key=${encodeURIComponent(current.key)}`
+        target
+          ? `/api/backup?key=${encodeURIComponent(target.key)}`
           : "/api/backup",
       );
 
@@ -115,60 +259,42 @@ export function Backup() {
 
   return (
     <Stack spacing={1.5} sx={{ padding: 2 }}>
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+      {/* One line, at any width: two controls that never shrink, and a caption
+          that takes what is left and ellipsises. */}
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         <Button
+          size="small"
           variant="contained"
           onClick={() => void sync.sync()}
           loading={sync.running}
+          sx={{ flexShrink: 0 }}
         >
           {t("BACKUP_CREATE")}
         </Button>
-        <Button
-          variant="outlined"
-          onClick={download}
-          disabled={sync.running || !current}
+
+        <DownloadButton
+          history={history}
+          current={current}
+          busy={sync.running}
+          canRestore={canRestore}
+          onDownload={() => void download()}
+          // Picking an older archive moves what Download and Restore mean, so
+          // the caption below has to be saying which one that is.
+          onPick={(backup) => {
+            setSelected(backup.key);
+            void download(backup);
+          }}
+          onRestore={() => setRestoring(current ?? null)}
+        />
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          noWrap
+          sx={{ minWidth: 0, flexGrow: 1 }}
         >
-          {t("BACKUP_DOWNLOAD")}
-        </Button>
-        {canRestore ? (
-          <Button
-            variant="text"
-            onClick={() => setRestoring(restoring ? null : (current ?? null))}
-            disabled={sync.running || !current}
-          >
-            {t("BACKUP_RESTORE")}
-          </Button>
-        ) : null}
-
-        <Box sx={{ flexGrow: 1 }} />
-
-        <Stack sx={{ minWidth: 0 }}>
-          <Typography variant="caption" color="text.secondary">
-            {history.length > 1 ? t("BACKUP_CHOOSE") : t("BACKUP_LAST")}
-          </Typography>
-          {/* The picker earns its space only once there is a choice to make. */}
-          {history.length > 1 ? (
-            <Select
-              value={current?.key ?? ""}
-              onChange={(event) => setSelected(event.target.value)}
-              variant="standard"
-              disabled={sync.running}
-              sx={{ fontSize: "0.875rem" }}
-            >
-              {history.map((backup) => (
-                <MenuItem key={backup.key} value={backup.key}>
-                  {label(backup)}
-                </MenuItem>
-              ))}
-            </Select>
-          ) : (
-            <Typography variant="body2" noWrap>
-              {current
-                ? new Date(current.date).toLocaleString()
-                : t("BACKUP_NEVER")}
-            </Typography>
-          )}
-        </Stack>
+          {current ? shortLabel(current) : t("BACKUP_NEVER")}
+        </Typography>
       </Stack>
 
       {/* Bound to the archive that was chosen when it opened, not to whatever
@@ -179,7 +305,7 @@ export function Backup() {
         {restoring ? (
           <RestorePanel
             backupKey={restoring.key}
-            when={new Date(restoring.date).toLocaleString()}
+            when={shortDate(restoring.date)}
             busy={sync.running}
             onClose={() => setRestoring(null)}
           />

@@ -36,8 +36,12 @@ provider "google" {
 
 # ── APIs ──────────────────────────────────────────────────────────────────
 # `cloudresourcemanager`, `iam`, and `storage` must already be enabled before
-# `terraform apply` (the README's bootstrap covers that). These four are
+# `terraform apply` (the README's bootstrap covers that). These are
 # safe to manage declaratively from this point on.
+#
+# `books` + `apikeys` back the GBook connector's API key (see apikeys.tf).
+# Adding a *new* entry here is a create, which needs
+# `roles/serviceusage.serviceUsageAdmin` on the caller — see the note in ci.tf.
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com",
@@ -45,6 +49,8 @@ resource "google_project_service" "apis" {
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudbilling.googleapis.com",
+    "books.googleapis.com",
+    "apikeys.googleapis.com",
   ])
   service                    = each.key
   disable_dependent_services = false
@@ -191,6 +197,12 @@ resource "google_cloud_run_v2_service" "app" {
           }
         }
       }
+
+      # Plain value, not a secret ref — see the header comment in apikeys.tf.
+      env {
+        name  = "GBOOK_API_KEY"
+        value = google_apikeys_key.gbook.key_string
+      }
     }
   }
 
@@ -275,6 +287,10 @@ resource "google_cloud_run_v2_job" "backup" {
             }
           }
         }
+
+        # No GBOOK_API_KEY here: this Job resolves the container scoped to
+        # "BitwardenBackup" (backend/job.ts) and never constructs GBookClient.
+        # GBook sync runs in the Service, via GET /api/sync.
       }
     }
   }

@@ -30,6 +30,7 @@ export const NOTION_BACKUP_CLIENT_SECRET = Symbol.for(
 export const TMDB_API_KEY = Symbol.for("TMDB_API_KEY");
 export const IGDB_CLIENT_ID = Symbol.for("IGDB_CLIENT_ID");
 export const IGDB_CLIENT_SECRET = Symbol.for("IGDB_CLIENT_SECRET");
+export const GBOOK_API_KEY = Symbol.for("GBOOK_API_KEY");
 export const DATA_PROVIDER = Symbol.for("DATA_PROVIDER");
 export const DB_ENGINE = Symbol.for("DB_ENGINE");
 export const STORAGE_ENGINE = Symbol.for("STORAGE_ENGINE");

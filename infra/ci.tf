@@ -53,6 +53,24 @@ resource "google_project_iam_member" "ci_service_usage_consumer" {
   member  = "serviceAccount:${google_service_account.ci.email}"
 }
 
+# Adding a *new* entry to `google_project_service.apis` is a create, and
+# `serviceUsageConsumer` above does not grant `serviceusage.services.enable` —
+# entries that already exist refresh fine, which is why this only bites when
+# the set grows. Same class as the domain-mapping failure in CLAUDE.md: not a
+# flake, it reproduces on every CI deploy that adds a service.
+resource "google_project_iam_member" "ci_service_usage_admin" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageAdmin"
+  member  = "serviceAccount:${google_service_account.ci.email}"
+}
+
+# Required to manage `google_apikeys_key` (see apikeys.tf).
+resource "google_project_iam_member" "ci_api_keys_admin" {
+  project = var.project_id
+  role    = "roles/serviceusage.apiKeysAdmin"
+  member  = "serviceAccount:${google_service_account.ci.email}"
+}
+
 # Deploying a new Cloud Run revision requires actAs on the runtime SA (which
 # the Service runs as). Same for the scheduler SA on the Job.
 resource "google_service_account_iam_member" "ci_can_act_as_runtime" {

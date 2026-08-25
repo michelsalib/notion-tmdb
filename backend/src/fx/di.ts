@@ -25,6 +25,7 @@ import {
   DB_ENGINE,
   DB_PROVIDER,
   DOMAIN as DOMAIN_KEY,
+  GBOOK_API_KEY,
   GCP_PROJECT_ID,
   IGDB_CLIENT_ID,
   IGDB_CLIENT_SECRET,
@@ -89,6 +90,7 @@ export function loadEnvironmentConfig(env: {
   bind(TMDB_API_KEY, env["TMDB_API_KEY"]);
   bind(IGDB_CLIENT_ID, env["IGDB_CLIENT_ID"]);
   bind(IGDB_CLIENT_SECRET, env["IGDB_CLIENT_SECRET"]);
+  bind(GBOOK_API_KEY, env["GBOOK_API_KEY"]);
 
   // GCS config
   bind(STORAGE_BUCKET, env["STORAGE_BUCKET"]);

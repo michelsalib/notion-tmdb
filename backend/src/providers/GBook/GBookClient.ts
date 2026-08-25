@@ -1,6 +1,6 @@
 import type { AxiosInstance } from "axios";
 import { inject, injectable } from "tsyringe";
-import { LOGGER } from "../../fx/keys.js";
+import { GBOOK_API_KEY, LOGGER } from "../../fx/keys.js";
 import type { Logger } from "../../fx/logger/Logger.js";
 import type {
   GBookDbConfig,
@@ -11,6 +11,7 @@ import type {
   UrlMatch,
 } from "../../types.js";
 import { entryUrl, idFromQuery } from "../../utils/providerId.js";
+import { retriable } from "../../utils/retriable.js";
 import { runSync } from "../../utils/syncRun.js";
 import type { DataProvider } from "../DataProvider.js";
 import { createProviderClient } from "../httpClient.js";
@@ -36,9 +37,24 @@ interface VolumeInfo {
 export class GBookClient implements DataProvider<"GBook"> {
   private readonly client: AxiosInstance;
 
-  constructor(@inject(LOGGER) logger: Logger) {
+  constructor(
+    @inject(GBOOK_API_KEY) gbookApiKey: string,
+    @inject(LOGGER) private readonly logger: Logger,
+  ) {
     this.client = createProviderClient(logger, {
       baseURL: "https://www.googleapis.com/books/v1/",
+      // Keyless calls are attributed to a shared anonymous consumer project
+      // whose daily quota Google set to 0, so every one of them now 429s.
+      //
+      // Sent as a header rather than the documented `?key=` param on purpose:
+      // axios would have to merge it with each call's own `params`, and
+      // `Logger.bindAxios` pins `headers: false`, so this way it cannot reach
+      // Cloud Logging either.
+      headers: {
+        common: {
+          "X-Goog-Api-Key": gbookApiKey,
+        },
+      },
     });
   }
 
@@ -78,13 +94,24 @@ export class GBookClient implements DataProvider<"GBook"> {
   }
 
   async search(query: string): Promise<Suggestion[]> {
-    const { data } = await this.client.get("/volumes", {
+    // `/volumes?q=` answers 503 `backendFailed` a large fraction of the time,
+    // independently of the key and of this project's quota — `/volumes/{id}`
+    // served from the same key is solid. `isRetriable` already covers 5xx.
+    const { data } = await retriable(
+      this.client,
+      "get",
+      this.logger,
+    )("/volumes", {
       params: {
         q: query,
       },
     });
 
-    return data.items.map((s: { id: string; volumeInfo: VolumeInfo }) => {
+    // Absent, not empty, when nothing matched — so mapping it unguarded made a
+    // zero-result search a TypeError instead of an empty dropdown.
+    const items: { id: string; volumeInfo: VolumeInfo }[] = data.items ?? [];
+
+    return items.map((s) => {
       let subtitle = s.volumeInfo.authors?.join(", ") || "NA";
       if (s.volumeInfo.subtitle) {
         subtitle += " - " + s.volumeInfo.subtitle;
@@ -113,7 +140,11 @@ export class GBookClient implements DataProvider<"GBook"> {
     id: string,
     dbConfig: GBookDbConfig,
   ): Promise<{ notionItem: NotionItem; title: string }> {
-    const { data } = await this.client.get(`/volumes/${id}`);
+    const { data } = await retriable(
+      this.client,
+      "get",
+      this.logger,
+    )(`/volumes/${id}`);
     const volumeInfo: VolumeInfo = data.volumeInfo;
 
     const bookItem: NotionItem = {

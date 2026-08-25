@@ -292,6 +292,18 @@ Monorepo using npm workspaces (installed by Bun):
   unblock: `gcloud beta run domain-mappings create …` from a local login that
   *is* an owner (Terraform matches by `location/name`, so no drift). This is
   **not** a transient flake — it reproduces for every new CI-created subdomain.
+- **A local `terraform apply` can roll prod back.** `infra/terraform.tfvars` is
+  gitignored *and* outranks `TF_VAR_*` in Terraform's variable precedence, so
+  the `image` someone last hand-wrote in it beats anything you export — the
+  deciding line is one that reviewers cannot see, because it is not in the
+  repo. CI is unaffected: it has no tfvars, so its
+  `TF_VAR_image: …:${github.sha}` wins there. From a dev machine, though, a
+  bare apply redeploys the Service *and* the backup Job at whatever stale
+  build that file names. The plan does show it — as one `~ image` line buried
+  in a long Cloud Run diff whose `env` blocks are all redacted as sensitive,
+  so it survives a skim. Apply a plan you have already read, or pass
+  `-var="image=…"` — a command-line `-var` is the only thing that outranks
+  the file.
 
 ## Don't
 

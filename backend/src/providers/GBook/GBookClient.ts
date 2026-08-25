@@ -21,7 +21,10 @@ interface VolumeInfo {
   title: string;
   authors?: string[];
   publisher?: string;
-  publishedDate: `${number}-${number}-${number}`;
+  // Not the full date the name suggests: a bare year ("2010") or a year-month
+  // is at least as common, and it is absent altogether on plenty of volumes.
+  // It was declared as `${number}-${number}-${number}`, which was a fiction.
+  publishedDate?: string;
   // Optional in fact as well as in the response: it was declared required, so
   // the guard below looked redundant rather than load-bearing.
   categories?: string[];
@@ -29,7 +32,9 @@ interface VolumeInfo {
   imageLinks?: {
     thumbnail: string;
   };
-  canonicalVolumeLink: string;
+  // `canonicalVolumeLink` is deliberately not declared. It is in the response,
+  // but it is the dead Play Store link described in `loadNotionEntry` —
+  // leaving it off the type means reaching for it again is a compile error.
   subtitle?: string;
 }
 
@@ -129,9 +134,12 @@ export class GBookClient implements DataProvider<"GBook"> {
     });
   }
 
-  // Google stores `canonicalVolumeLink`, whose shape includes the book's
-  // title and so cannot be rebuilt from the id. The volume id is a 12-character
-  // opaque token that appears in it verbatim.
+  // Matches on the bare id rather than on a URL shape, which is what lets the
+  // written form change without stranding anything: rows still hold the old
+  // `play.google.com/store/books/details?id=…` that `canonicalVolumeLink`
+  // used to supply, newer ones hold `books.google.com/books?id=…`, and a user
+  // may have pasted either by hand. The id is an opaque token that appears
+  // verbatim in all of them.
   urlFor(id: string): UrlMatch {
     return { contains: id };
   }
@@ -147,10 +155,19 @@ export class GBookClient implements DataProvider<"GBook"> {
     )(`/volumes/${id}`);
     const volumeInfo: VolumeInfo = data.volumeInfo;
 
+    // NOT `canonicalVolumeLink`. Google returns
+    // `play.google.com/store/books/details?id=…` for a great many volumes, and
+    // that 404s for anything the Play store does not sell — which is most of
+    // what a reader owns on paper. `books.google.com/books?id=…` answers 200
+    // for the same id. `urlFor` matches on the bare id, and `idFromQuery`
+    // reads `?id=`, so both forms keep working and a re-sync repairs the rows
+    // that already hold a dead Play link.
+    const volumeUrl = `https://books.google.com/books?id=${id}`;
+
     const bookItem: NotionItem = {
       properties: {
         [dbConfig.url]: {
-          url: volumeInfo.canonicalVolumeLink,
+          url: volumeUrl,
         },
         [dbConfig.status]: {
           date: {
@@ -186,9 +203,15 @@ export class GBookClient implements DataProvider<"GBook"> {
       };
     }
 
-    if (dbConfig.releaseDate) {
+    // Absent on a fair number of volumes, and `start: undefined` is not the
+    // same as leaving the column alone — same trap as the cover above.
+    if (dbConfig.releaseDate && volumeInfo.publishedDate) {
       bookItem.properties[dbConfig.releaseDate] = {
         date: {
+          // Often a bare year ("2010") or a year-month, never the full date
+          // the field's name suggests. Both are valid ISO 8601 and Notion
+          // takes them, so widen rather than discard: a year is worth more in
+          // the column than a blank.
           start: volumeInfo.publishedDate,
         },
       };
@@ -201,7 +224,7 @@ export class GBookClient implements DataProvider<"GBook"> {
             text: {
               content: volumeInfo.authors?.join(", ") || "NA",
               link: {
-                url: volumeInfo.canonicalVolumeLink,
+                url: volumeUrl,
               },
             },
           },
@@ -216,7 +239,7 @@ export class GBookClient implements DataProvider<"GBook"> {
             text: {
               content: volumeInfo.publisher,
               link: {
-                url: volumeInfo.canonicalVolumeLink,
+                url: volumeUrl,
               },
             },
           },

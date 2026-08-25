@@ -148,16 +148,6 @@ export class GBookClient implements DataProvider<"GBook"> {
     const volumeInfo: VolumeInfo = data.volumeInfo;
 
     const bookItem: NotionItem = {
-      cover: {
-        external: {
-          url: volumeInfo.imageLinks?.thumbnail || "",
-        },
-      },
-      icon: {
-        external: {
-          url: volumeInfo.imageLinks?.thumbnail || "",
-        },
-      },
       properties: {
         [dbConfig.url]: {
           url: volumeInfo.canonicalVolumeLink,
@@ -169,6 +159,19 @@ export class GBookClient implements DataProvider<"GBook"> {
         },
       },
     };
+
+    // The key has to be *absent*, not empty: Notion rejects the whole page
+    // with "body.icon.external.url should be populated, instead was ``" —
+    // and plenty of volumes carry no `imageLinks` at all, editions of a title
+    // Google has never scanned especially. Sending `""` is what made adding
+    // one fail with "Could not add that book", and made `sync` skip its row
+    // on every run.
+    const thumbnail = volumeInfo.imageLinks?.thumbnail;
+
+    if (thumbnail) {
+      bookItem.cover = { external: { url: thumbnail } };
+      bookItem.icon = { external: { url: thumbnail } };
+    }
 
     const title = volumeInfo.title;
     if (dbConfig.title) {

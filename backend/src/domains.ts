@@ -90,6 +90,18 @@ function byField(field: "subdomain" | "state"): Record<string, DOMAIN> {
 /** Subdomain → domain, for resolving a connector from the request hostname. */
 export const HOSTNAME_DOMAIN: Record<string, DOMAIN> = byField("subdomain");
 
+/**
+ * Is this hostname one of the connector subdomains?
+ *
+ * `computeDomain` answers *which* connector a request is for and falls back to
+ * TMDB for anything unrecognised, which is right for serving the app and wrong
+ * for deciding whether a URL should be in a search index: the public
+ * `*.run.app` URL serves the same document as every mapped subdomain.
+ */
+export function isConnectorHost(hostname: string): boolean {
+  return (hostname.split(".")[0] ?? "") in HOSTNAME_DOMAIN;
+}
+
 /** OAuth `state` value → domain. */
 export const STATE_DOMAIN: Record<string, DOMAIN> = byField("state");
 

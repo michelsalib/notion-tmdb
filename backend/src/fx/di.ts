@@ -271,7 +271,12 @@ function getUserId(request: ScopedRequest): string | undefined {
   return /userId=([\w-]*)/.exec(request.headers["referer"] ?? "")?.[1];
 }
 
-export function computeDomain(request: ScopedRequest): DOMAIN {
+// Takes only what it reads, rather than a whole ScopedRequest: the route that
+// serves index.html resolves a connector before there is a request scope to
+// build one from.
+export function computeDomain(
+  request: Pick<ScopedRequest, "query" | "hostname">,
+): DOMAIN {
   // Explicit per-request connector override (the multi-connector embed widget).
   const explicit = (request.query as any)?.["domain"]?.toLowerCase();
   if (explicit && SEARCH_DOMAINS[explicit]) {

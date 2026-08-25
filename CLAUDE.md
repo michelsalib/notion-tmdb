@@ -237,6 +237,46 @@ unchanged.
   which is why `restore()` lives on `NotionBackup` rather than on
   `BackupDataProvider`.
 
+## Head tags and indexing
+
+All six connectors are one Cloud Run service serving one built `index.html`, so
+without help every host returns the same bytes. `backend/src/pageMeta.ts` stamps
+the head per request and `backend/index.ts` serves the shell itself for that
+reason (`staticPlugin` gets `indexHTML: false` plus an `ignorePatterns` for
+`index.html`, so it hands out assets and nothing else).
+
+- **The `<title>` stamped server-side must match what Helmet sets on mount**
+  (`${pre} ⇄ ${label}`, `App.tsx`), or the tab changes under the user a moment
+  after first paint. Helmet was the *only* thing setting a title: the built
+  document has none at all, which left every crawler and link unfurler that
+  does not run JS with a titleless page, and six identical ones at that.
+- **The copy comes from the locale files, not from a table here.**
+  `PITCH_TITLE`/`PITCH_BODY` in `frontend/static/locales/en/<domain>.yaml` are
+  what the landing page renders, and the unfurl card describing that page must
+  not be able to disagree with it. Read the built copy under `frontend/dist`
+  first — that is the only one the image ships — and fall back to
+  `frontend/static`, because CI runs `bun test` without a frontend build.
+- **The generic description has to be removed, not merely added to.** Two
+  `name="description"` tags in one head means the old all-connectors sentence is
+  still a snippet candidate, and nothing about that is visible in a browser.
+  `pageMeta.test.ts` stamps the real `frontend/index.html` and asserts exactly
+  one survives, so reformatting that head cannot quietly break the regex.
+- **Only a connector's own bare landing page is indexable.** A query string
+  means an embed (`?userId=`, `?multi`) or an OAuth hand-back, and an unmapped
+  host is the public `*.run.app` URL — all of them serve the same document, so
+  they get `noindex` and every response carries a canonical. `isConnectorHost`
+  is separate from `computeDomain` for this: falling back to TMDB is right for
+  *serving* an unrecognised host and wrong for deciding what may be indexed.
+
+There is no `og:image`: the connector logos are SVG, which unfurlers generally
+do not render. Adding one means adding a PNG per connector.
+
+No sitemap, deliberately. Each host is one page and `micheldev.com` already
+links all six, so there is nothing to discover; robots.txt and sitemaps are
+per-host anyway, so the apex's cannot apply to a subdomain. Note that Cloudflare
+serves its own managed `robots.txt` on those subdomains — if directives are ever
+needed there, check how it merges an origin file rather than assuming one wins.
+
 ## Colour
 
 Connector accents live in `frontend/src/theme.ts`, as explicit hex per theme
@@ -317,6 +357,8 @@ Monorepo using npm workspaces (installed by Bun):
 - Don't add a webfont to `frontend/index.html` — the app is pinned to the
   system stack in `theme.ts`, and the old Google Fonts link blocked first
   paint on a third-party request.
+- Don't restate a connector's pitch in the backend to build a meta tag — read
+  the locale file, see "Head tags and indexing".
 - Don't report embed progress through the `Snackbar`. A Notion embed is often
   no taller than the toast, so it covered the widget it was reporting on;
   the widget has an inline status row for this (see `ConnectorWidget`).

@@ -4,7 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@elysiajs/static": "^1.4.0",
-    "@google-cloud/storage": "^7.19.0",
+    "@google-cloud/storage": "^8.0.1",
     "@notionhq/client": "^2.3.0",
     "@sinclair/typebox": "^0.34.52",
     "archiver": "^7.0.1",

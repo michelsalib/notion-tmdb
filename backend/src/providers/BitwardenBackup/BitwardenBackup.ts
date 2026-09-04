@@ -1,4 +1,4 @@
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 import axios, { AxiosInstance } from "axios";
 import { inject, injectable } from "tsyringe";
 import { LOGGER, STORAGE_PROVIDER, USER } from "../../fx/keys.js";
@@ -78,7 +78,7 @@ export class BitwardenBackup implements BackupDataProvider<"BitwardenBackup"> {
 
     yield "Storing backup...";
 
-    const archive = archiver("zip");
+    const archive = new ZipArchive();
 
     // Upload first, finalize second: with no consumer attached, `finalize()`
     // resolves only once the whole zip is sitting in archiver's buffer.

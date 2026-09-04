@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 import {
   findZipEntry,
   type RangeSource,
@@ -21,7 +21,7 @@ interface Entry {
  * only known afterwards — the exact case a local-header reader gets wrong.
  */
 async function zip(entries: Entry[]): Promise<Uint8Array> {
-  const archive = archiver("zip");
+  const archive = new ZipArchive();
   const chunks: Uint8Array[] = [];
 
   archive.on("data", (chunk: Uint8Array) => chunks.push(chunk));

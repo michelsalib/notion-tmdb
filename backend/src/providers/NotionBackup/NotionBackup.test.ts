@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 import type { SyncEvent } from "../../types.js";
 import {
   DATA_ENTRY,
@@ -17,7 +17,7 @@ import { NotionBackup } from "./NotionBackup.js";
 
 /** An archive as the backup connector writes one: entries streamed, data last. */
 async function archive(entries: Record<string, string>): Promise<Uint8Array> {
-  const zip = archiver("zip");
+  const zip = new ZipArchive();
   const chunks: Uint8Array[] = [];
 
   zip.on("data", (chunk: Uint8Array) => chunks.push(chunk));

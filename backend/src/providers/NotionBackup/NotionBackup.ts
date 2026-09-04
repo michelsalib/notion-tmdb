@@ -1,6 +1,5 @@
 import { Readable } from "node:stream";
-import type { Archiver } from "archiver";
-import archiver from "archiver";
+import { type Archiver, ZipArchive } from "archiver";
 import { Axios } from "axios";
 import { inject, injectable } from "tsyringe";
 import { LOGGER, REQUEST, STORAGE_PROVIDER } from "../../fx/keys.js";
@@ -85,7 +84,7 @@ export class NotionBackup implements BackupDataProvider<"backup"> {
    */
   async *sync(): AsyncGenerator<string> {
     const startedAt = new Date();
-    const archive = archiver("zip");
+    const archive = new ZipArchive();
 
     // Begin the upload *before* filling the archive. `finalize()` used to be
     // awaited with nothing consuming the stream, so the whole zip — every

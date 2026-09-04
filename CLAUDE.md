@@ -277,6 +277,25 @@ per-host anyway, so the apex's cannot apply to a subdomain. Note that Cloudflare
 serves its own managed `robots.txt` on those subdomains — if directives are ever
 needed there, check how it merges an origin file rather than assuming one wins.
 
+## Open in Notion
+
+The "Open" link on a row that was just written goes through `notionHref()`
+(`frontend/src/notionLink.ts`), and the scheme it picks is per-platform for a
+reason — both halves were bugs.
+
+- **Desktop gets `notion://`.** The https URL Notion hands back opens the
+  system browser instead of the app the user is already sitting in.
+- **Mobile keeps the https URL.** Mobile registers no `notion://` handler, so
+  the webview opened the `_blank` tab, failed to resolve the scheme and closed
+  it again — a window that loads and vanishes, which is all the user got.
+  notion.so is a universal link on iOS and an app link on Android, so the OS
+  deep-links it into the app itself, and a device without the app still renders
+  the page.
+
+Both surfaces (the standalone toast in `App.tsx`, the embed's inline status row
+in `ConnectorWidget.tsx`) call the same helper; don't inline the rewrite back
+into either.
+
 ## Colour
 
 Connector accents live in `frontend/src/theme.ts`, as explicit hex per theme
@@ -359,6 +378,8 @@ Monorepo using npm workspaces (installed by Bun):
   paint on a third-party request.
 - Don't restate a connector's pitch in the backend to build a meta tag — read
   the locale file, see "Head tags and indexing".
+- Don't rewrite a Notion page link to `notion://` unconditionally — see
+  "Open in Notion".
 - Don't report embed progress through the `Snackbar`. A Notion embed is often
   no taller than the toast, so it covered the widget it was reporting on;
   the widget has an inline status row for this (see `ConnectorWidget`).

@@ -21,6 +21,7 @@ import {
 import { Footer } from "./Footer";
 import "./i18n";
 import { Login } from "./Login";
+import { notionHref } from "./notionLink";
 import { buildTheme, connectorLabel, connectorStyle } from "./theme";
 import { UserPage } from "./UserPage";
 import { Note } from "./ui/Note";
@@ -104,7 +105,7 @@ export function App() {
                   <Button
                     color="inherit"
                     size="small"
-                    href={snackbar.url.replace(/^https:\/\//, "notion://")}
+                    href={notionHref(snackbar.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

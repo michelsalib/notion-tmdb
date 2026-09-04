@@ -20,6 +20,7 @@ import type { Suggestion } from "backend/src/types";
 import { Fragment, useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AuthContext, DomainContext } from "./Context";
+import { notionHref } from "./notionLink";
 import { Poster, Search } from "./Search";
 import { buildTheme, connectorStyle } from "./theme";
 import { ChevronDown } from "./ui/icons";
@@ -576,7 +577,7 @@ function WidgetStatus({
         {result?.url ? (
           <Link
             variant="caption"
-            href={result.url.replace(/^https:\/\//, "notion://")}
+            href={notionHref(result.url)}
             target="_blank"
             rel="noopener noreferrer"
             sx={{ flexShrink: 0 }}

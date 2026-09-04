@@ -7,7 +7,7 @@
     "@google-cloud/storage": "^7.19.0",
     "@notionhq/client": "^2.3.0",
     "@sinclair/typebox": "^0.34.52",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "axios": "^1.20.0",
     "axios-logger": "^2.8.1",
     "date-fns": "^4.4.0",
@@ -22,7 +22,7 @@
     "tsyringe": "^4.10.0"
   },
   "devDependencies": {
-    "@types/archiver": "^7.0.0",
+    "@types/archiver": "^8.0.0",
     "@types/bun": "^1.4.0",
     "@types/minimist": "^1.2.5"
   },

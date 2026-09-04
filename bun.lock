@@ -21,7 +21,7 @@
         "axios-logger": "^2.8.1",
         "date-fns": "^4.4.0",
         "elysia": "^1.4.30",
-        "exact-mirror": "^0.0.9",
+        "exact-mirror": "^1.2.4",
         "file-type": "^20.0.0",
         "matcher": "^6.0.0",
         "mime": "^4.1.0",
@@ -357,7 +357,7 @@
 
     "events-universal": ["events-universal@1.0.1", "", { "dependencies": { "bare-events": "^2.7.0" } }, "sha512-LUd5euvbMLpwOF8m6ivPCbhQeSiYVNb8Vs0fQ8QjXo0JTkEHpz8pxdQf0gStltaPpw0Cca8b39KxvK9cfKRiAw=="],
 
-    "exact-mirror": ["exact-mirror@0.0.9", "", { "peerDependencies": { "@sinclair/typebox": "^0.34.15" }, "optionalPeers": ["@sinclair/typebox"] }, "sha512-eaBCB5hJeG21lp3SeCiWzDOZiAnxzvOizcCqhRsftrlGbbBzGfwj79QTeFngugfFQ6OkVicfxGmeUXp5DYdPIg=="],
+    "exact-mirror": ["exact-mirror@1.2.4", "", { "peerDependencies": { "typebox": ">= 1.1.0" }, "optionalPeers": ["typebox"] }, "sha512-lNLw824fkSqcHSxNIh8skA7gHO5X5Q8UUllXuRedtJCU8cJwKOT3XPQY8GfhveatFMO4nCK8+oEXsLGErMWC/Q=="],
 
     "extend": ["extend@3.0.2", "", {}, "sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g=="],
 

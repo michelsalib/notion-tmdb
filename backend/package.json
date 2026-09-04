@@ -12,7 +12,7 @@
     "axios-logger": "^2.8.1",
     "date-fns": "^4.4.0",
     "elysia": "^1.4.30",
-    "exact-mirror": "^0.0.9",
+    "exact-mirror": "^1.2.4",
     "file-type": "^20.0.0",
     "matcher": "^6.0.0",
     "mime": "^4.1.0",

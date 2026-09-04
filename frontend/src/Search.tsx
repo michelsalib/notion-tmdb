@@ -258,6 +258,16 @@ export function Search({
       // No caret: this is a search field, not a closed list to open. Inside
       // the merged input group it read as a second, non-functional control.
       forcePopupIcon={false}
+      // Defaults to `!freeSolo`, so true — and that is what emptied the field
+      // on a connector switch. It clears the input on *blur* whenever nothing
+      // is selected, and reaching the connector picker means blurring the
+      // field, so a query typed and not yet picked from was gone before
+      // pickDomain even ran. It clears it a second way too: MUI resets the
+      // input whenever the controlled `value` goes null, which is exactly what
+      // the switch below does to drop the stale selection. Both paths early-
+      // return once this is off. Selecting an option still fills the field,
+      // and the clear button still clears it — neither goes through here.
+      clearOnBlur={false}
       getOptionLabel={(option) => option.title}
       getOptionKey={(x) => x.id}
       options={options}

@@ -177,11 +177,16 @@ export function ConnectorWidget({
     );
   }, [multi, domain, parentTheme, auth.status]);
 
+  // The query survives a switch of connector; the selection does not. Its id
+  // belongs to the provider that just went away, and what the user typed is as
+  // good a search on the next one — asking them to retype "Dune" to look it up
+  // as a book after looking it up as a film is the whole point of the widget
+  // undone. `Search` re-runs the query against the new connector on its own,
+  // and reopens its results on the answer.
   function pickDomain(next: string) {
     setPicked(next);
     setValue(null);
     setResult(null);
-    setResetToken((n) => n + 1);
     writeSetting(STORAGE_KEY, next);
   }
 
@@ -344,7 +349,9 @@ export function ConnectorWidget({
 
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Search
-              key={`${domain}-${resetToken}`}
+              // Keyed on the reset token alone: a domain change is a prop
+              // change here, not a remount, so the typed query is kept.
+              key={resetToken}
               domain={multi ? domain : undefined}
               borderless
               checkExisting

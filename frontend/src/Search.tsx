@@ -7,7 +7,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { Suggestion } from "backend/src/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "./ui/icons";
 
@@ -134,6 +134,7 @@ export function Search({
   // round trip and then say "No results" — which was a lie while in flight.
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
   const fetchSearch = useMemo(
@@ -158,6 +159,36 @@ export function Search({
       setInputValue(seed);
     }
   }, [seed]);
+
+  // Switching connector in the multi widget invalidates the selection and the
+  // list — those ids belong to the provider that just went away — but not the
+  // query, which the widget deliberately keeps across a switch. Guarded on a
+  // real change so the mount pass does not report a selection nobody made.
+  const lastDomain = useRef(domain);
+  useEffect(() => {
+    if (lastDomain.current === domain) {
+      return;
+    }
+
+    lastDomain.current = domain;
+    setValue(null);
+    setOptions([]);
+    onChange(null);
+
+    if (!inputValue.trim()) {
+      return;
+    }
+
+    // Reopen on the new connector's answer, rather than leaving the same text
+    // sitting over a list that was just emptied. Focus moves with it and is
+    // not optional: the panel closes on the input's blur, so opening it while
+    // focus is still on the connector picker leaves something a click outside
+    // cannot dismiss. Safe to do here — MUI's FocusTrap hands focus back to
+    // the picker from an effect *cleanup*, and React flushes every cleanup
+    // before any effect body.
+    inputRef.current?.focus();
+    setOpen(true);
+  }, [domain, inputValue, onChange]);
 
   useEffect(() => {
     let active = true;
@@ -215,7 +246,9 @@ export function Search({
     return () => {
       active = false;
     };
-  }, [inputValue]);
+    // `fetchSearch` is memoized on `domain`, so it is what re-runs the same
+    // query against a newly picked connector.
+  }, [inputValue, fetchSearch]);
 
   return (
     <Autocomplete<Suggestion>
@@ -329,6 +362,7 @@ export function Search({
       renderInput={(params) => (
         <TextField
           {...params}
+          inputRef={inputRef}
           size="small"
           fullWidth
           placeholder={placeholder ?? t("SEARCH_PLACEHOLDER")}

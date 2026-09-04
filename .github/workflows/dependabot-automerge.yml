@@ -1,0 +1,57 @@
+name: Dependabot auto-merge
+
+# Non-major Dependabot updates are queued to merge themselves once CI is green.
+# Majors are deliberately left alone: dependabot.yml groups only minor and patch,
+# so a major always arrives as its own pull request and always waits for a human.
+#
+# Worth being explicit about what a merge here does: deploy.yml runs on push to
+# main, so anything this queues goes to Cloud Run without a human ever looking at
+# it. That is the trade — the cooldown in dependabot.yml and the checks below are
+# what stand in for the review.
+on: pull_request
+
+permissions:
+  contents: write # queue the merge
+  pull-requests: write # enable auto-merge on the pull request
+
+jobs:
+  automerge:
+    # The pull request's author, not github.actor: a human re-running this
+    # workflow becomes the actor, and that must not change the decision.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      # Reads the metadata Dependabot attaches to its own pull request rather
+      # than parsing the title. For a grouped pull request, update-type is the
+      # largest bump in the group, which is what makes the check below safe for
+      # the grouped minor+patch updates: one major in the batch disqualifies the
+      # whole batch.
+      #
+      # v3 rather than the v2 that is usually quoted: its one breaking change is
+      # requiring Node 24 on the runner, which ubuntu-latest has, and it fixes
+      # update-type coming back null for some ecosystems. A null there would
+      # silently pass the != major test below and merge something unreviewed.
+      - name: Fetch the update metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # --auto queues the merge instead of performing it: GitHub merges only
+      # after the branch's required checks pass. Those checks are
+      # all_notion-tmdb.yml's two jobs — `check` (install, biome, both
+      # typechecks, tests) and `terraform` (fmt, validate). That workflow is
+      # `on: push` for every branch rather than `on: pull_request`, which covers
+      # Dependabot's branches because it pushes them to this repository; the
+      # runs attach to the head commit, which is what a required check is read
+      # from. deploy.yml is gated to main, so nothing here touches GCP.
+      #
+      # This needs two repository settings to work at all: "Allow auto-merge"
+      # on, and at least one required status check on main. Without a required
+      # check there is nothing to wait for and GitHub rejects the request.
+      - name: Queue non-major updates for auto-merge
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

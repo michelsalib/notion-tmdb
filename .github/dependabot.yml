@@ -1,0 +1,150 @@
+version: 2
+
+# Monthly, not weekly, and matching micheldev.com so the two repositories are
+# read the same way. A batch that arrives on a predictable morning gets
+# reviewed; a trickle does not.
+#
+# On `day: monday`: GitHub only documents `day` for weekly schedules, so a
+# monthly run may well land on the first of the month whatever this says. It is
+# written out because it is the intent. If the Monday matters more than the
+# "monthly", replace the schedule with `interval: cron` and
+# `cronjob: "0 5 1-7 * 1"`, which is exactly the first Monday of each month.
+#
+# The 7-day cooldown is the point of the whole file: nothing is offered until it
+# has been public for a week, so a release that gets yanked or immediately
+# patched is never proposed in the first place.
+#
+# Only minor and patch are grouped. A major is therefore never in a group, so it
+# always arrives as its own pull request and always waits for a human — see
+# .github/workflows/dependabot-automerge.yml.
+updates:
+  # `directory: /` is where bun.lock is, and it is the only lockfile in the
+  # repository: the root package.json declares npm workspaces and Bun resolves
+  # backend/ and frontend/ from there. That matters, because 32 of the 34
+  # dependencies here live in those two workspace manifests and not in the root
+  # one — a config that only watched the root would be watching biome and tsgo.
+  #
+  # Expect the lockfile to need a hand. dependabot-core#14223 — open since
+  # February 2026 — is exactly this layout: bun plus npm workspaces, where the
+  # bumped workspace package.json arrives without a matching bun.lock. That
+  # fails loudly rather than quietly: every job in all_notion-tmdb.yml runs
+  # `bun install --frozen-lockfile`, so such a pull request never goes green and
+  # auto-merge waits forever instead of merging an unresolvable tree. Clearing
+  # one is `bun install` on the branch and a push.
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "⬆️ "
+    labels:
+      - dependencies
+    groups:
+      bun:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  # `directory: /` is correct here and not a copy-paste slip: the
+  # github-actions ecosystem always takes the repository root and finds the
+  # workflows under .github/workflows itself.
+  #
+  # Expect this group to be quiet. Every action across the two workflows is
+  # pinned to a bare major — actions/checkout@v7, oven-sh/setup-bun@v2,
+  # hashicorp/setup-terraform@v4, google-github-actions/auth@v3,
+  # google-github-actions/setup-gcloud@v3 — and those tags already float across
+  # minors and patches, so there is nothing to bump until a new major appears.
+  # A new major is not minor or patch, so it arrives as its own pull request and
+  # does not auto-merge. That is the intended outcome, not a gap.
+  #
+  # One thing no ecosystem watches: `terraform_version: 1.14.8`, pinned twice as
+  # an *input* to setup-terraform. It is a workflow input, not a dependency, so
+  # neither this entry nor the terraform one below will ever offer to move it.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "⬆️ "
+    labels:
+      - dependencies
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  # One Dockerfile, two FROMs, both oven/bun — `1` for the builder and `1-slim`
+  # for the runner. Same situation as the actions: those tags float, so the only
+  # bump Dependabot can ever offer is 2 / 2-slim, which is a major and therefore
+  # lands as a reviewable pull request. The entry is here so that the day Bun 2
+  # ships, something says so — and so that the two stages are moved together.
+  #
+  # The `# syntax=docker/dockerfile:1.7` directive on line 1 is a BuildKit
+  # frontend, not a base image, and Dependabot does not track it.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "⬆️ "
+    labels:
+      - dependencies
+    groups:
+      docker:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  # The providers in infra/main.tf: hashicorp/google, mongodb/mongodbatlas,
+  # hashicorp/random. Quiet by construction, like the two above — every one is
+  # constrained with `~>`, so an in-range release needs no edit and Dependabot
+  # has nothing to propose until a provider goes major and the constraint has to
+  # move. That is the one bump worth a human anyway: a major google provider is
+  # a `terraform apply` against live infrastructure.
+  #
+  # A pull request here is checked but never applied. all_notion-tmdb.yml's
+  # terraform job runs `fmt -check` and `validate` on every branch, while
+  # deploy.yml is `push: branches: [main]`, so nothing on a Dependabot branch
+  # can reach GCP.
+  - package-ecosystem: terraform
+    directory: /infra
+    schedule:
+      interval: monthly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "⬆️ "
+    labels:
+      - dependencies
+    groups:
+      terraform:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

@@ -24,13 +24,14 @@ updates:
   # dependencies here live in those two workspace manifests and not in the root
   # one — a config that only watched the root would be watching biome and tsgo.
   #
-  # Expect the lockfile to need a hand. dependabot-core#14223 — open since
-  # February 2026 — is exactly this layout: bun plus npm workspaces, where the
-  # bumped workspace package.json arrives without a matching bun.lock. That
-  # fails loudly rather than quietly: every job in all_notion-tmdb.yml runs
-  # `bun install --frozen-lockfile`, so such a pull request never goes green and
-  # auto-merge waits forever instead of merging an unresolvable tree. Clearing
-  # one is `bun install` on the branch and a push.
+  # dependabot-core#14223 reports bun leaving bun.lock untouched on exactly this
+  # layout — bun plus npm workspaces — and it is still open. It does not
+  # reproduce here: the first run bumped four backend/ dependencies and moved
+  # the lockfile with every one of them. Worth knowing anyway, because if it
+  # ever does bite, it looks like a mystery rather than a lockfile: every job in
+  # all_notion-tmdb.yml runs `bun install --frozen-lockfile`, so a stale
+  # lockfile just keeps the pull request red and auto-merge never fires.
+  # Clearing one would be `bun install` on the branch and a push.
   - package-ecosystem: bun
     directory: /
     schedule:
@@ -118,11 +119,12 @@ updates:
           - patch
 
   # The providers in infra/main.tf: hashicorp/google, mongodb/mongodbatlas,
-  # hashicorp/random. Quiet by construction, like the two above — every one is
-  # constrained with `~>`, so an in-range release needs no edit and Dependabot
-  # has nothing to propose until a provider goes major and the constraint has to
-  # move. That is the one bump worth a human anyway: a major google provider is
-  # a `terraform apply` against live infrastructure.
+  # hashicorp/random. Every one is constrained with `~>`, so an in-range release
+  # needs no edit and there is nothing to propose until a provider goes major
+  # and the constraint has to move — which does not mean silence. The first run
+  # opened two: google 6 → 8 and mongodbatlas 1 → 2, both already waiting. They
+  # are also exactly the bumps worth a human, since a major provider is a
+  # `terraform apply` against live infrastructure.
   #
   # A pull request here is checked but never applied. all_notion-tmdb.yml's
   # terraform job runs `fmt -check` and `validate` on every branch, while

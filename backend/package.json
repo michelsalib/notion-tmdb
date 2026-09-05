@@ -5,7 +5,7 @@
   "dependencies": {
     "@elysiajs/static": "^1.4.0",
     "@google-cloud/storage": "^8.0.1",
-    "@notionhq/client": "^2.3.0",
+    "@notionhq/client": "^5.26.0",
     "@sinclair/typebox": "^0.34.52",
     "archiver": "^8.0.0",
     "axios": "^1.20.0",

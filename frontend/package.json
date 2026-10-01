@@ -5,15 +5,15 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^9.4.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "i18next-browser-languagedetector": "^8.2.1",
-    "i18next-http-backend": "^4.0.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "i18next-http-backend": "^4.0.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "react-helmet-async": "^3.0.0",
-    "react-i18next": "^17.0.12",
-    "yaml": "^2.9.0"
+    "react-i18next": "^17.0.15",
+    "yaml": "^2.9.1"
   },
   "scripts": {
     "build": "rm -rf dist && bun build index.html --outdir dist --target browser --production --sourcemap && cp -r static/. dist/",

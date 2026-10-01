@@ -4,7 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@elysiajs/static": "^1.4.0",
-    "@google-cloud/storage": "^8.0.1",
+    "@google-cloud/storage": "^8.2.0",
     "@notionhq/client": "^2.3.0",
     "@sinclair/typebox": "^0.34.52",
     "archiver": "^8.0.0",
@@ -12,8 +12,8 @@
     "axios-logger": "^2.8.1",
     "date-fns": "^4.4.0",
     "elysia": "^1.4.30",
-    "exact-mirror": "^1.2.4",
-    "file-type": "^22.0.2",
+    "exact-mirror": "^1.2.6",
+    "file-type": "^22.1.1",
     "matcher": "^6.0.0",
     "mime": "^4.1.0",
     "mongodb": "^7.6.0",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@types/archiver": "^8.0.0",
-    "@types/bun": "^1.4.0",
+    "@types/bun": "^1.4.2",
     "@types/minimist": "^1.2.5"
   },
   "scripts": {

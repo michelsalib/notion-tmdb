@@ -14,7 +14,7 @@
     "elysia": "^1.4.30",
     "exact-mirror": "^1.2.6",
     "file-type": "^22.1.1",
-    "matcher": "^6.0.0",
+    "matcher": "^7.0.0",
     "mime": "^4.1.0",
     "mongodb": "^7.6.0",
     "reflect-metadata": "^0.2.2",
